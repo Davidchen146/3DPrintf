@@ -44,6 +44,7 @@ wrapper.sh
 *.qbs.user*
 *.qmlproject.user*
 CMakeLists.txt.user*
+CMakeLists.txt*
 /share/qtcreator/examples/
 /share/qtcreator/externaltools/
 /share/qtcreator/fonts/
