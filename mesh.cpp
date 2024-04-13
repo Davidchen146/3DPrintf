@@ -1072,6 +1072,14 @@ void Mesh::validate(){
 
 }
 
+vector<Vector3f> Mesh::getVertices() {
+    return _vertices;
+}
+
+vector<Vector3i> Mesh::getFaces() {
+    return _faces;
+}
+
 // TESTING BELOW //
 
 void Mesh::testAmbientOcclusion() {

@@ -6,6 +6,7 @@
 #include <chrono>
 
 #include "mesh.h"
+#include "meshoperations.h"
 
 
 int main(int argc, char *argv[])
@@ -52,6 +53,7 @@ int main(int argc, char *argv[])
     // Load
     Mesh m;
     m.loadFromFile(infile.toStdString());
+    MeshOperations m_o(m);
 
     // Start timing
     auto t0 = std::chrono::high_resolution_clock::now();
@@ -104,7 +106,9 @@ int main(int argc, char *argv[])
 
         // TODO
 
-    } else {
+    } else if (method == "geodesic") {
+        m_o.geodesicDistance();
+    }else {
 
         std::cerr << "Error: Unknown method \"" << method.toUtf8().constData() << "\"" << std::endl;
 

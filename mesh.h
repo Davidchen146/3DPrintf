@@ -99,6 +99,9 @@ public:
 
     void testAmbientOcclusion();
 
+    std::vector<Eigen::Vector3f> getVertices();
+    std::vector<Eigen::Vector3i> getFaces();
+
 private:
     int globalVertexIndex;
     std::unordered_map<int, Vertex*>                              _vertexMap;

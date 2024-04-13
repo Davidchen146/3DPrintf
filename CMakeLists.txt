@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 # Sets project name
-project(mesh LANGUAGES CXX)
+project(3DPrintf LANGUAGES CXX)
 
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
@@ -30,9 +30,12 @@ find_package(Qt6 REQUIRED COMPONENTS Xml)
 add_executable(${PROJECT_NAME}
     main.cpp
     mesh.cpp
+    meshoperations.cpp
 
     mesh.h
+    meshoperations.h
     util/tiny_obj_loader.h
+    meshoperations.h meshoperations.cpp
 )
 
 # Specifies libraries to be linked (Qt components, glew, etc)
