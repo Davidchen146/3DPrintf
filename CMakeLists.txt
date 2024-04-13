@@ -10,6 +10,7 @@ include(libigl)
 
 igl_include(embree)
 igl_include(core)
+igl_include(glfw)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -45,6 +46,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt::Xml
     igl::embree
     igl::core
+    igl::glfw
 )
 
 # This allows you to `#include "Eigen/..."`
