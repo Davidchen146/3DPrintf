@@ -1,0 +1,344 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1,
+						2
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Release-f5ebdc15457944623624.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						2,
+						5,
+						6,
+						7
+					]
+				},
+				{
+					"build" : "_deps/libigl-build",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-_deps.libigl-build-Release-c20461662175ae5404a8.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 1,
+					"source" : "build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/libigl-src",
+					"targetIndexes" : 
+					[
+						1
+					]
+				},
+				{
+					"build" : "_deps/embree-build",
+					"childIndexes" : 
+					[
+						3,
+						9
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-_deps.embree-build-Release-281d25bd1a67f1227131.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.1.0"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 2,
+					"source" : "build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src",
+					"targetIndexes" : 
+					[
+						11
+					]
+				},
+				{
+					"build" : "_deps/embree-build/common",
+					"childIndexes" : 
+					[
+						4,
+						5,
+						6,
+						7,
+						8
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-_deps.embree-build.common-Release-ef067a6c6c9183b0a82c.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.1.0"
+					},
+					"parentIndex" : 2,
+					"projectIndex" : 2,
+					"source" : "build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/common"
+				},
+				{
+					"build" : "_deps/embree-build/common/sys",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-_deps.embree-build.common.sys-Release-4a59f21d5dfed7a234d0.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.1.0"
+					},
+					"parentIndex" : 3,
+					"projectIndex" : 2,
+					"source" : "build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/common/sys",
+					"targetIndexes" : 
+					[
+						9
+					]
+				},
+				{
+					"build" : "_deps/embree-build/common/math",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-_deps.embree-build.common.math-Release-11694d2de9e94f6150e5.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.1.0"
+					},
+					"parentIndex" : 3,
+					"projectIndex" : 2,
+					"source" : "build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/common/math",
+					"targetIndexes" : 
+					[
+						4
+					]
+				},
+				{
+					"build" : "_deps/embree-build/common/simd",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-_deps.embree-build.common.simd-Release-5ae575a63b38eea48b1d.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.1.0"
+					},
+					"parentIndex" : 3,
+					"projectIndex" : 2,
+					"source" : "build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/common/simd",
+					"targetIndexes" : 
+					[
+						8
+					]
+				},
+				{
+					"build" : "_deps/embree-build/common/lexers",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-_deps.embree-build.common.lexers-Release-bcc274ea859e467ac537.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.1.0"
+					},
+					"parentIndex" : 3,
+					"projectIndex" : 2,
+					"source" : "build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/common/lexers",
+					"targetIndexes" : 
+					[
+						3
+					]
+				},
+				{
+					"build" : "_deps/embree-build/common/tasking",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-_deps.embree-build.common.tasking-Release-cde609726fd60492d819.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.1.0"
+					},
+					"parentIndex" : 3,
+					"projectIndex" : 2,
+					"source" : "build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/common/tasking",
+					"targetIndexes" : 
+					[
+						10
+					]
+				},
+				{
+					"build" : "_deps/embree-build/kernels",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-_deps.embree-build.kernels-Release-9e7791b07f1629a9b5c7.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.1.0"
+					},
+					"parentIndex" : 2,
+					"projectIndex" : 2,
+					"source" : "build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/kernels",
+					"targetIndexes" : 
+					[
+						0
+					]
+				}
+			],
+			"name" : "Release",
+			"projects" : 
+			[
+				{
+					"childIndexes" : 
+					[
+						1,
+						2
+					],
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "mesh",
+					"targetIndexes" : 
+					[
+						2,
+						5,
+						6,
+						7
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						1
+					],
+					"name" : "libigl",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						1
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9
+					],
+					"name" : "embree3",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						0,
+						3,
+						4,
+						8,
+						9,
+						10,
+						11
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 9,
+					"id" : "embree::@68ccd8af01df142541e5",
+					"jsonFile" : "target-embree-Release-185c311349b06a9407dd.json",
+					"name" : "embree",
+					"projectIndex" : 2
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "igl_core::@7e03116a751a0a925ea3",
+					"jsonFile" : "target-igl_core-Release-f1919381fc200adea8ba.json",
+					"name" : "igl_core",
+					"projectIndex" : 1
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "igl_embree::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-igl_embree-Release-1e10d58fff92f075ed6e.json",
+					"name" : "igl_embree",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 7,
+					"id" : "lexers::@564ab01cb913f2ea3a89",
+					"jsonFile" : "target-lexers-Release-55efa88d26fcac4a80f9.json",
+					"name" : "lexers",
+					"projectIndex" : 2
+				},
+				{
+					"directoryIndex" : 5,
+					"id" : "math::@c7e5a4ce7f9bb878cdf0",
+					"jsonFile" : "target-math-Release-70073b169e3ae00600c8.json",
+					"name" : "math",
+					"projectIndex" : 2
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "mesh::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-mesh-Release-4bc6467085de1ff19e71.json",
+					"name" : "mesh",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "mesh_autogen::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-mesh_autogen-Release-fd7b46b9d40f5d88d7a3.json",
+					"name" : "mesh_autogen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "mesh_autogen_timestamp_deps::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-mesh_autogen_timestamp_deps-Release-b55ad844d3d74da712af.json",
+					"name" : "mesh_autogen_timestamp_deps",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 6,
+					"id" : "simd::@72ce5f97176e03e81465",
+					"jsonFile" : "target-simd-Release-19b9421606dfcb0c3b06.json",
+					"name" : "simd",
+					"projectIndex" : 2
+				},
+				{
+					"directoryIndex" : 4,
+					"id" : "sys::@973da7eff35abfecc1ee",
+					"jsonFile" : "target-sys-Release-0af209c0e52ef061f49d.json",
+					"name" : "sys",
+					"projectIndex" : 2
+				},
+				{
+					"directoryIndex" : 8,
+					"id" : "tasking::@6d38324737ae7f136e0b",
+					"jsonFile" : "target-tasking-Release-ef57b79800720afaaf51.json",
+					"name" : "tasking",
+					"projectIndex" : 2
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "uninstall::@fc560089438173e56efc",
+					"jsonFile" : "target-uninstall-Release-cb27fff7c61a4b901044.json",
+					"name" : "uninstall",
+					"projectIndex" : 2
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release",
+		"source" : "/Users/david/Documents/GitHub/mesh-Davidchen146"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 6
+	}
+}

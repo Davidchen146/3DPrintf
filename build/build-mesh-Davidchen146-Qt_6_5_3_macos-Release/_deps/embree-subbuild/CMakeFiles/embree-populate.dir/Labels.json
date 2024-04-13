@@ -1,0 +1,46 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-subbuild/CMakeFiles/embree-populate"
+		},
+		{
+			"file" : "/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-subbuild/CMakeFiles/embree-populate.rule"
+		},
+		{
+			"file" : "/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-subbuild/CMakeFiles/embree-populate-complete.rule"
+		},
+		{
+			"file" : "/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-subbuild/embree-populate-prefix/src/embree-populate-stamp/embree-populate-build.rule"
+		},
+		{
+			"file" : "/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-subbuild/embree-populate-prefix/src/embree-populate-stamp/embree-populate-configure.rule"
+		},
+		{
+			"file" : "/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-subbuild/embree-populate-prefix/src/embree-populate-stamp/embree-populate-download.rule"
+		},
+		{
+			"file" : "/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-subbuild/embree-populate-prefix/src/embree-populate-stamp/embree-populate-install.rule"
+		},
+		{
+			"file" : "/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-subbuild/embree-populate-prefix/src/embree-populate-stamp/embree-populate-mkdir.rule"
+		},
+		{
+			"file" : "/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-subbuild/embree-populate-prefix/src/embree-populate-stamp/embree-populate-patch.rule"
+		},
+		{
+			"file" : "/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-subbuild/embree-populate-prefix/src/embree-populate-stamp/embree-populate-test.rule"
+		},
+		{
+			"file" : "/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-subbuild/embree-populate-prefix/src/embree-populate-stamp/embree-populate-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"embree-populate"
+		],
+		"name" : "embree-populate"
+	}
+}

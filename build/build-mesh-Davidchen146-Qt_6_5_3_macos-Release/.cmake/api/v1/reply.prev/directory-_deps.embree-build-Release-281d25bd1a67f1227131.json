@@ -1,0 +1,202 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"INSTALL",
+			"include"
+		],
+		"files" : 
+		[
+			"build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/common/cmake/package.cmake",
+			"build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 467,
+				"parent" : 0
+			},
+			{
+				"file" : 0,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 37,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 39,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 54,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 55,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 56,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 57,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 58,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 59,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 125,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 126,
+				"parent" : 2
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 3,
+			"component" : "devel",
+			"destination" : "include",
+			"paths" : 
+			[
+				"build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/include/embree3"
+			],
+			"type" : "directory"
+		},
+		{
+			"backtrace" : 4,
+			"component" : "devel",
+			"destination" : "share/man",
+			"paths" : 
+			[
+				"build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/man/man3"
+			],
+			"type" : "directory"
+		},
+		{
+			"backtrace" : 5,
+			"component" : "lib",
+			"destination" : "share/doc/mesh",
+			"paths" : 
+			[
+				"build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/LICENSE.txt"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 6,
+			"component" : "lib",
+			"destination" : "share/doc/mesh",
+			"paths" : 
+			[
+				"build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/CHANGELOG.md"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 7,
+			"component" : "lib",
+			"destination" : "share/doc/mesh",
+			"paths" : 
+			[
+				"build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/README.md"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 8,
+			"component" : "lib",
+			"destination" : "share/doc/mesh",
+			"paths" : 
+			[
+				"build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/readme.pdf"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 9,
+			"component" : "lib",
+			"destination" : "share/doc/mesh",
+			"paths" : 
+			[
+				"build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/third-party-programs.txt"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 10,
+			"component" : "lib",
+			"destination" : "share/doc/mesh",
+			"paths" : 
+			[
+				"build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/third-party-programs-TBB.txt"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 11,
+			"component" : "devel",
+			"destination" : "lib/cmake/embree-3.13.3",
+			"paths" : 
+			[
+				{
+					"from" : "build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-build/embree-config-install.cmake",
+					"to" : "embree-config.cmake"
+				}
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 12,
+			"component" : "devel",
+			"destination" : "lib/cmake/embree-3.13.3",
+			"paths" : 
+			[
+				"build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-build/embree-config-version.cmake"
+			],
+			"type" : "file"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "_deps/embree-build",
+		"source" : "build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src"
+	}
+}

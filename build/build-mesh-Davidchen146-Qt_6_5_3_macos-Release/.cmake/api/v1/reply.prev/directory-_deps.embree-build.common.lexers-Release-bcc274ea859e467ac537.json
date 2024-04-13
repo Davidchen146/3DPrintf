@@ -1,0 +1,69 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"INSTALL"
+		],
+		"files" : 
+		[
+			"build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/common/lexers/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 13,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 14,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "devel",
+			"destination" : "lib",
+			"paths" : 
+			[
+				"_deps/embree-build/liblexers.a"
+			],
+			"targetId" : "lexers::@564ab01cb913f2ea3a89",
+			"targetIndex" : 3,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 2,
+			"component" : "devel",
+			"destination" : "lib/cmake/embree-3.13.3",
+			"exportName" : "lexers-targets",
+			"exportTargets" : 
+			[
+				{
+					"id" : "lexers::@564ab01cb913f2ea3a89",
+					"index" : 3
+				}
+			],
+			"paths" : 
+			[
+				"_deps/embree-build/common/lexers/CMakeFiles/Export/9ad699547625b23915cc848ec18a3972/lexers-targets.cmake"
+			],
+			"type" : "export"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "_deps/embree-build/common/lexers",
+		"source" : "build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/common/lexers"
+	}
+}

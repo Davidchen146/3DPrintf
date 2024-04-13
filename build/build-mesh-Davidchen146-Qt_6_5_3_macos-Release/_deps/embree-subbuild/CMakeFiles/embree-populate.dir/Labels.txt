@@ -1,0 +1,14 @@
+# Target labels
+ embree-populate
+# Source files and their labels
+/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-subbuild/CMakeFiles/embree-populate
+/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-subbuild/CMakeFiles/embree-populate.rule
+/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-subbuild/CMakeFiles/embree-populate-complete.rule
+/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-subbuild/embree-populate-prefix/src/embree-populate-stamp/embree-populate-build.rule
+/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-subbuild/embree-populate-prefix/src/embree-populate-stamp/embree-populate-configure.rule
+/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-subbuild/embree-populate-prefix/src/embree-populate-stamp/embree-populate-download.rule
+/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-subbuild/embree-populate-prefix/src/embree-populate-stamp/embree-populate-install.rule
+/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-subbuild/embree-populate-prefix/src/embree-populate-stamp/embree-populate-mkdir.rule
+/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-subbuild/embree-populate-prefix/src/embree-populate-stamp/embree-populate-patch.rule
+/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-subbuild/embree-populate-prefix/src/embree-populate-stamp/embree-populate-test.rule
+/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-subbuild/embree-populate-prefix/src/embree-populate-stamp/embree-populate-update.rule

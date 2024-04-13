@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "_deps/embree-build/common",
+		"source" : "build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/common"
+	}
+}

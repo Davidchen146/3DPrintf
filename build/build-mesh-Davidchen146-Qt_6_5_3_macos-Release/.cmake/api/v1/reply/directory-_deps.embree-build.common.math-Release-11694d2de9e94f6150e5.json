@@ -1,0 +1,69 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"INSTALL"
+		],
+		"files" : 
+		[
+			"build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/common/math/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 10,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "devel",
+			"destination" : "lib",
+			"paths" : 
+			[
+				"_deps/embree-build/libmath.a"
+			],
+			"targetId" : "math::@c7e5a4ce7f9bb878cdf0",
+			"targetIndex" : 4,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 2,
+			"component" : "devel",
+			"destination" : "lib/cmake/embree-3.13.3",
+			"exportName" : "math-targets",
+			"exportTargets" : 
+			[
+				{
+					"id" : "math::@c7e5a4ce7f9bb878cdf0",
+					"index" : 4
+				}
+			],
+			"paths" : 
+			[
+				"_deps/embree-build/common/math/CMakeFiles/Export/9ad699547625b23915cc848ec18a3972/math-targets.cmake"
+			],
+			"type" : "export"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "_deps/embree-build/common/math",
+		"source" : "build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/common/math"
+	}
+}

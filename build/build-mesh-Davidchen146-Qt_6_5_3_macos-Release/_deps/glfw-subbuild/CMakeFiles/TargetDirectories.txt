@@ -1,0 +1,3 @@
+/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/glfw-subbuild/CMakeFiles/glfw-populate.dir
+/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/glfw-subbuild/CMakeFiles/edit_cache.dir
+/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/glfw-subbuild/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,5 @@
+math_autogen/timestamp: \
+	/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/common/math/CMakeLists.txt \
+	/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/common/math/constants.cpp \
+	/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/embree-src/common/math/constants.h \
+	/Users/david/Qt/Tools/CMake/CMake.app/Contents/bin/cmake
