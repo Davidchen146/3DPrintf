@@ -1,3 +1,0 @@
-/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/libigl-subbuild/CMakeFiles/libigl-populate.dir
-/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/libigl-subbuild/CMakeFiles/edit_cache.dir
-/Users/david/Documents/GitHub/mesh-Davidchen146/build/build-mesh-Davidchen146-Qt_6_5_3_macos-Release/_deps/libigl-subbuild/CMakeFiles/rebuild_cache.dir
