@@ -25,12 +25,15 @@ struct Edge;
 struct Vertex {
     Halfedge* halfedge;
     int index;
-    Eigen::Vector3f p;
+    Eigen::Vector3f p; // p is the coordinates
     Eigen::Matrix4f Q;
 };
 
 struct Face {
+    int index;
     Halfedge* halfedge;
+    Eigen::Vector3f normal;
+    std::vector<Face *> neighbors;
 };
 
 struct Halfedge {
@@ -82,12 +85,9 @@ public:
     void validate();
 
     void flip(Edge* edge);
-    Vertex* split(Edge* edge, std::unordered_set<Edge*>* newEdges);
     Vertex* collapse(Edge* edge, Eigen::Vector4f point);
 
-    void loopSubdivide();
     void simplify(int numFacesToRemove);
-    void remesh(float w);
 
     bool removeSpecificEdgeFromEdgeQueue(Edge* e);
 
@@ -101,6 +101,7 @@ public:
 
     std::vector<Eigen::Vector3f> getVertices();
     std::vector<Eigen::Vector3i> getFaces();
+    std::unordered_set<Face *> getFaceSet();
 
 private:
     int globalVertexIndex;

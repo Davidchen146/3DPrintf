@@ -18,6 +18,7 @@ class MeshOperations
 public:
     MeshOperations(Mesh m);
     void geodesicDistance();
+    void angularDistance();
 
 
 private:
@@ -27,6 +28,7 @@ private:
     MatrixXf _V;
     MatrixXi _F;
     Eigen::MatrixXd _geodesicDistances;
+    Eigen::MatrixXd _angularDistances;
 };
 
 #endif // MESHOPERATIONS_H

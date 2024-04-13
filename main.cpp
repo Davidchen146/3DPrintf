@@ -53,65 +53,19 @@ int main(int argc, char *argv[])
     // Load
     Mesh m;
     m.loadFromFile(infile.toStdString());
-    MeshOperations m_o(m);
 
     // Start timing
     auto t0 = std::chrono::high_resolution_clock::now();
+    m.preProcess();
+    MeshOperations m_o(m);
 
     // Switch on method
-    if (method == "subdivide") {
-        int numIterations = settings.value("Parameters/args1").toInt();
-        m.preProcess();
-        m.validate();
-
-        for (int i = 0; i < numIterations; i++) {
-            m.loopSubdivide();
-        }
-
-        m.validate();
-        m.convert();
-    } else if (method == "simplify") {
-        int numFacesToRemove = settings.value("Parameters/args1").toInt();
-
-        // TODO
-        // Testing conversion between data structures
-        m.preProcess();
-        m.validate();
-
-        m.simplify(numFacesToRemove);
-        m.testAmbientOcclusion();
-
-        m.validate();
-        m.convert();
-
-    } else if (method == "remesh") {
-        int numIterations = settings.value("Parameters/args1").toInt();
-        float w = settings.value("Parameters/args2").toFloat();
-        // TODO
-        m.preProcess();
-        m.validate();
-
-        for (int i = 0; i < numIterations; i++) {
-            m.remesh(w);
-        }
-
-        m.validate();
-        m.convert();
-
-    } else if (method == "noise") {
-
-        // TODO
-
-    } else if (method == "denoise") {
-
-        // TODO
-
-    } else if (method == "geodesic") {
+    if (method == "geodesic") {
         m_o.geodesicDistance();
-    }else {
-
+    }else if (method == "angular") {
+        m_o.angularDistance();
+    } else {
         std::cerr << "Error: Unknown method \"" << method.toUtf8().constData() << "\"" << std::endl;
-
     }
 
     // Finish timing
