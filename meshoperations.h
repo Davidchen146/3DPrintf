@@ -43,7 +43,7 @@ private:
 
     // Subroutines used for Phase 1 (Oversegmentation)
     // Initial seed computation
-    void sampleRandomFaces(std::vector<int> &faces);
+    void sampleRandomFaces(std::vector<int> &faces, int n);
     void generateInitialSeeds(std::vector<int> &seeds);
 
     // Iterative steps to generate oversegmentation

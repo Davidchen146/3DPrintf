@@ -18,6 +18,9 @@ MeshOperations::MeshOperations(Mesh m) {
     _angularDistances.resize(numFaces, numFaces);
     _angularDistances.setZero();
 
+    std::vector<int> faces;
+    sampleRandomFaces(faces, 150);
+
 }
 
 void MeshOperations::geodesicDistance() {
@@ -75,7 +78,7 @@ void MeshOperations::angularDistance() {
             h = h->next;
         } while (h != f_i->halfedge);
     }
-    std::cout << _angularDistances << std::endl;
+    // std::cout << _angularDistances << std::endl;
 }
 
 double MeshOperations::getGeodesicDistance(int i, int j) {
