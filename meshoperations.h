@@ -30,7 +30,7 @@ public:
 
     // Oversegmentation: returns list of lists of faces
     // Each list of faces represents a connected patch (to be merged and assigned a printing direction)
-    std::vector<std::vector<int>> generateOversegmentation();
+    void generateOversegmentation(std::vector<std::vector<int>> &patches);
 
 private:
     Mesh _mesh;
