@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 # Sets project name
-project(mesh LANGUAGES CXX)
+project(3dprintf LANGUAGES CXX)
 
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
@@ -37,6 +37,8 @@ add_executable(${PROJECT_NAME}
     meshoperations.h
     util/tiny_obj_loader.h
     meshoperations.h meshoperations.cpp
+    oversegmentation.cpp
+    meshop_util.cpp
 )
 
 # Specifies libraries to be linked (Qt components, glew, etc)
@@ -55,9 +57,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 )
 
 # Set this flag to silence warnings on Windows
-if (MSVC OR MSYS OR MINGW)
-  set(CMAKE_CXX_FLAGS "-Wno-volatile")
-endif()
+# if (MSVC OR MSYS OR MINGW)
+#   set(CMAKE_CXX_FLAGS "-Wno-volatile")
+# endif()
 
 # Set this flag to silence warnings on MacOS
 if (APPLE)

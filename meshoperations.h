@@ -17,10 +17,20 @@ class MeshOperations
 
 public:
     MeshOperations(Mesh m);
+
+    // Computes global shortest path between faces using geodesic distance
     void geodesicDistance();
+
+    // Computes local angular distance between pairs of adjacent faces
     void angularDistance();
+
+    // Distances between arbitrary faces
     double getGeodesicDistance(int i, int j);
     double getWeightedDistance(int i, int j);
+
+    // Oversegmentation: returns list of lists of faces
+    // Each list of faces represents a connected patch (to be merged and assigned a printing direction)
+    std::vector<std::vector<int>> generateOversegmentation();
 
 private:
     Mesh _mesh;
@@ -30,6 +40,21 @@ private:
     MatrixXi _F;
     Eigen::MatrixXd _geodesicDistances;
     Eigen::MatrixXd _angularDistances;
+
+    // Subroutines used for Phase 1 (Oversegmentation)
+    // Initial seed computation
+    void sampleRandomFaces(std::vector<int> &faces);
+    void generateInitialSeeds(std::vector<int> &seeds);
+
+    // Iterative steps to generate oversegmentation
+    void generatePatches(const std::vector<int> &seeds, std::vector<std::vector<int>> &patches);
+    void recenterSeeds(const std::vector<std::vector<int>> &patches, std::vector<int> &new_seeds);
+
+    // Basic utility functions
+    Eigen::Vector3d getNormal(const int &face);
+    double getArea(const int &face);
+    double getGeodesicDistanceToSet(const int &face, const std::vector<int> &faces, bool include_self = false);
+    double getWeightedDistanceToSet(const int &face, const std::vector<int> &faces, bool include_self = false);
 };
 
 #endif // MESHOPERATIONS_H
