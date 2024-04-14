@@ -19,12 +19,14 @@ public:
     MeshOperations(Mesh m);
     void geodesicDistance();
     void angularDistance();
-
+    void visualize(std::vector<std::vector<int>>& coloringGroups);
 
 private:
     Mesh _mesh;
     std::vector<Eigen::Vector3f> _vertices;
     std::vector<Eigen::Vector3i> _faces;
+    int numVertices;
+    int numFaces;
     MatrixXf _V;
     MatrixXi _F;
     Eigen::MatrixXd _geodesicDistances;

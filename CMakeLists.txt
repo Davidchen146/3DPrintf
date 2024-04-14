@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 # Sets project name
-project(mesh LANGUAGES CXX)
+project(3DPrintf LANGUAGES CXX)
 
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
