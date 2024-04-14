@@ -261,7 +261,7 @@ double MeshOperations::getGeodesicDistance(int i, int j) {
 
 double MeshOperations::getWeightedDistance(int i, int j) {
 
-    return 1;
+    return _weightedDistances(i, j);
 }
 
 int minDistanceVertex(vector<double> distances, vector<bool> visited) {

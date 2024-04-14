@@ -69,8 +69,12 @@ private:
     Eigen::Vector3f getNormal(const int &face);
     Eigen::Vector3f getCentroid(const int &face);
     double getArea(const int &face);
-    std::pair<double, int> getGeodesicDistanceToSet(const int &face, const std::vector<int> &faces, bool include_self = false);
-    std::pair<double, int> getWeightedDistanceToSet(const int &face, const std::vector<int> &faces, bool include_self = false);
+    std::pair<double, int> getMinGeodesicDistanceToSet(const int &face, const std::vector<int> &faces, bool include_self = false);
+    std::pair<double, int> getMinWeightedDistanceToSet(const int &face, const std::vector<int> &faces, bool include_self = false);
+    std::pair<double, int> getMaxGeodesicDistanceToSet(const int &face, const std::vector<int> &faces);
+    std::pair<double, int> getMaxWeightedDistanceToSet(const int &face, const std::vector<int> &faces);
+    double getTotalGeodesicDistanceToSet(const int &face, const std::vector<int> &faces);
+    double getTotalWeightedDistanceToSet(const int &face, const std::vector<int> &faces);
     double bbd; // bounding box diagonal
     Eigen::MatrixXd _weightedDistances;
 
