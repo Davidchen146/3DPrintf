@@ -77,3 +77,11 @@ void MeshOperations::angularDistance() {
     }
     std::cout << _angularDistances << std::endl;
 }
+
+double MeshOperations::getGeodesicDistance(int i, int j) {
+    return 1;
+}
+
+double MeshOperations::getWeightedDistance(int i, int j) {
+    return 1;
+}

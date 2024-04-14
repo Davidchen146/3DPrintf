@@ -19,7 +19,8 @@ public:
     MeshOperations(Mesh m);
     void geodesicDistance();
     void angularDistance();
-
+    double getGeodesicDistance(int i, int j);
+    double getWeightedDistance(int i, int j);
 
 private:
     Mesh _mesh;
