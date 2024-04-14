@@ -39,7 +39,7 @@ public:
 
     // Oversegmentation: returns list of lists of faces
     // Each list of faces represents a connected patch (to be merged and assigned a printing direction)
-    void generateOversegmentation();
+    void generateOversegmentation(std::vector<std::vector<int>> &patches);
 
 private:
     Mesh _mesh;
@@ -66,10 +66,11 @@ private:
     void recenterSeeds(const std::vector<std::vector<int>> &patches, std::vector<int> &new_seeds);
 
     // Basic utility functions
-    Eigen::Vector3d getNormal(const int &face);
+    Eigen::Vector3f getNormal(const int &face);
+    Eigen::Vector3f getCentroid(const int &face);
     double getArea(const int &face);
-    double getGeodesicDistanceToSet(const int &face, const std::vector<int> &faces, bool include_self = false);
-    double getWeightedDistanceToSet(const int &face, const std::vector<int> &faces, bool include_self = false);
+    std::pair<double, int> getGeodesicDistanceToSet(const int &face, const std::vector<int> &faces, bool include_self = false);
+    std::pair<double, int> getWeightedDistanceToSet(const int &face, const std::vector<int> &faces, bool include_self = false);
     double bbd; // bounding box diagonal
     Eigen::MatrixXd _weightedDistances;
 
