@@ -284,6 +284,8 @@ tmp/
 
 # MacOS
 .DS_Store
+template_inis/.DS_Store
+template_inis/final/.DS_Store
 
 # Eigen
 Eigen
