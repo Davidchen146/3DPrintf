@@ -62,9 +62,9 @@ int main(int argc, char *argv[])
 
     // Switch on method
     if (method == "geodesic") {
-        m_o.geodesicDistance();
+        // m_o.geodesicDistance();
     }else if (method == "angular") {
-        m_o.angularDistance();
+        // m_o.angularDistance();
     } else {
         std::cerr << "Error: Unknown method \"" << method.toUtf8().constData() << "\"" << std::endl;
     }

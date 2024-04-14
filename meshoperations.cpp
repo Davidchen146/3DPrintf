@@ -3,10 +3,16 @@
 
 MeshOperations::MeshOperations(Mesh m) {
     _mesh = m;
+    preprocess();
+}
+
+void MeshOperations::preprocess() {
     _vertices = _mesh.getVertices();
     _faces = _mesh.getFaces();
     numVertices = _vertices.size();
     numFaces = _faces.size();
+    _n = numFaces;
+    _delta = 0.1;
     _V.resize(numVertices, 3);
     _F.resize(numFaces, 3);
     for (int i = 0; i < numVertices; i++) {
@@ -17,6 +23,9 @@ MeshOperations::MeshOperations(Mesh m) {
     }
     _geodesicDistances.resize(numFaces, numFaces);
     _angularDistances.resize(numFaces, numFaces);
+    _weightedDistances.resize(numFaces, numFaces);
+
+    _geodesicDistances.setZero();
     _angularDistances.setZero();
     bbd = (_V.colwise().maxCoeff()- _V.colwise().minCoeff()).norm();
 
@@ -44,6 +53,27 @@ MeshOperations::MeshOperations(Mesh m) {
     groups.push_back(groupTwo);
     groups.push_back(groupThree);
     visualize(groups);
+    _weightedDistances.setZero();
+
+    makeAdjacency();
+    geodesicDistance();
+    angularDistance();
+    calculateAvgDistances();
+    weightedDistance();
+    assert(_weightedDistances.isApprox(_weightedDistances.transpose()));
+    std::cout << _weightedDistances << std::endl;
+}
+
+void MeshOperations::makeAdjacency() {
+    std::vector<std::vector<bool>> matrix(_n, std::vector<bool>(_n, false));
+    _adjacency = matrix;
+
+    unordered_set<Face *> faceSet = _mesh.getFaceSet();
+    for (Face* f: faceSet) {
+        for (Face* n: f->neighbors) {
+            _adjacency[f->index][n->index] = true;
+        }
+    }
 }
 
 void MeshOperations::geodesicDistance() {
@@ -62,7 +92,7 @@ void MeshOperations::geodesicDistance() {
     }
 
     // std::cout << "Size: " << d.size() << std::endl;
-    std::cout << _geodesicDistances << std::endl;
+    // std::cout << _geodesicDistances << std::endl;
 }
 
 void MeshOperations::angularDistance() {
@@ -76,7 +106,9 @@ void MeshOperations::angularDistance() {
             Vector3f normal_j = f_j->normal;
 
             // angle between face normals
-            float alpha_ij = acos((normal_i.dot(normal_j)) / (normal_i.norm() * normal_j.norm()));
+
+            float cos_alpha_ij = (normal_i.dot(normal_j)) / (normal_i.norm() * normal_j.norm());
+
 
             // determine convexity / concavity
             Vertex *v1 = h->next->destination;
@@ -94,10 +126,11 @@ void MeshOperations::angularDistance() {
             if (lineToHalfedge.dot(normal_i) < 0) {
                 assert(lineToHalfedge.dot(normal_j) < 0);
                 // concave
-                // std::cout << "concave" << std::endl;
+                std::cout << "concave" << std::endl;
                 n = 1;
             }
-            _angularDistances(f_i->index, f_j->index) = n * (1 - alpha_ij);
+            // std::cout << cos_alpha_ij << std::endl;
+            _angularDistances(f_i->index, f_j->index) = n * (1 - cos_alpha_ij);
             h = h->next;
         } while (h != f_i->halfedge);
     }
@@ -190,4 +223,88 @@ void MeshOperations::visualize(vector<vector<int>>& coloringGroups) {
     // activate label rendering
     viewer.data().show_custom_labels = true;
     viewer.launch();
+
+void MeshOperations::weightedDistance() {
+    for (int i = 0; i < _n; i++) {
+        VectorXd distances = dijkstra(i);
+        _weightedDistances.row(i) = distances;
+    }
+}
+
+void MeshOperations::calculateAvgDistances() {
+    int numPairs = 0;
+    double sumAngular = 0;
+    double sumGeodesic = 0;
+
+    for (int i = 0; i < _n; i++) {
+        for (int j = 0; j < _n; j++) {
+            if (_adjacency[i][j]) {
+                // If this is a connected pair
+                numPairs += 1;
+                sumAngular += _angularDistances(i, j);
+                sumGeodesic += getGeodesicDistance(i, j);
+            }
+        }
+    }
+
+    _avgGeodesic = sumGeodesic / numPairs;
+    _avgAngular = sumAngular / numPairs;
+}
+
+double MeshOperations::getGeodesicDistance(int i, int j) {
+    return _geodesicDistances(i, j);
+}
+
+double MeshOperations::getWeightedDistance(int i, int j) {
+
+    return 1;
+}
+
+int minDistanceVertex(vector<double> distances, vector<bool> visited) {
+    double minDistance = std::numeric_limits<double>::infinity();
+    int v = -1;
+    for (int i = 0; i < distances.size(); i++) {
+        if (!visited[i] && distances[i] < minDistance) {
+            minDistance = distances[i];
+            v = i;
+        }
+    }
+    return v;
+}
+
+VectorXd MeshOperations::dijkstra(int start) {
+    vector<double> distances;
+    vector<bool> visited;
+    VectorXd d;
+    // initialize distances and visited vectors
+    for (int i = 0; i < _n; i++) {
+        distances.push_back(std::numeric_limits<double>::infinity());
+        visited.push_back(false);
+    }
+    distances[start] = 0;
+
+    for (int i = 0; i < _n; i++) {
+        int u = minDistanceVertex(distances, visited);
+        if (u == -1) {
+            // if we are done with the algorithm
+            break;
+        }
+        visited[u] = true;
+
+        for (int v = 0; v < _n; v++) {
+            if (_adjacency[u][v] && !visited[v]) {
+                double altDistance = distances[u] + (_delta*(getGeodesicDistance(u, v) / _avgGeodesic) + ((1.0 - _delta)*(_angularDistances(u, v) / _avgAngular)));
+                if (altDistance < distances[v]) {
+                    distances[v] = altDistance;
+                }
+            }
+        }
+    }
+
+    d.resize(_n);
+    d.setZero();
+    for (int i = 0; i < _n; i++) {
+        d[i] = distances[i];
+    }
+    return d;
 }

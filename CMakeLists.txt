@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 # Sets project name
 project(3DPrintf LANGUAGES CXX)
 
+
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # Libigl
@@ -55,9 +56,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 )
 
 # Set this flag to silence warnings on Windows
-if (MSVC OR MSYS OR MINGW)
-  set(CMAKE_CXX_FLAGS "-Wno-volatile")
-endif()
 
 # Set this flag to silence warnings on MacOS
 if (APPLE)
