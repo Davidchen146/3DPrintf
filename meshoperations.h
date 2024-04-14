@@ -51,7 +51,7 @@ private:
     void recenterSeeds(const std::vector<std::vector<int>> &patches, std::vector<int> &new_seeds);
 
     // Basic utility functions
-    Eigen::Vector3d getNormal(const int &face);
+    Eigen::Vector3f getNormal(const int &face);
     double getArea(const int &face);
     double getGeodesicDistanceToSet(const int &face, const std::vector<int> &faces, bool include_self = false);
     double getWeightedDistanceToSet(const int &face, const std::vector<int> &faces, bool include_self = false);
