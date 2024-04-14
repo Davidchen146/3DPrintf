@@ -11,6 +11,8 @@
 
 int main(int argc, char *argv[])
 {
+    srand(static_cast<unsigned>(time(0)));
+
     QCoreApplication a(argc, argv);
     QCommandLineParser parser;
     parser.addHelpOption();
@@ -49,7 +51,6 @@ int main(int argc, char *argv[])
     // args4:
     // Denoise: Kernel size (\rho)
 
-
     // Load
     Mesh m;
     m.loadFromFile(infile.toStdString());
@@ -61,20 +62,20 @@ int main(int argc, char *argv[])
 
     // Switch on method
     if (method == "geodesic") {
-        m_o.geodesicDistance();
+        // m_o.geodesicDistance();
     }else if (method == "angular") {
-        m_o.angularDistance();
+        // m_o.angularDistance();
     } else {
         std::cerr << "Error: Unknown method \"" << method.toUtf8().constData() << "\"" << std::endl;
     }
 
     // Finish timing
-    auto t1 = std::chrono::high_resolution_clock::now();
-    auto duration = duration_cast<std::chrono::milliseconds>(t1 - t0).count();
-    std::cout << "Execution took " << duration << " milliseconds." << std::endl;
+    // auto t1 = std::chrono::high_resolution_clock::now();
+    // auto duration = duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+    // std::cout << "Execution took " << duration << " milliseconds." << std::endl;
 
     // Save
-    m.saveToFile(outfile.toStdString());
+    // m.saveToFile(outfile.toStdString());
 
     a.exit();
 }

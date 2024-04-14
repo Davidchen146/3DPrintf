@@ -4,7 +4,7 @@
 // Implments the Oversegmentation Routine and any necessary subroutines
 
 // Generates oversegmentation
-std::vector<std::vector<int>> MeshOperations::generateOversegmentation(){
+void MeshOperations::generateOversegmentation(){
 
 }
 
