@@ -31,6 +31,7 @@ private:
     MatrixXi _F;
     Eigen::MatrixXd _geodesicDistances;
     Eigen::MatrixXd _angularDistances;
+    double bbd; // bounding box diagonal
 };
 
 #endif // MESHOPERATIONS_H
