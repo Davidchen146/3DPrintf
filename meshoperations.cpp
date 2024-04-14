@@ -68,6 +68,9 @@ void MeshOperations::makeAdjacency() {
     std::vector<std::vector<bool>> matrix(_n, std::vector<bool>(_n, false));
     _adjacency = matrix;
 
+    std::vector<int> faces;
+    sampleRandomFaces(faces, 150);
+
     unordered_set<Face *> faceSet = _mesh.getFaceSet();
     for (Face* f: faceSet) {
         for (Face* n: f->neighbors) {
@@ -223,6 +226,7 @@ void MeshOperations::visualize(vector<vector<int>>& coloringGroups) {
     // activate label rendering
     viewer.data().show_custom_labels = true;
     viewer.launch();
+}
 
 void MeshOperations::weightedDistance() {
     for (int i = 0; i < _n; i++) {
