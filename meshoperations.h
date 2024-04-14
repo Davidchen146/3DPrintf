@@ -21,6 +21,8 @@ public:
     void preprocess();
     void geodesicDistance();
     void angularDistance();
+    void visualize(std::vector<std::vector<int>>& coloringGroups);
+
     void weightedDistance();
     void calculateAvgDistances();
     void makeAdjacency();
@@ -33,11 +35,17 @@ private:
     Mesh _mesh;
     std::vector<Eigen::Vector3f> _vertices;
     std::vector<Eigen::Vector3i> _faces;
+  
+    int numVertices;
+    int numFaces;
+  
     std::vector<std::vector<bool>> _adjacency;
+
     MatrixXf _V;
     MatrixXi _F;
     Eigen::MatrixXd _geodesicDistances;
     Eigen::MatrixXd _angularDistances;
+    double bbd; // bounding box diagonal
     Eigen::MatrixXd _weightedDistances;
 
     int _n;
