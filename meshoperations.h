@@ -52,6 +52,7 @@ private:
 
     // Basic utility functions
     Eigen::Vector3f getNormal(const int &face);
+    Eigen::Vector3f getCentroid(const int &face);
     double getArea(const int &face);
     std::pair<double, int> getGeodesicDistanceToSet(const int &face, const std::vector<int> &faces, bool include_self = false);
     std::pair<double, int> getWeightedDistanceToSet(const int &face, const std::vector<int> &faces, bool include_self = false);

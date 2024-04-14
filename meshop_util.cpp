@@ -40,6 +40,20 @@ double MeshOperations::getArea(const int &face) {
     return cross.norm() / 2;
 }
 
+// Compute the centroid for a face
+Eigen::Vector3f MeshOperations::getCentroid(const int &face) {
+    assert(face >= 0 && face < _faces.size());
+
+    // Obtain 3 vertices of the face
+    Eigen::Vector3i face_vertices = _faces[face];
+    Eigen::Vector3f A = _vertices[face_vertices(0)];
+    Eigen::Vector3f B = _vertices[face_vertices(1)];
+    Eigen::Vector3f C = _vertices[face_vertices(2)];
+
+    // Centroid is their average lul
+    return (A + B + C) / 3;
+}
+
 // Returns smallest geodesic distance from queried face to faces in set
 std::pair<double, int> MeshOperations::getGeodesicDistanceToSet(const int &face, const std::vector<int> &faces, bool include_self) {
     double min_distance = std::numeric_limits<double>::max();
