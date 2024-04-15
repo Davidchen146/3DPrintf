@@ -29,39 +29,20 @@ void MeshOperations::preprocess() {
     _angularDistances.setZero();
     bbd = (_V.colwise().maxCoeff()- _V.colwise().minCoeff()).norm();
 
-    vector<int> groupOne;
-    vector<int> groupTwo;
-    vector<int> groupThree;
-    for (int i = 0; i < _faces.size(); i++) {
-        int rand_val = (rand() % 3) + 1;
-        switch (rand_val) {
-        case 1:
-            groupOne.push_back(i);
-            break;
-        case 2:
-            groupTwo.push_back(i);
-            break;
-        case 3:
-            groupThree.push_back(i);
-            break;
-        default:
-            break;
-        }
-    }
-    vector<vector<int>> groups;
-    groups.push_back(groupOne);
-    groups.push_back(groupTwo);
-    groups.push_back(groupThree);
-    visualize(groups);
     _weightedDistances.setZero();
-
     makeAdjacency();
+    std::cout << "I'm doing hot geodesic shit" << std::endl;
     geodesicDistance();
+    std::cout << "I'm doing hot Dijkstra's shit" << std::endl;
     angularDistance();
     calculateAvgDistances();
     weightedDistance();
     assert(_weightedDistances.isApprox(_weightedDistances.transpose()));
-    std::cout << _weightedDistances << std::endl;
+    vector<vector<int>> patches;
+    std::cout << "I'm doing hot oversegmentation shit" << std::endl;
+    generateOversegmentation(patches);
+    std::cout << "patch total: " << patches.size() << std::endl;
+    visualize(patches);
 }
 
 void MeshOperations::makeAdjacency() {
@@ -93,9 +74,6 @@ void MeshOperations::geodesicDistance() {
         VectorXd d_copy = d;
         _geodesicDistances.row(i) = d_copy;
     }
-
-    // std::cout << "Size: " << d.size() << std::endl;
-    // std::cout << _geodesicDistances << std::endl;
 }
 
 void MeshOperations::angularDistance() {
@@ -109,9 +87,7 @@ void MeshOperations::angularDistance() {
             Vector3f normal_j = f_j->normal;
 
             // angle between face normals
-
             float cos_alpha_ij = (normal_i.dot(normal_j)) / (normal_i.norm() * normal_j.norm());
-
 
             // determine convexity / concavity
             Vertex *v1 = h->next->destination;
@@ -129,15 +105,12 @@ void MeshOperations::angularDistance() {
             if (lineToHalfedge.dot(normal_i) < 0) {
                 assert(lineToHalfedge.dot(normal_j) < 0);
                 // concave
-                std::cout << "concave" << std::endl;
                 n = 1;
             }
-            // std::cout << cos_alpha_ij << std::endl;
             _angularDistances(f_i->index, f_j->index) = n * (1 - cos_alpha_ij);
             h = h->next;
         } while (h != f_i->halfedge);
     }
-    // std::cout << _angularDistances << std::endl;
 }
 
 void MeshOperations::visualize(vector<vector<int>>& coloringGroups) {
@@ -260,8 +233,7 @@ double MeshOperations::getGeodesicDistance(int i, int j) {
 }
 
 double MeshOperations::getWeightedDistance(int i, int j) {
-
-    return 1;
+    return _weightedDistances(i, j);
 }
 
 int minDistanceVertex(vector<double> distances, vector<bool> visited) {

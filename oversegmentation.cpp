@@ -5,7 +5,22 @@
 
 // Generates oversegmentation
 void MeshOperations::generateOversegmentation(std::vector<std::vector<int>> &patches) {
+    // Init the patches vec
+    patches.clear();
 
+    // Generate the initial seeds
+    std::vector<int> seeds;
+    generateInitialSeeds(seeds);
+
+    for (int num_iterations = 0; num_iterations < 3; num_iterations++) {
+        // Grow from the seeds to get the patches
+        generatePatches(seeds, patches);
+        // Recenter seeds based on the patches
+        if (num_iterations < 2) {
+            recenterSeeds(patches, seeds);
+        }
+    }
+    // At this point, the patches should be generated
 }
 
 void MeshOperations::sampleRandomFaces(std::vector<int> &faces, int n) {
@@ -21,7 +36,7 @@ void MeshOperations::sampleRandomFaces(std::vector<int> &faces, int n) {
     Eigen::MatrixXd P_blue;
     igl::blue_noise(_V,_F,r,B,FI,P_blue);
 
-    // std::cout << FI.size() << std::endl;
+    std::cout << "faces sampled: " << FI.size() << std::endl;
 
     for (int i = 0; i < FI.size(); i++) {
         faces.push_back(FI[i]);
@@ -29,7 +44,71 @@ void MeshOperations::sampleRandomFaces(std::vector<int> &faces, int n) {
 }
 
 void MeshOperations::generateInitialSeeds(std::vector<int> &seeds) {
+    // Initialize seeds vector
+    seeds.clear();
 
+    // TODO: Add some heuristic to determine how many seed faces we will consider sampling
+    int num_samples = numFaces * _delta;
+    std::vector<int> seed_candidates;
+    sampleRandomFaces(seed_candidates, num_samples);
+
+    std::cout << "Number of seed candidates " << seed_candidates.size() << std::endl;
+
+    // Determine the initial central face by selecting the face with the smallest sum of distances to all other faces
+    int center_face = -1;
+    double center_min_distance = std::numeric_limits<double>::max();
+    for (int seed_candidate = 0; seed_candidate < seed_candidates.size(); seed_candidate++) {
+        double seed_sum_distance = getTotalGeodesicDistanceToSet(seed_candidates[seed_candidate], seed_candidates);
+
+        // Update minimal distance
+        if (seed_sum_distance < center_min_distance) {
+            center_min_distance = seed_sum_distance;
+            center_face = seed_candidate;
+        }
+    }
+
+    // This becomes the center face
+    assert(center_face != -1);
+    seeds.push_back(seed_candidates[center_face]);
+    // Remove it from the list of candidate seeds
+    seed_candidates.erase(seed_candidates.begin() + center_face);
+
+    // Continue to add faces until the maximum distance between any pairs of faces is sufficiently small
+    double maximum_distance = std::numeric_limits<double>::max();
+    // Threshold for convergence is a multiple of the bounding box diagonal
+    int iteration = 0;
+    while(maximum_distance > bbd * 0.1 && seed_candidates.size() > 0) {
+        // Pick a face with the largest geodesic distance to the set of seeds
+        double largest_distance = -1;
+        int next_face = -1;
+        for (int seed_candidate = 0; seed_candidate < seed_candidates.size(); seed_candidate++) {
+            double dist_to_seeds = getMinGeodesicDistanceToSet(seed_candidates[seed_candidate], seeds).first;
+            if (dist_to_seeds > largest_distance) {
+                largest_distance = dist_to_seeds;
+                next_face = seed_candidate;
+            }
+        }
+
+        // This is the new seed face
+        seeds.push_back(seed_candidates[next_face]);
+        // Remove it from the candidate seeds
+        seed_candidates.erase(seed_candidates.begin() + next_face);
+
+        // Determine convergence by computing distances between seeds
+        maximum_distance = -1;
+        for (int seed = 0; seed < seeds.size(); seed++) {
+            double seed_dist_to_other_seeds = getMinGeodesicDistanceToSet(seeds[seed], seeds).first;
+            if (seed_dist_to_other_seeds > maximum_distance) {
+                maximum_distance = seed_dist_to_other_seeds;
+            }
+        }
+
+        assert(maximum_distance != -1);
+        // If we iterate again, we have added another seed and we have chosen to continue
+        iteration++;
+    }
+    // If we've reached this point, we've terminated with our set of seeds
+    std::cout << "Number of selected final seeds " << seeds.size() << std::endl;
 }
 
 // Iterative steps to generate oversegmentation
@@ -37,18 +116,23 @@ void MeshOperations::generateInitialSeeds(std::vector<int> &seeds) {
 void MeshOperations::generatePatches(const std::vector<int> &seeds, std::vector<std::vector<int>> &patches) {
     // Initialize patches to contain a list for each seed
     patches.clear();
+    std::unordered_map<int, int> numToIndex;
+    int index = 0;
     for (const int &seed : seeds) {
         std::vector<int> patch;
         patches.push_back(patch);
+        numToIndex[seed] = index;
+        index++;
     }
+
 
     // Assign faces based on the shortest weighted distance to a seed
     // TODO: Use std::thread to make this faster by parallelizing the computation
     for (int face = 0; face < _faces.size(); face++) {
-        std::pair<double, int> min_weighted_distance = getWeightedDistanceToSet(face, seeds, true);
+        std::pair<double, int> min_weighted_distance = getMinWeightedDistanceToSet(face, seeds, true);
         assert(min_weighted_distance.first < std::numeric_limits<double>::max());
         // Assign this face to the patch it has the smallest distance to
-        patches[min_weighted_distance.second].push_back(face);
+        patches[numToIndex[min_weighted_distance.second]].push_back(face);
     }
 }
 
@@ -76,10 +160,15 @@ void MeshOperations::recenterSeeds(const std::vector<std::vector<int>> &patches,
 
         // The new seed is the patch whose centroid is closest to the weighted center of the patch
         int closest_face = -1;
+        double min_dist = std::numeric_limits<double>::max();
 
         for (const int &face : patches[patch]) {
             Eigen::Vector3f face_centroid = getCentroid(face);
             double distance_to_center = (face_centroid - patch_center).norm();
+            // This is the face whose centroid is closest to the center of the patch
+            if (distance_to_center < min_dist) {
+                closest_face = face;
+            }
         }
 
         assert(closest_face != -1);
