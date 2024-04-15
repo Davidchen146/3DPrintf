@@ -1,0 +1,6 @@
+[submodule "libigl"]
+	path = libigl
+	url = https://github.com/libigl/libigl.git
+[submodule "or-tools"]
+	path = or-tools
+	url = https://github.com/google/or-tools.git
