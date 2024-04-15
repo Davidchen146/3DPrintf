@@ -44,7 +44,6 @@ wrapper.sh
 *.qbs.user*
 *.qmlproject.user*
 CMakeLists.txt.user*
-CMakeLists.txt*
 /share/qtcreator/examples/
 /share/qtcreator/externaltools/
 /share/qtcreator/fonts/
@@ -284,8 +283,18 @@ tmp/
 
 # MacOS
 .DS_Store
-template_inis/.DS_Store
-template_inis/final/.DS_Store
 
 # Eigen
-Eigen
+Eigen/
+
+# Hopefully this should ignore stuff
+.qt/
+.qtc/
+.qtc_clangd/
+CMakeFiles/
+CPackConfig.cmake
+CPackSourceConfig.cmake
+Testing/
+_deps/
+build.ninja
+qtcsettings.cmake

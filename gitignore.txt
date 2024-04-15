@@ -285,7 +285,7 @@ tmp/
 .DS_Store
 
 # Eigen
-Eigen
+Eigen/
 
 # Hopefully this should ignore stuff
 .qt/

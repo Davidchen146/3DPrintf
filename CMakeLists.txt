@@ -29,18 +29,19 @@ find_package(Qt6 REQUIRED COMPONENTS Xml)
 
 # Specifies .cpp and .h files to be passed to the compiler
 add_executable(${PROJECT_NAME}
-    main.cpp
-    mesh.cpp
-    meshoperations.cpp
+    src/main.cpp
+    src/mesh.cpp
+    src/meshoperations.cpp
 
-    mesh.h
-    meshoperations.h
+    src/mesh.h
+    src/meshoperations.h
     util/tiny_obj_loader.h
-    meshoperations.h meshoperations.cpp
-    oversegmentation.cpp
-    meshop_util.cpp
-    do_operations.cpp
-    do_operations.h
+    src/meshoperations.h
+    src/meshoperations.cpp
+    src/oversegmentation.cpp
+    src/meshop_util.cpp
+    src/do_operations.cpp
+    src/do_operations.h
 )
 
 # Specifies libraries to be linked (Qt components, glew, etc)
