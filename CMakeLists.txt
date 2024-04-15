@@ -32,7 +32,6 @@ add_executable(${PROJECT_NAME}
     src/main.cpp
     src/mesh.cpp
     src/meshoperations.cpp
-
     src/mesh.h
     src/meshoperations.h
     util/tiny_obj_loader.h
@@ -40,8 +39,8 @@ add_executable(${PROJECT_NAME}
     src/meshoperations.cpp
     src/oversegmentation.cpp
     src/meshop_util.cpp
-    src/do_operations.cpp
-    src/do_operations.h
+
+
 )
 
 # Specifies libraries to be linked (Qt components, glew, etc)

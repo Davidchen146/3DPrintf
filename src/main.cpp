@@ -7,7 +7,6 @@
 
 #include "src/mesh.h"
 #include "src/meshoperations.h"
-#include "src/do_operations.h"
 
 int main(int argc, char *argv[])
 {
@@ -102,45 +101,72 @@ int main(int argc, char *argv[])
     bool is_3d_print_operation = method == "preprocess" || method == "oversegmentation" || method == "initial" || method == "refined" || method == "fabricate";
 
     // Mesh project operations
-    if (method == "subdivide") {
-        // Load parameters
-        int num_iterations = settings.value("Subdivide/num_iterations").toInt();
-        std::cerr << "Error: Mesh loop subdivision operation not yet supported" << std::endl;
-    }
-    else if (method == "simplify") {
-        // Load parameters
+    if (is_mesh_operation) {
+        // Load mesh parameters here
+        // Subdivision
+        int subdivide_num_iterations = settings.value("Subdivide/num_iterations").toInt();
+        // Simplification
         int target_faces = settings.value("Simplify/target_faces").toInt();
         int faces_to_remove = settings.value("Simplify/faces_to_remove").toInt();
+        // Remeshing
+        int remesh_num_iterations = settings.value("Remesh/num_iterations").toInt();
+        double smoothing_weight = settings.value("Remesh/smoothing_weight").toDouble();
 
-        // Determine how many faces to remove
-        if (target_faces != 0) {
-            int num_mesh_faces = m.getFaceSet().size();
-            faces_to_remove = std::max(num_mesh_faces - target_faces, 0);
+        // Case on the method
+        if (method == "subdivide") {
+            std::cerr << "Error: Mesh loop subdivision operation not yet supported" << std::endl;
         }
-        m.simplify(faces_to_remove);
-    }
-    else if (method == "remesh") {
-        // Load parameters
-        std::cerr << "Error: Mesh isotropic remeshing operation not yet supported" << std::endl;
+        else if (method == "simplify") {
+            // Determine how many faces to remove
+            if (target_faces != 0) {
+                int num_mesh_faces = m.getFaceSet().size();
+                faces_to_remove = std::max(num_mesh_faces - target_faces, 0);
+            }
+            m.simplify(faces_to_remove);
+        }
+        else if (method == "remesh") {
+            std::cerr << "Error: Mesh isotropic remeshing operation not yet supported" << std::endl;
+        }
     }
 
     // Operations for 3Dprintf
-    else if (method == "preprocess") {
-        doPreprocess(&settings, &m, &m_o);
-    }
-    else if (method == "oversegmentation") {
-        std::vector<std::vector<int>> patches;
-        doPreprocess(&settings, &m, &m_o);
-        doOversegmentation(&settings, &m, &m_o, patches);
-    }
-    else if (method == "initial") {
-        std::cerr << "Error: 3D printing initial segmentation operation not yet supported" << std::endl;
-    }
-    else if (method == "refined") {
-        std::cerr << "Error: 3D printing refined segmentation operation not yet supported" << std::endl;
-    }
-    else if (method == "fabricate") {
-        std::cerr << "Error: 3D printing fabrication operation not yet supported" << std::endl;
+    else if (is_3d_print_operation) {
+        // Load 3D printing operations here
+        // Preprocessing
+        double angular_distance_convex = settings.value("Preprocess/angular_distance_convex").toDouble();
+        double angular_distance_concave = settings.value("Preprocess/angular_distance_concave").toDouble();
+        double geodesic_dist_coeff = settings.value("Preprocess/geodesic_distance_weight").toDouble();
+        // Oversegmentation
+        int num_seed_faces = settings.value("Oversegmentation/num_seed_faces").toInt();
+        double proportion_seed_faces = settings.value("Oversegmentation/proportion_seed_faces").toDouble();
+        double e_patch = settings.value("Oversegmentation/e_patch").toDouble();
+        int num_iterations = settings.value("Oversegmentation/num_iterations").toInt();
+        bool seeds_only = settings.value("Oversegmentation/seeds_only").toBool();
+
+        // Case on the method
+        if (method == "preprocess") {
+            m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
+            m_o.preprocess();
+        }
+        else if (method == "oversegmentation") {
+            m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
+            m_o.preprocess();
+
+            // This vec will hold the labelings
+            std::vector<std::vector<int>> patches;
+            m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, seeds_only);
+            m_o.generateOversegmentation(patches);
+            m_o.visualize(patches);
+        }
+        else if (method == "initial") {
+            std::cerr << "Error: This phase hasn't been implemented yet" << std::endl;
+        }
+        else if (method == "refined") {
+            std::cerr << "Error: This phase hasn't been implemented yet" << std::endl;
+        }
+        else if (method == "fabricate") {
+            std::cerr << "Error: This phase hasn't been implemented yet" << std::endl;
+        }
     }
     else {
         std::cerr << "Error: Unknown method \"" << method.toUtf8().constData() << "\"" << std::endl;
