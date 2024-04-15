@@ -15,11 +15,9 @@ void MeshOperations::generateOversegmentation(std::vector<std::vector<int>> &pat
     for (int num_iterations = 0; num_iterations < 3; num_iterations++) {
         // Grow from the seeds to get the patches
         generatePatches(seeds, patches);
-
         // Recenter seeds based on the patches
         recenterSeeds(patches, seeds);
     }
-
     // At this point, the patches should be generated
 }
 
@@ -36,7 +34,7 @@ void MeshOperations::sampleRandomFaces(std::vector<int> &faces, int n) {
     Eigen::MatrixXd P_blue;
     igl::blue_noise(_V,_F,r,B,FI,P_blue);
 
-    // std::cout << FI.size() << std::endl;
+    std::cout << "faces sampled: " << FI.size() << std::endl;
 
     for (int i = 0; i < FI.size(); i++) {
         faces.push_back(FI[i]);
@@ -49,7 +47,9 @@ void MeshOperations::generateInitialSeeds(std::vector<int> &seeds) {
 
     // TODO: Add some heuristic to determine how many seed faces we will consider sampling
     int num_samples = numFaces * _delta;
+    // int num_samples = numFaces / 2;
     std::vector<int> seed_candidates;
+    std::cout << "generte initial seeds" << std::endl;
     sampleRandomFaces(seed_candidates, num_samples);
 
     // Determine the initial central face by selecting the face with the smallest sum of distances to all other faces
@@ -74,7 +74,8 @@ void MeshOperations::generateInitialSeeds(std::vector<int> &seeds) {
     // Continue to add faces until the maximum distance between any pairs of faces is sufficiently small
     double maximum_distance = std::numeric_limits<double>::max();
     // Threshold for convergence is a multiple of the bounding box diagonal
-    while(maximum_distance > bbd * 0.01) {
+    int iteration = 0;
+    while(maximum_distance > bbd * 0.01 && seed_candidates.size() > 0) {
         // Pick a face with the largest geodesic distance to the set of seeds
         double largest_distance = -1;
         int next_face = -1;
@@ -102,6 +103,7 @@ void MeshOperations::generateInitialSeeds(std::vector<int> &seeds) {
 
         assert(maximum_distance != -1);
         // If we iterate again, we have added another seed and we have chosen to continue
+        iteration++;
     }
     // If we've reached this point, we've terminated with our set of seeds
 }
@@ -111,10 +113,15 @@ void MeshOperations::generateInitialSeeds(std::vector<int> &seeds) {
 void MeshOperations::generatePatches(const std::vector<int> &seeds, std::vector<std::vector<int>> &patches) {
     // Initialize patches to contain a list for each seed
     patches.clear();
+    std::unordered_map<int, int> numToIndex;
+    int index = 0;
     for (const int &seed : seeds) {
         std::vector<int> patch;
         patches.push_back(patch);
+        numToIndex[seed] = index;
+        index++;
     }
+
 
     // Assign faces based on the shortest weighted distance to a seed
     // TODO: Use std::thread to make this faster by parallelizing the computation
@@ -122,7 +129,7 @@ void MeshOperations::generatePatches(const std::vector<int> &seeds, std::vector<
         std::pair<double, int> min_weighted_distance = getMinWeightedDistanceToSet(face, seeds, true);
         assert(min_weighted_distance.first < std::numeric_limits<double>::max());
         // Assign this face to the patch it has the smallest distance to
-        patches[min_weighted_distance.second].push_back(face);
+        patches[numToIndex[min_weighted_distance.second]].push_back(face);
     }
 }
 
