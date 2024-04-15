@@ -44,7 +44,7 @@ void MeshOperations::sampleRandomFaces(std::vector<int> &faces, int n) {
     Eigen::MatrixXd P_blue;
     igl::blue_noise(_V,_F,r,B,FI,P_blue);
 
-    std::cout << "faces sampled: " << FI.size() << std::endl;
+    std::cout << "Faces sampled: " << FI.size() << std::endl;
 
     for (int i = 0; i < FI.size(); i++) {
         faces.push_back(FI[i]);

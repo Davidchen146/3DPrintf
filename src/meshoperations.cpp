@@ -94,9 +94,6 @@ void MeshOperations::makeAdjacency() {
     std::vector<std::vector<bool>> matrix(_n, std::vector<bool>(_n, false));
     _adjacency = matrix;
 
-    std::vector<int> faces;
-    sampleRandomFaces(faces, 150);
-
     unordered_set<Face *> faceSet = _mesh.getFaceSet();
     for (Face* f: faceSet) {
         for (Face* n: f->neighbors) {
@@ -183,8 +180,10 @@ void MeshOperations::visualize(vector<vector<int>>& coloringGroups) {
     }
 
     for (int i = 0; i < _faces.size(); i++) {
-        assert(faceToGroup.contains(i));
-        assert(groupToColor.contains(faceToGroup[i]));
+        if (!_seeds_only) {
+            assert(faceToGroup.contains(i));
+            assert(groupToColor.contains(faceToGroup[i]));
+        }
         C.row(i) = groupToColor[faceToGroup[i]];
     }
 

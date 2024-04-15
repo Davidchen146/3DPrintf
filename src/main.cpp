@@ -82,9 +82,9 @@ int main(int argc, char *argv[])
     // Parse common inputs
     std::cout << "Loading config " << args[0].toStdString() << std::endl;
     QSettings settings(args[0], QSettings::IniFormat);
-    QString infile  = settings.value("General/meshfile").toString();
-    QString outfile = settings.value("General/output").toString();
-    QString method  = settings.value("General/method").toString();
+    QString infile  = settings.value("Global/meshfile").toString();
+    QString outfile = settings.value("Global/output").toString();
+    QString method  = settings.value("Global/method").toString();
 
     // Load
     Mesh m;
