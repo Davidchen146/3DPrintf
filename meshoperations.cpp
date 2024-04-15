@@ -31,12 +31,15 @@ void MeshOperations::preprocess() {
 
     _weightedDistances.setZero();
     makeAdjacency();
+    std::cout << "I'm doing hot geodesic shit" << std::endl;
     geodesicDistance();
+    std::cout << "I'm doing hot Dijkstra's shit" << std::endl;
     angularDistance();
     calculateAvgDistances();
     weightedDistance();
     assert(_weightedDistances.isApprox(_weightedDistances.transpose()));
     vector<vector<int>> patches;
+    std::cout << "I'm doing hot oversegmentation shit" << std::endl;
     generateOversegmentation(patches);
     std::cout << "patch total: " << patches.size() << std::endl;
     visualize(patches);

@@ -16,7 +16,9 @@ void MeshOperations::generateOversegmentation(std::vector<std::vector<int>> &pat
         // Grow from the seeds to get the patches
         generatePatches(seeds, patches);
         // Recenter seeds based on the patches
-        recenterSeeds(patches, seeds);
+        if (num_iterations < 2) {
+            recenterSeeds(patches, seeds);
+        }
     }
     // At this point, the patches should be generated
 }
@@ -47,10 +49,10 @@ void MeshOperations::generateInitialSeeds(std::vector<int> &seeds) {
 
     // TODO: Add some heuristic to determine how many seed faces we will consider sampling
     int num_samples = numFaces * _delta;
-    // int num_samples = numFaces / 2;
     std::vector<int> seed_candidates;
-    std::cout << "generte initial seeds" << std::endl;
     sampleRandomFaces(seed_candidates, num_samples);
+
+    std::cout << "Number of seed candidates " << seed_candidates.size() << std::endl;
 
     // Determine the initial central face by selecting the face with the smallest sum of distances to all other faces
     int center_face = -1;
@@ -75,7 +77,7 @@ void MeshOperations::generateInitialSeeds(std::vector<int> &seeds) {
     double maximum_distance = std::numeric_limits<double>::max();
     // Threshold for convergence is a multiple of the bounding box diagonal
     int iteration = 0;
-    while(maximum_distance > bbd * 0.01 && seed_candidates.size() > 0) {
+    while(maximum_distance > bbd * 0.1 && seed_candidates.size() > 0) {
         // Pick a face with the largest geodesic distance to the set of seeds
         double largest_distance = -1;
         int next_face = -1;
@@ -106,6 +108,7 @@ void MeshOperations::generateInitialSeeds(std::vector<int> &seeds) {
         iteration++;
     }
     // If we've reached this point, we've terminated with our set of seeds
+    std::cout << "Number of selected final seeds " << seeds.size() << std::endl;
 }
 
 // Iterative steps to generate oversegmentation
