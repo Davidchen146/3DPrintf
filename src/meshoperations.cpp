@@ -6,7 +6,7 @@ MeshOperations::MeshOperations(Mesh m) {
 
     // Set default parameters for operations here
     // Preprocessing parameters
-    _geodesic_distance_weight = 0.9;
+    _geodesic_distance_weight = 0.1;
     _convex_coeff = 0.05;
     _concave_coeff = 1;
 

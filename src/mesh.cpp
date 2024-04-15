@@ -176,7 +176,7 @@ void Mesh::loadFromFile(const string &filePath)
     }
 
     if (!ret) {
-        cerr << "Failed to load/parse .obj file" << endl;
+        cerr << "Failed to load/parse .obj file " << filePath << endl;
         return;
     }
 

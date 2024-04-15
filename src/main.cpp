@@ -45,9 +45,9 @@ int main(int argc, char *argv[])
     // Parameters for each option:
 
     // General/All:
-        // "Mesh/meshfile": input mesh file
-        // "Mesh/output": path to output file or output path (directory) if using 3D printing pipeline
-        // "Method/method": mesh operation to perform
+        // "General/meshfile": input mesh file
+        // "General/output": path to output file or output path (directory) if using 3D printing pipeline
+        // "General/method": mesh operation to perform
 
     // Mesh operations:
     // Subdivide:
@@ -80,10 +80,11 @@ int main(int argc, char *argv[])
         // Extension: solid/hollow shell objects and if they should have internal connectors
 
     // Parse common inputs
-    QSettings settings( args[0], QSettings::IniFormat );
-    QString infile  = settings.value("Mesh/meshfile").toString();
-    QString outfile = settings.value("Mesh/output").toString();
-    QString method  = settings.value("Method/method").toString();
+    std::cout << "Loading config " << args[0].toStdString() << std::endl;
+    QSettings settings(args[0], QSettings::IniFormat);
+    QString infile  = settings.value("General/meshfile").toString();
+    QString outfile = settings.value("General/output").toString();
+    QString method  = settings.value("General/method").toString();
 
     // Load
     Mesh m;
