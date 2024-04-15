@@ -36,6 +36,9 @@ public:
     double getWeightedDistance(int i, int j);
     Eigen::VectorXd dijkstra(int start);
 
+    // Sets parameters for various operations
+    void setPreprocessingParameters(double geodesic_weight = 0.1, double convex_coeff = 0.05, double concave_coeff = 1);
+    void setOversegmentationParameters(int num_seed_faces = 0, double proportion_seed_faces = 0.1, double bounding_box_coeff = 0.01, int num_iterations = 3, bool seeds_only = false);
 
     // Oversegmentation: returns list of lists of faces
     // Each list of faces represents a connected patch (to be merged and assigned a printing direction)
@@ -48,6 +51,8 @@ private:
   
     int numVertices;
     int numFaces;
+    // Also the number of faces, I think?
+    int _n;
   
     std::vector<std::vector<bool>> _adjacency;
 
@@ -55,6 +60,8 @@ private:
     MatrixXi _F;
     Eigen::MatrixXd _geodesicDistances;
     Eigen::MatrixXd _angularDistances;
+    double _avgGeodesic;
+    double _avgAngular;
 
     // Subroutines used for Phase 1 (Oversegmentation)
     // Initial seed computation
@@ -65,23 +72,37 @@ private:
     void generatePatches(const std::vector<int> &seeds, std::vector<std::vector<int>> &patches);
     void recenterSeeds(const std::vector<std::vector<int>> &patches, std::vector<int> &new_seeds);
 
-    // Basic utility functions
+    // Basic utility functions for faces
+    // TODO: Change these functions to do lookups to values stored in the face struct
     Eigen::Vector3f getNormal(const int &face);
     Eigen::Vector3f getCentroid(const int &face);
     double getArea(const int &face);
+
+    // Distances to sets of points
     std::pair<double, int> getMinGeodesicDistanceToSet(const int &face, const std::vector<int> &faces, bool include_self = false);
     std::pair<double, int> getMinWeightedDistanceToSet(const int &face, const std::vector<int> &faces, bool include_self = false);
     std::pair<double, int> getMaxGeodesicDistanceToSet(const int &face, const std::vector<int> &faces);
     std::pair<double, int> getMaxWeightedDistanceToSet(const int &face, const std::vector<int> &faces);
     double getTotalGeodesicDistanceToSet(const int &face, const std::vector<int> &faces);
     double getTotalWeightedDistanceToSet(const int &face, const std::vector<int> &faces);
+
+
     double bbd; // bounding box diagonal
     Eigen::MatrixXd _weightedDistances;
 
-    int _n;
-    double _delta;
-    double _avgGeodesic;
-    double _avgAngular;
+    // Configurable parameters
+    // Preprocessing parameters
+    double _geodesic_distance_weight;
+    double _convex_coeff;
+    double _concave_coeff;
+
+    // Oversegmentation parameters
+    int _num_seed_faces;
+    double _proportion_seed_faces;
+    double _oversegmentation_bounding_box_coeff;
+    int _num_oversegmentation_iterations;
+    bool _seeds_only;
+
 };
 
 #endif // MESHOPERATIONS_H

@@ -286,3 +286,15 @@ tmp/
 
 # Eigen
 Eigen
+
+# Hopefully this should ignore stuff
+.qt/
+.qtc/
+.qtc_clangd/
+CMakeFiles/
+CPackConfig.cmake
+CPackSourceConfig.cmake
+Testing/
+_deps/
+build.ninja
+qtcsettings.cmake

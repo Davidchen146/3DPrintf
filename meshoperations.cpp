@@ -3,7 +3,58 @@
 
 MeshOperations::MeshOperations(Mesh m) {
     _mesh = m;
-    preprocess();
+
+    // Set default parameters for operations here
+    // Preprocessing parameters
+    _geodesic_distance_weight = 0.9;
+    _convex_coeff = 0.05;
+    _concave_coeff = 1;
+
+    // Oversegmentation parameters
+    _num_seed_faces = 0;
+    _proportion_seed_faces = 0.1;
+    _oversegmentation_bounding_box_coeff = 0.01;
+    _num_oversegmentation_iterations = 3;
+    _seeds_only = false;
+}
+
+// Configure parameters for 3D printing operations
+void MeshOperations::setPreprocessingParameters(double geodesic_weight, double convex_coeff, double concave_coeff) {
+    // Check against default value (0) to prevent loading in unspecified parameters
+    if (geodesic_weight != 0.0) {
+        _geodesic_distance_weight = geodesic_weight;
+    }
+
+    if (convex_coeff != 0.0) {
+        _convex_coeff = convex_coeff;
+    }
+
+    if (concave_coeff != 0.0) {
+        _concave_coeff = concave_coeff;
+    }
+}
+
+void MeshOperations::setOversegmentationParameters(int num_seed_faces, double proportion_seed_faces, double bounding_box_coeff, int num_iterations, bool seeds_only) {
+    // Check against default value (0) to prevent loading in unspecified parameters
+    if (num_seed_faces != 0.0) {
+        _num_seed_faces = num_seed_faces;
+    }
+
+    if (proportion_seed_faces != 0.0) {
+        _proportion_seed_faces = proportion_seed_faces;
+    }
+
+    if (bounding_box_coeff != 0.0) {
+        _oversegmentation_bounding_box_coeff = bounding_box_coeff;
+    }
+
+    if (num_iterations != 0) {
+        _num_oversegmentation_iterations = num_iterations;
+    }
+
+    if (seeds_only) {
+        _seeds_only = seeds_only;
+    }
 }
 
 void MeshOperations::preprocess() {
@@ -12,7 +63,6 @@ void MeshOperations::preprocess() {
     numVertices = _vertices.size();
     numFaces = _faces.size();
     _n = numFaces;
-    _delta = 0.1;
     _V.resize(numVertices, 3);
     _F.resize(numFaces, 3);
     for (int i = 0; i < numVertices; i++) {
@@ -31,18 +81,13 @@ void MeshOperations::preprocess() {
 
     _weightedDistances.setZero();
     makeAdjacency();
-    std::cout << "I'm doing hot geodesic shit" << std::endl;
+    std::cout << "Performing geodesic distance computations" << std::endl;
     geodesicDistance();
-    std::cout << "I'm doing hot Dijkstra's shit" << std::endl;
+    std::cout << "Performing angular distance computations" << std::endl;
     angularDistance();
     calculateAvgDistances();
     weightedDistance();
     assert(_weightedDistances.isApprox(_weightedDistances.transpose()));
-    vector<vector<int>> patches;
-    std::cout << "I'm doing hot oversegmentation shit" << std::endl;
-    generateOversegmentation(patches);
-    std::cout << "patch total: " << patches.size() << std::endl;
-    visualize(patches);
 }
 
 void MeshOperations::makeAdjacency() {
@@ -100,12 +145,12 @@ void MeshOperations::angularDistance() {
             Vector3f midpoint_halfedge = (h->source->p + h->destination->p) / 2;
             Vector3f lineToHalfedge = midpoint_halfedge - midpoint_line;
 
-            float n = 0.05; // convex
+            float n = _convex_coeff; // convex
             // note: would this dot product ever be 0?
             if (lineToHalfedge.dot(normal_i) < 0) {
                 assert(lineToHalfedge.dot(normal_j) < 0);
                 // concave
-                n = 1;
+                n = _concave_coeff;
             }
             _angularDistances(f_i->index, f_j->index) = n * (1 - cos_alpha_ij);
             h = h->next;
@@ -269,7 +314,7 @@ VectorXd MeshOperations::dijkstra(int start) {
 
         for (int v = 0; v < _n; v++) {
             if (_adjacency[u][v] && !visited[v]) {
-                double altDistance = distances[u] + (_delta*(getGeodesicDistance(u, v) / _avgGeodesic) + ((1.0 - _delta)*(_angularDistances(u, v) / _avgAngular)));
+                double altDistance = distances[u] + (_geodesic_distance_weight*(getGeodesicDistance(u, v) / _avgGeodesic) + ((1.0 - _geodesic_distance_weight)*(_angularDistances(u, v) / _avgAngular)));
                 if (altDistance < distances[v]) {
                     distances[v] = altDistance;
                 }

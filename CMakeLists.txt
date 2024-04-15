@@ -39,6 +39,8 @@ add_executable(${PROJECT_NAME}
     meshoperations.h meshoperations.cpp
     oversegmentation.cpp
     meshop_util.cpp
+    do_operations.cpp
+    do_operations.h
 )
 
 # Specifies libraries to be linked (Qt components, glew, etc)

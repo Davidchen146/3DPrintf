@@ -12,7 +12,7 @@ void MeshOperations::generateOversegmentation(std::vector<std::vector<int>> &pat
     std::vector<int> seeds;
     generateInitialSeeds(seeds);
 
-    for (int num_iterations = 0; num_iterations < 3; num_iterations++) {
+    for (int num_iterations = 0; num_iterations < _num_oversegmentation_iterations; num_iterations++) {
         // Grow from the seeds to get the patches
         generatePatches(seeds, patches);
         // Recenter seeds based on the patches
@@ -20,7 +20,15 @@ void MeshOperations::generateOversegmentation(std::vector<std::vector<int>> &pat
             recenterSeeds(patches, seeds);
         }
     }
+
     // At this point, the patches should be generated
+    // If we only want the seeds, set patches to only consist of the seeds
+    if(_seeds_only) {
+        for (int seednum = 0; seednum < seeds.size(); seednum++) {
+            patches[seednum].clear();
+            patches[seednum].push_back(seeds[seednum]);
+        }
+    }
 }
 
 void MeshOperations::sampleRandomFaces(std::vector<int> &faces, int n) {
@@ -47,8 +55,11 @@ void MeshOperations::generateInitialSeeds(std::vector<int> &seeds) {
     // Initialize seeds vector
     seeds.clear();
 
-    // TODO: Add some heuristic to determine how many seed faces we will consider sampling
-    int num_samples = numFaces * _delta;
+    int num_samples = _num_seed_faces;
+    // Prioritize hard-coded seed face number, use proportion as heuristic if not present
+    if (num_samples == 0) {
+        num_samples = std::round(_proportion_seed_faces * numFaces);
+    }
     std::vector<int> seed_candidates;
     sampleRandomFaces(seed_candidates, num_samples);
 
@@ -77,7 +88,7 @@ void MeshOperations::generateInitialSeeds(std::vector<int> &seeds) {
     double maximum_distance = std::numeric_limits<double>::max();
     // Threshold for convergence is a multiple of the bounding box diagonal
     int iteration = 0;
-    while(maximum_distance > bbd * 0.1 && seed_candidates.size() > 0) {
+    while(maximum_distance > bbd * _oversegmentation_bounding_box_coeff && seed_candidates.size() > 0) {
         // Pick a face with the largest geodesic distance to the set of seeds
         double largest_distance = -1;
         int next_face = -1;
