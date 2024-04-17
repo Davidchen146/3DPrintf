@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
             m_o.preprocess();
 
             // This vec will hold the labelings
-            std::vector<std::vector<int>> patches;
+            std::vector<std::unordered_set<int>> patches;
             m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, seeds_only);
             m_o.generateOversegmentation(patches);
             m_o.visualize(patches);

@@ -27,7 +27,7 @@ public:
     void angularDistance();
 
     // Distances between arbitrary faces
-    void visualize(std::vector<std::vector<int>>& coloringGroups);
+    void visualize(std::vector<std::unordered_set<int>>& coloringGroups);
 
     void weightedDistance();
     void calculateAvgDistances();
@@ -42,7 +42,7 @@ public:
 
     // Oversegmentation: returns list of lists of faces
     // Each list of faces represents a connected patch (to be merged and assigned a printing direction)
-    void generateOversegmentation(std::vector<std::vector<int>> &patches);
+    void generateOversegmentation(std::vector<std::unordered_set<int>> &patches);
 
     // Initial segmentation: returns list of lists of faces and printing directions
     // Takes in an initial list of lists representing patches from oversegmentation
@@ -71,12 +71,12 @@ private:
 
     // Subroutines used for Phase 1 (Oversegmentation)
     // Initial seed computation
-    void sampleRandomFaces(std::vector<int> &faces, int n);
-    void generateInitialSeeds(std::vector<int> &seeds);
+    void sampleRandomFaces(std::unordered_set<int> &faces, int n);
+    void generateInitialSeeds(std::unordered_set<int> &seeds);
 
     // Iterative steps to generate oversegmentation
-    void generatePatches(const std::vector<int> &seeds, std::vector<std::vector<int>> &patches);
-    void recenterSeeds(const std::vector<std::vector<int>> &patches, std::vector<int> &new_seeds);
+    void generatePatches(const std::unordered_set<int> &seeds, std::vector<std::unordered_set<int>> &patches);
+    void recenterSeeds(const std::vector<std::unordered_set<int>> &patches, std::unordered_set<int> &new_seeds);
 
     // Subroutines used for Phase 2 (Initial Segmentation)
     // Interface to ILP
@@ -90,12 +90,12 @@ private:
     double getArea(const int &face);
 
     // Distances to sets of points
-    std::pair<double, int> getMinGeodesicDistanceToSet(const int &face, const std::vector<int> &faces, bool include_self = false);
-    std::pair<double, int> getMinWeightedDistanceToSet(const int &face, const std::vector<int> &faces, bool include_self = false);
-    std::pair<double, int> getMaxGeodesicDistanceToSet(const int &face, const std::vector<int> &faces);
-    std::pair<double, int> getMaxWeightedDistanceToSet(const int &face, const std::vector<int> &faces);
-    double getTotalGeodesicDistanceToSet(const int &face, const std::vector<int> &faces);
-    double getTotalWeightedDistanceToSet(const int &face, const std::vector<int> &faces);
+    std::pair<double, int> getMinGeodesicDistanceToSet(const int &face, const std::unordered_set<int> &faces, bool include_self = false);
+    std::pair<double, int> getMinWeightedDistanceToSet(const int &face, const std::unordered_set<int> &faces, bool include_self = false);
+    std::pair<double, int> getMaxGeodesicDistanceToSet(const int &face, const std::unordered_set<int> &faces);
+    std::pair<double, int> getMaxWeightedDistanceToSet(const int &face, const std::unordered_set<int> &faces);
+    double getTotalGeodesicDistanceToSet(const int &face, const std::unordered_set<int> &faces);
+    double getTotalWeightedDistanceToSet(const int &face, const std::unordered_set<int> &faces);
 
 
     double bbd; // bounding box diagonal
