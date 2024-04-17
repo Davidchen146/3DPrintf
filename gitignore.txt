@@ -295,3 +295,9 @@ Testing/
 _deps/
 build.ninja
 qtcsettings.cmake
+
+# Do not add the Or-Tools binaries
+or-tools-windows/*
+!or-tools-windows/README-3DPrintf.md
+or-tools-mac/*
+!or-tools-mac/README-3DPrintf.md
