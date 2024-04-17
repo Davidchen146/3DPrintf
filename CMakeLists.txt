@@ -5,6 +5,17 @@ project(3DPrintf LANGUAGES CXX)
 
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+# Find location of OR-TOOLS
+# Link OR-Tools for Windows
+if (MSVC OR MSYS OR MINGW)
+    list(PREPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR}/or-tools-windows)
+endif()
+
+# Link OR-Tools for Mac
+if (APPLE)
+    list(PREPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR}/or-tools-mac)
+endif()
+
 # Libigl
 include(libigl)
 
@@ -26,6 +37,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 REQUIRED COMPONENTS Core)
 find_package(Qt6 REQUIRED COMPONENTS Gui)
 find_package(Qt6 REQUIRED COMPONENTS Xml)
+
+# Find OR-TOOLS
+find_package(ortools REQUIRED CONFIG)
 
 # Specifies .cpp and .h files to be passed to the compiler
 add_executable(${PROJECT_NAME}
@@ -49,6 +63,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     igl::embree
     igl::core
     igl::glfw
+    ortools::ortools
 )
 
 # This allows you to `#include "Eigen/..."`

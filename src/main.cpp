@@ -8,6 +8,10 @@
 #include "src/mesh.h"
 #include "src/meshoperations.h"
 
+#include <ortools/base/bitmap.h>
+#include <ortools/base/logging.h>
+#include <ortools/constraint_solver/constraint_solver.h>
+
 int main(int argc, char *argv[])
 {
     srand(static_cast<unsigned>(time(0)));
@@ -79,12 +83,50 @@ int main(int argc, char *argv[])
         // TODO: Implement!
         // Extension: solid/hollow shell objects and if they should have internal connectors
 
+    operations_research::Bitmap map(8, false);
+    if (map.Get(0)) {
+        std::cout << "Compile test" << std::endl;
+    } else {
+        std::cout << "Compile no test" << std::endl;
+    }
+    operations_research::Solver solver("ConstraintProgrammingExample");
+    // Define decision variables.
+    const int64_t numVals = 3;
+    operations_research::IntVar* const x = solver.MakeIntVar(0, numVals - 1, "x");
+    operations_research::IntVar* const y = solver.MakeIntVar(0, numVals - 1, "y");
+    operations_research::IntVar* const z = solver.MakeIntVar(0, numVals - 1, "z");
+
+    // Define constraints.
+    std::vector<operations_research::IntVar*> xyvars = {x, y};
+    solver.AddConstraint(solver.MakeAllDifferent(xyvars));
+
+    LOG(INFO) << "Number of constraints: " << solver.constraints();
+    std::cout << solver.constraints();
+
     // Parse common inputs
     std::cout << "Loading config " << args[0].toStdString() << std::endl;
     QSettings settings(args[0], QSettings::IniFormat);
     QString infile  = settings.value("Global/meshfile").toString();
     QString outfile = settings.value("Global/output").toString();
     QString method  = settings.value("Global/method").toString();
+
+    // Create decision builder to search for solutions.
+    std::vector<operations_research::IntVar*> allvars = {x, y, z};
+    operations_research::DecisionBuilder* const db = solver.MakePhase(
+        allvars, operations_research::Solver::CHOOSE_FIRST_UNBOUND, operations_research::Solver::ASSIGN_MIN_VALUE);
+
+    solver.NewSearch(db);
+    while (solver.NextSolution()) {
+        LOG(INFO) << "Solution"
+                  << ": x = " << x->Value() << "; y = " << y->Value()
+                  << "; z = " << z->Value();
+    }
+    solver.EndSearch();
+    LOG(INFO) << "Number of solutions: " << solver.solutions();
+    LOG(INFO) << "";
+    LOG(INFO) << "Advanced usage:";
+    LOG(INFO) << "Problem solved in " << solver.wall_time() << "ms";
+    LOG(INFO) << "Memory usage: " << operations_research::Solver::MemoryUsage() << " bytes";
 
     // Load
     Mesh m;
