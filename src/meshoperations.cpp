@@ -155,16 +155,16 @@ void MeshOperations::angularDistance() {
     }
 }
 
-void MeshOperations::visualize(vector<vector<int>>& coloringGroups) {
+void MeshOperations::visualize(vector<unordered_set<int>>& coloringGroups) {
     // generate a certain number of colors based on coloringGroups
     Eigen::MatrixXd C;
     C.resize(_faces.size(), 3);
 
     std::unordered_map<int, int> faceToGroup;
     for (int i = 0; i < coloringGroups.size(); i++) {
-        vector<int> group_i = coloringGroups[i];
-        for (int j = 0; j < group_i.size(); j++) {
-            int face_index = group_i[j];
+        std::unordered_set<int> group_i = coloringGroups[i];
+        for (auto j = group_i.begin(); j != group_i.end(); j++) {
+            int face_index = *j;
             assert(!faceToGroup.contains(face_index));
             faceToGroup[face_index] = i;
         }
