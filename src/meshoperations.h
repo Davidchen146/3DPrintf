@@ -44,6 +44,12 @@ public:
     // Each list of faces represents a connected patch (to be merged and assigned a printing direction)
     void generateOversegmentation(std::vector<std::vector<int>> &patches);
 
+    // Initial segmentation: returns list of lists of faces and printing directions
+    // Takes in an initial list of lists representing patches from oversegmentation
+    // Each element in the output list represents a printable component
+    // The other list stores the corresponding printing direction (the ith component is printed in direction i)
+    void generateInitialSegmentation(const std::vector<std::vector<int>> &patches, std::vector<std::vector<int>> &printable_components, std::vector<Eigen::Vector3f> &printing_directions);
+
 private:
     Mesh _mesh;
     std::vector<Eigen::Vector3f> _vertices;
@@ -71,6 +77,11 @@ private:
     // Iterative steps to generate oversegmentation
     void generatePatches(const std::vector<int> &seeds, std::vector<std::vector<int>> &patches);
     void recenterSeeds(const std::vector<std::vector<int>> &patches, std::vector<int> &new_seeds);
+
+    // Subroutines used for Phase 2 (Initial Segmentation)
+    // Interface to ILP
+    void assignPrintingDirections(const std::vector<std::vector<int>> &patches, std::vector<Eigen::Vector3f> &printing_directions);
+
 
     // Basic utility functions for faces
     // TODO: Change these functions to do lookups to values stored in the face struct
@@ -103,6 +114,12 @@ private:
     int _num_oversegmentation_iterations;
     bool _seeds_only;
 
+    // Initial Segmentation parameters
+    int _num_random_dir_samples;
+    double _printer_tolerance_angle; // Measured in degrees
+    double _ambient_occlusion_supports_alpha;
+    double _ambient_occlusion_smoothing_alpha;
+    double _smoothing_width_t;
 };
 
 #endif // MESHOPERATIONS_H
