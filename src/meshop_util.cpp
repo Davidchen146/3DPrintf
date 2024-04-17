@@ -55,7 +55,7 @@ Eigen::Vector3f MeshOperations::getCentroid(const int &face) {
 }
 
 // Returns smallest geodesic distance from queried face to faces in set
-std::pair<double, int> MeshOperations::getMinGeodesicDistanceToSet(const int &face, const std::vector<int> &faces, bool include_self) {
+std::pair<double, int> MeshOperations::getMinGeodesicDistanceToSet(const int &face, const std::unordered_set<int> &faces, bool include_self) {
     double min_distance = std::numeric_limits<double>::max();
     int min_face = -1;
 
@@ -78,7 +78,7 @@ std::pair<double, int> MeshOperations::getMinGeodesicDistanceToSet(const int &fa
 
 // Returns smallest weighted distance from queried faces to faces in set
 // Weighted distance is linear combination of geodesic and angular distances
-std::pair<double, int> MeshOperations::getMinWeightedDistanceToSet(const int &face, const std::vector<int> &faces, bool include_self) {
+std::pair<double, int> MeshOperations::getMinWeightedDistanceToSet(const int &face, const std::unordered_set<int> &faces, bool include_self) {
     double min_distance = std::numeric_limits<double>::max();
     int min_face = -1;
 
@@ -100,7 +100,7 @@ std::pair<double, int> MeshOperations::getMinWeightedDistanceToSet(const int &fa
 }
 
 // Returns smallest geodesic distance from queried face to faces in set
-std::pair<double, int> MeshOperations::getMaxGeodesicDistanceToSet(const int &face, const std::vector<int> &faces) {
+std::pair<double, int> MeshOperations::getMaxGeodesicDistanceToSet(const int &face, const std::unordered_set<int> &faces) {
     double max_distance = -1;
     int max_face = -1;
 
@@ -118,7 +118,7 @@ std::pair<double, int> MeshOperations::getMaxGeodesicDistanceToSet(const int &fa
 
 // Returns smallest weighted distance from queried faces to faces in set
 // Weighted distance is linear combination of geodesic and angular distances
-std::pair<double, int> MeshOperations::getMaxWeightedDistanceToSet(const int &face, const std::vector<int> &faces) {
+std::pair<double, int> MeshOperations::getMaxWeightedDistanceToSet(const int &face, const std::unordered_set<int> &faces) {
     double max_distance = -1;
     int max_face = -1;
 
@@ -135,7 +135,7 @@ std::pair<double, int> MeshOperations::getMaxWeightedDistanceToSet(const int &fa
 }
 
 // Returns total geodesic distance from queried face to faces in set
-double MeshOperations::getTotalGeodesicDistanceToSet(const int &face, const std::vector<int> &faces) {
+double MeshOperations::getTotalGeodesicDistanceToSet(const int &face, const std::unordered_set<int> &faces) {
     double total_dist = 0;
     // Add up distance from all faces
     for (const int &face_in_set : faces) {
@@ -146,7 +146,7 @@ double MeshOperations::getTotalGeodesicDistanceToSet(const int &face, const std:
 }
 
 // Returns total weighted distance from queried face to faces in set
-double MeshOperations::getTotalWeightedDistanceToSet(const int &face, const std::vector<int> &faces) {
+double MeshOperations::getTotalWeightedDistanceToSet(const int &face, const std::unordered_set<int> &faces) {
     double total_dist = 0;
     // Add up distance from all faces
     for (const int &face_in_set : faces) {
