@@ -8,6 +8,18 @@
 #include "src/mesh.h"
 #include "src/meshoperations.h"
 
+#include <vcglib/vcg/complex/complex.h>
+#include<vcglib/vcg/complex/algorithms/create/platonic.h>
+
+class MyEdge;
+class MyFace;
+class MyVertex;
+struct MyUsedTypes : public vcg::UsedTypes<	vcg::Use<MyVertex>::AsVertexType, vcg::Use<MyFace>::AsFaceType>{};
+
+class MyVertex  : public vcg::Vertex< MyUsedTypes, vcg::vertex::Coord3f, vcg::vertex::BitFlags  >{};
+class MyFace    : public vcg::Face  < MyUsedTypes, vcg::face::VertexRef,vcg::face::FFAdj, vcg::face::Mark, vcg::face::BitFlags > {};
+class MyMesh : public vcg::tri::TriMesh< std::vector<MyVertex>, std::vector<MyFace > >{};
+
 int main(int argc, char *argv[])
 {
     srand(static_cast<unsigned>(time(0)));
@@ -78,6 +90,60 @@ int main(int argc, char *argv[])
     // Fabricate:
         // TODO: Implement!
         // Extension: solid/hollow shell objects and if they should have internal connectors
+
+    MyMesh mesh;
+
+    //generate a mesh
+    vcg::tri::Icosahedron(mesh);
+
+    //update the face-face topology
+    vcg::tri::UpdateTopology<MyMesh>::FaceFace(mesh);
+
+    // Now for each face the FFp() FFi() members are correctly initialized
+
+    if(vcg::face::IsBorder(mesh.face[0],0)) printf("Edge 0 of face 0 is a border\n");
+    else printf("Edge 0 of face 0 is NOT a border\n"); // always this path!
+
+    vcg::face::FFDetach<MyFace>(mesh.face[0],0);  // Detach the face [0] from the mesh
+    vcg::face::FFDetach<MyFace>(mesh.face[0],1);
+    vcg::face::FFDetach<MyFace>(mesh.face[0],2);
+
+    if(vcg::face::IsBorder(mesh.face[0],0)) printf("Edge 0 of face 0 is a border\n"); // always this path!
+    else printf("Edge 0 of face 0 is NOT a border\n");
+
+    vcg::tri::Allocator<MyMesh>::DeleteFace(mesh,mesh.face[0]);
+
+    // declare an iterator on the mesh
+    vcg::face::Pos<MyMesh::FaceType> he, hei;
+
+    UnMarkAll(mesh);
+
+    // Now a simple search and trace of all the borders of the mesh
+    int BorderEdgeNum=0;
+    int HoleNum=0;
+    for(MyMesh::FaceIterator fi=mesh.face.begin();fi!=mesh.face.end();++fi) if(!(*fi).IsD())
+        {
+            for(int j=0;j<3;j++)
+            {
+                if ( vcg::face::IsBorder(*fi,j) && !vcg::tri::IsMarked(mesh,&*fi))
+                {
+                    vcg::tri::Mark(mesh,&*fi);
+                    hei.Set(&*fi,j,fi->V(j));
+                    he=hei;
+                    do
+                    {
+                        BorderEdgeNum++;
+                        he.NextB(); // next pos along a border
+                        vcg::tri::Mark(mesh,he.f);
+                    }
+                    while (he.f!=hei.f);
+                    HoleNum++;
+                }
+            }
+        }
+
+    printf("Mesh has %i holes and %i border edges\n",HoleNum,BorderEdgeNum);
+    return 0;
 
     // Parse common inputs
     std::cout << "Loading config " << args[0].toStdString() << std::endl;

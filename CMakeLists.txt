@@ -69,6 +69,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 # This allows you to `#include "Eigen/..."`
 target_include_directories(${PROJECT_NAME} PRIVATE
     Eigen
+    vcglib
 )
 
 # Set this flag to silence warnings on Windows

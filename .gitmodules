@@ -4,3 +4,6 @@
 [submodule "or-tools"]
 	path = or-tools
 	url = https://github.com/google/or-tools.git
+[submodule "vcglib"]
+	path = vcglib
+	url = https://github.com/cnr-isti-vclab/vcglib.git
