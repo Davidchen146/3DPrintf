@@ -16,6 +16,13 @@ MeshOperations::MeshOperations(Mesh m) {
     _oversegmentation_bounding_box_coeff = 0.01;
     _num_oversegmentation_iterations = 3;
     _seeds_only = false;
+
+    // Initial segmentation parameters
+    _num_random_dir_samples = 512;
+    _printer_tolerance_angle = 55;
+    _ambient_occlusion_supports_alpha = 0.5;
+    _ambient_occlusion_smoothing_alpha = 0.5;
+    _smoothing_width_t = 0.3;
 }
 
 // Configure parameters for 3D printing operations

@@ -37,9 +37,19 @@ public:
     Eigen::VectorXd dijkstra(int start);
 
     // Sets parameters for various operations
-    void setPreprocessingParameters(double geodesic_weight = 0.1, double convex_coeff = 0.05, double concave_coeff = 1);
-    void setOversegmentationParameters(int num_seed_faces = 0, double proportion_seed_faces = 0.1, double bounding_box_coeff = 0.01, int num_iterations = 3, bool seeds_only = false);
-    void setInitialSegmentationParameters(int num_random_dir_samples = 512, double printer_tolerance_angle = 55, double ambient_occlusion_supports_alpha = 0.5, double ambient_occlusion_smoothing_alpha = 0.5, double smoothing_width_t = 0.03);
+    void setPreprocessingParameters(double geodesic_weight = 0.1,
+                                    double convex_coeff = 0.05,
+                                    double concave_coeff = 1);
+    void setOversegmentationParameters(int num_seed_faces = 0,
+                                       double proportion_seed_faces = 0.1,
+                                       double bounding_box_coeff = 0.01,
+                                       int num_iterations = 3,
+                                       bool seeds_only = false);
+    void setInitialSegmentationParameters(int num_random_dir_samples = 512,
+                                          double printer_tolerance_angle = 55,
+                                          double ambient_occlusion_supports_alpha = 0.5,
+                                          double ambient_occlusion_smoothing_alpha = 0.5,
+                                          double smoothing_width_t = 0.3);
 
     // Oversegmentation: returns list of lists of faces
     // Each list of faces represents a connected patch (to be merged and assigned a printing direction)
@@ -49,7 +59,9 @@ public:
     // Takes in an initial list of lists representing patches from oversegmentation
     // Each element in the output list represents a printable component
     // The other list stores the corresponding printing direction (the ith component is printed in direction i)
-    void generateInitialSegmentation(const std::vector<std::unordered_set<int>> &patches, std::vector<std::unordered_set<int>> &printable_components, std::vector<Eigen::Vector3f> &printing_directions);
+    void generateInitialSegmentation(const std::vector<std::unordered_set<int>> &patches,
+                                     std::vector<std::unordered_set<int>> &printable_components,
+                                     std::vector<Eigen::Vector3f> &printing_directions);
 
 private:
     Mesh _mesh;
@@ -80,13 +92,55 @@ private:
     void recenterSeeds(const std::vector<std::unordered_set<int>> &patches, std::unordered_set<int> &new_seeds);
 
     // Subroutines used for Phase 2 (Initial Segmentation)
+    // Sample random directions
+    void sampleRandomDirections(std::vector<Eigen::Vector3f> &directions);
+    // Determine if a face should be supported
+    bool isFaceSupported(const int face, const Eigen::Vector3f &direction, const std::vector<std::unordered_set<int>> &patches);
+    bool isFaceOverhanging(const int face, const Eigen::Vector3f &direction);
+    bool isEdgeOverhanging(const std::pair<int, int> &edge, const Eigen::Vector3f &direction);
+    bool isVertexOverhanging(const int vertex, const Eigen::Vector3f &direction);
+    bool isFaceFooted(const int face, const Eigen::Vector3f &direction, const std::vector<std::unordered_set<int>> &patches);
+    // Compute support coefficient for a face in direction
+    double computeSupportCoefficient(const int face, const Eigen::Vector3f &direction,
+                                     const std::vector<std::unordered_set<int>> &patches);
+    // Compute smoothing coefficient between two sets of faces
+    double computeSmoothingCoefficient(const std::vector<std::unordered_set<int>> &patch_one,
+                                       const std::vector<std::unordered_set<int>> &patch_two);
     // Interface to ILP
-    void assignPrintingDirections(const std::vector<std::vector<int>> &patches, std::vector<Eigen::Vector3f> &printing_directions);
+    void assignPrintingDirections(const std::vector<std::vector<int>> &patches,
+                                  const std::vector<Eigen::Vector3f> &printing_directions,
+                                  std::vector<Eigen::Vector3f> &patch_printing_directions);
+    // Assign results of the ILP to something we can return out
+    void generatePrintableComponents(const std::vector<std::vector<int>> &patches,
+                                     std::vector<unordered_set<int>> &printable_components,
+                                     const std::vector<Eigen::Vector3f> &patch_printing_directions,
+                                     std::vector<Eigen::Vector3f> &component_printing_directions);
 
+    // Other general subroutines
+/*-------------------------------------------------------------------------------------------------*/
+    // Normals
+    Eigen::Vector3f getFaceNormal(const int &face);
+    Eigen::Vector3f getEdgeNormal(const std::pair<int, int> &edge);
+    Eigen::Vector3f getVertexNormal(const int &vertex);
+
+    // Ambient Occlusion
+    // Could cache this as a preprocessing step?
+    double getFaceAmbientOcclusion(const int &face);
+    double getEdgeAmbientOcclusion(const std::pair<int, int> &edge);
+
+    // For random direction generation
+    Eigen::Vector3f generateRandomVector();
+
+    // For determining intersections with other faces
+    // Should use BVH, some other structure, or there might be something in libigl/VCGlib we can use
+    // If using BVH, may need to make BVH initialization a preprocessing step
+    int getIntersection(const Eigen::Vector3f &ray_position, const Eigen::Vector3f ray_direction);
+
+    // Gets intersection of edges (or faces, TBD) between two patches
+    void getBoundaryEdges(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two);
 
     // Basic utility functions for faces
     // TODO: Change these functions to do lookups to values stored in the face struct
-    Eigen::Vector3f getNormal(const int &face);
     Eigen::Vector3f getCentroid(const int &face);
     double getArea(const int &face);
 

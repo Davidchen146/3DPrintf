@@ -2,7 +2,7 @@
 #include <limits.h>
 
 // Computes normal for a face
-Eigen::Vector3f MeshOperations::getNormal(const int &face) {
+Eigen::Vector3f MeshOperations::getFaceNormal(const int &face) {
     assert(face >= 0 && face < _faces.size());
 
     // Obtain 3 vertices of the face
@@ -18,6 +18,16 @@ Eigen::Vector3f MeshOperations::getNormal(const int &face) {
     // Do the cross product (this is a normal vector to the face)
     Eigen::Vector3f cross = AC.cross(AB);
     return cross.normalized();
+}
+
+// Normal computation for edge
+Eigen::Vector3f MeshOperations::getEdgeNormal(const std::pair<int, int> &edge) {
+    return Eigen::Vector3f(0.0f, 0.0f, 0.0f);
+}
+
+// Normal computation for vertex
+Eigen::Vector3f MeshOperations::getVertexNormal(const int &vertex) {
+    return Eigen::Vector3f(0.0f, 0.0f, 0.0f);
 }
 
 // Computes area for a face
@@ -154,4 +164,33 @@ double MeshOperations::getTotalWeightedDistanceToSet(const int &face, const std:
     }
 
     return total_dist;
+}
+
+// Ambient Occlusion (use libigl)
+// Could cache this as a preprocessing step?
+double MeshOperations::getFaceAmbientOcclusion(const int &face) {
+    return 0.0f;
+}
+
+// Ambient occlusion but for edges (use libigl)
+double MeshOperations::getEdgeAmbientOcclusion(const std::pair<int, int> &edge) {
+    return 0.0f;
+}
+
+// For random direction generation
+Eigen::Vector3f MeshOperations::generateRandomVector() {
+    return Eigen::Vector3f(0.0f, 0.0f, 0.0f);
+}
+
+// For determining intersections with other faces
+// Should use BVH, some other structure, or there might be something in libigl/VCGlib we can use
+// If using BVH, may need to make BVH initialization a preprocessing step
+// It should return the face it intersects
+int MeshOperations::getIntersection(const Eigen::Vector3f &ray_position, const Eigen::Vector3f ray_direction) {
+    return 0;
+}
+
+// Gets intersection of edges (or faces, TBD) between two patches
+void MeshOperations::getBoundaryEdges(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two) {
+    return;
 }
