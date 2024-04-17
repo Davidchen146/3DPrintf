@@ -57,6 +57,29 @@ void MeshOperations::setOversegmentationParameters(int num_seed_faces, double pr
     }
 }
 
+void MeshOperations::setInitialSegmentationParameters(int num_random_dir_samples, double printer_tolerance_angle, double ambient_occlusion_supports_alpha, double ambient_occlusion_smoothing_alpha, double smoothing_width_t) {
+    // Check against default value (0) to prevent loading in unspecified parameters
+    if (num_random_dir_samples != 0) {
+        _num_random_dir_samples = num_random_dir_samples;
+    }
+
+    if (printer_tolerance_angle != 0.0) {
+        _printer_tolerance_angle = printer_tolerance_angle;
+    }
+
+    if (ambient_occlusion_supports_alpha != 0.0) {
+        _ambient_occlusion_supports_alpha = ambient_occlusion_supports_alpha;
+    }
+
+    if (ambient_occlusion_smoothing_alpha != 0.0) {
+        _ambient_occlusion_smoothing_alpha = ambient_occlusion_smoothing_alpha;
+    }
+
+    if (smoothing_width_t != 0.0) {
+        _smoothing_width_t = smoothing_width_t;
+    }
+}
+
 void MeshOperations::preprocess() {
     _vertices = _mesh.getVertices();
     _faces = _mesh.getFaces();

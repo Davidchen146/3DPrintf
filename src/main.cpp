@@ -71,7 +71,11 @@ int main(int argc, char *argv[])
         // "Oversegmentation/num_iterations": number of iterations to recenter and regrow seeds; 0 means patches will be regrown, but will not recenter
         // "Oversegmentation/seeds_only": only returns the center seed faces of patches
     // Initial:
-        // TODO: Implement!
+        // "Intital/num_random_dir_samples": number of directions to randomly sample
+        // "Initial/printer_tolerance_angle": how far faces can deviate from the printing direction without requiring supports (in degrees)
+        // "Initial/ambient_occlusion_supports_alpha": alpha coefficient for ambient occlusion computations for support cost
+        // "Initial/ambient_occlusion_smoothing_alpha": alpha coefficient for ambient occlusion computations for smoothing cost
+        // "Initial/smoothing_width_t": t coefficient for smoothing cost (measures size of cut)
         // Extension: specify faces to hardcode cost values for support (or a region of faces)
     // Refined:
         // TODO: Implement!
@@ -143,6 +147,12 @@ int main(int argc, char *argv[])
         double e_patch = settings.value("Oversegmentation/e_patch").toDouble();
         int num_iterations = settings.value("Oversegmentation/num_iterations").toInt();
         bool seeds_only = settings.value("Oversegmentation/seeds_only").toBool();
+        // Initial Segmentation
+        int num_random_dir_samples = settings.value("Intital/num_random_dir_samples").toInt();
+        double printer_tolerance_angle = settings.value("Initial/printer_tolerance_angle").toDouble(); // In degrees
+        double ambient_occlusion_supports_alpha = settings.value("Initial/ambient_occlusion_supports_alpha").toDouble();
+        double ambient_occlusion_smoothing_alpha = settings.value("Initial/ambient_occlusion_smoothing_alpha").toDouble();
+        double smoothing_width_t = settings.value("Initial/smoothing_width_t").toDouble();
 
         // Case on the method
         if (method == "preprocess") {
@@ -160,7 +170,23 @@ int main(int argc, char *argv[])
             m_o.visualize(patches);
         }
         else if (method == "initial") {
-            std::cerr << "Error: This phase hasn't been implemented yet" << std::endl;
+            m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
+            m_o.preprocess();
+
+            // This vec will hold the labelings
+            std::vector<std::unordered_set<int>> patches;
+            m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, seeds_only);
+            m_o.generateOversegmentation(patches);
+            m_o.visualize(patches);
+
+            // The printable components
+            std::vector<std::unordered_set<int>> printable_components;
+            // Printing directions for each component
+            std::vector<Eigen::Vector3f> printing_directions;
+            m_o.setInitialSegmentationParameters();
+            m_o.generateInitialSegmentation(patches, printable_components, printing_directions);
+            m_o.visualize(printable_components);
+            // TODO: Include a way to orient/visualize printing directions for each printable component
         }
         else if (method == "refined") {
             std::cerr << "Error: This phase hasn't been implemented yet" << std::endl;

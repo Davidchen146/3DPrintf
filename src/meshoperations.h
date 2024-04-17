@@ -39,6 +39,7 @@ public:
     // Sets parameters for various operations
     void setPreprocessingParameters(double geodesic_weight = 0.1, double convex_coeff = 0.05, double concave_coeff = 1);
     void setOversegmentationParameters(int num_seed_faces = 0, double proportion_seed_faces = 0.1, double bounding_box_coeff = 0.01, int num_iterations = 3, bool seeds_only = false);
+    void setInitialSegmentationParameters(int num_random_dir_samples = 512, double printer_tolerance_angle = 55, double ambient_occlusion_supports_alpha = 0.5, double ambient_occlusion_smoothing_alpha = 0.5, double smoothing_width_t = 0.03);
 
     // Oversegmentation: returns list of lists of faces
     // Each list of faces represents a connected patch (to be merged and assigned a printing direction)
@@ -48,7 +49,7 @@ public:
     // Takes in an initial list of lists representing patches from oversegmentation
     // Each element in the output list represents a printable component
     // The other list stores the corresponding printing direction (the ith component is printed in direction i)
-    void generateInitialSegmentation(const std::vector<std::vector<int>> &patches, std::vector<std::vector<int>> &printable_components, std::vector<Eigen::Vector3f> &printing_directions);
+    void generateInitialSegmentation(const std::vector<std::unordered_set<int>> &patches, std::vector<std::unordered_set<int>> &printable_components, std::vector<Eigen::Vector3f> &printing_directions);
 
 private:
     Mesh _mesh;
