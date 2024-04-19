@@ -35,7 +35,7 @@ void Mesh::makeHalfEdges(Vertex* vertex1, Vertex* vertex2, Face* faceStruct) {
         // If half edge twins don't exist, make them
         Halfedge* halfedge = new Halfedge{nullptr, nullptr, vertex1, vertex2, faceStruct, nullptr};
         Halfedge* twin = new Halfedge{halfedge, nullptr, vertex2, vertex1, nullptr, nullptr};
-        Edge* edge = new Edge{halfedge};
+        Edge* edge = new Edge{halfedge, std::make_pair(vertex1->index, vertex2->index)};
 
         // Set the first half edge's twin
         halfedge->twin = twin;
@@ -48,8 +48,7 @@ void Mesh::makeHalfEdges(Vertex* vertex1, Vertex* vertex2, Face* faceStruct) {
         _halfEdgeSet.insert(halfedge);
         _halfEdgeSet.insert(twin);
         // Add to set of edges
-        _edgeSet.insert(edge);
-
+        _edgeMap[edge->vertices] = edge;
         faceStruct->halfedge = vertex1->halfedge;
     } else {
         existingHalfEdge->face = faceStruct;
@@ -131,7 +130,8 @@ void Mesh::preProcess() {
     }
 
     // edge normal is just average of two adjacent faces
-    for (Edge *e : _edgeSet) {
+    for (const auto& pair : _edgeMap) {
+        Edge *e = pair.second;
         Vector3f edgeNormal = e->halfedge->face->normal + e->halfedge->twin->face->normal;
         edgeNormal /= 2;
         e->normal = edgeNormal;
@@ -306,7 +306,7 @@ void Mesh::flip(Edge* edge){
     d->halfedge = da;
 
     // Create new edge
-    Edge* ad_edge = new Edge{ad};
+    Edge* ad_edge = new Edge{ad, std::make_pair(a->index, d->index)};
     ad->edge = ad_edge;
     da->edge = ad_edge;
 
@@ -315,7 +315,8 @@ void Mesh::flip(Edge* edge){
     _halfEdgeSet.insert(da);
 
     // Add edge to set
-    _edgeSet.insert(ad_edge);
+    assert(_edgeMap.contains(std::make_pair(a->index, d->index)));
+    _edgeMap[ad_edge->vertices] = ad_edge;
 
     // Fix faces for (c,a) and (b,d)
     ca->face = dc->face;
@@ -336,7 +337,6 @@ void Mesh::flip(Edge* edge){
     delete cb;
     delete bc;
 
-    _edgeSet.erase(edge);
     delete edge;
 }
 
@@ -476,9 +476,9 @@ Vertex* Mesh::collapse(Edge* edge, Vector4f point) {
     delete bd;
 
 
-    _edgeSet.erase(edge);
-    _edgeSet.erase(ad_edge);
-    _edgeSet.erase(db_edge);
+    _edgeMap.erase(edge->vertices);
+    _edgeMap.erase(ad_edge->vertices);
+    _edgeMap.erase(db_edge->vertices);
     delete edge;
     delete ad_edge;
     delete db_edge;
@@ -626,7 +626,8 @@ void Mesh::simplify(int numFacesToRemove){
     }
 
     // Initialize minimum cost and points for each edge
-    for (Edge* e: _edgeSet) {
+    for (const auto& pair : _edgeMap) {
+        Edge *e = pair.second;
         updateEdgeCost(e);
         _edgeQueue.insert(e);
     }
@@ -641,7 +642,7 @@ void Mesh::simplify(int numFacesToRemove){
         Edge* edgeToCollapse = *firstEdgeIterator;
         _edgeQueue.erase(firstEdgeIterator);
 
-        if (!_edgeSet.contains(edgeToCollapse)) {
+        if (!_edgeMap.contains(edgeToCollapse->vertices)) {
             // If the edge no longer exists due to collapse
             continue;
         }
@@ -724,7 +725,6 @@ Vertex* Mesh::split(Edge* edge, unordered_set<Edge*>* newEdges) {
     mc->next = ca;
     ca->next = am;
 
-
     Halfedge* ma = new Halfedge{nullptr, nullptr, m, a, face3, nullptr};
     Halfedge* bm = new Halfedge{nullptr, nullptr, b, m, face3, nullptr};
     _halfEdgeSet.insert(ma);
@@ -745,23 +745,23 @@ Vertex* Mesh::split(Edge* edge, unordered_set<Edge*>* newEdges) {
     bd->next = dm;
     dm->next = mb;
 
-    Edge* cm_edge = new Edge{cm};
+    Edge* cm_edge = new Edge{cm, std::make_pair(c->index, m->index)};
     cm->edge = cm_edge;
     mc->edge = cm_edge;
-    Edge* md_edge = new Edge{md};
+    Edge* md_edge = new Edge{md, std::make_pair(m->index, d->index)};
     md->edge = md_edge;
     dm->edge = md_edge;
-    Edge* am_edge = new Edge{am};
+    Edge* am_edge = new Edge{am, std::make_pair(a->index, m->index)};
     am->edge = am_edge;
     ma->edge = am_edge;
-    Edge* mb_edge = new Edge{mb};
+    Edge* mb_edge = new Edge{mb, std::make_pair(m->index, b->index)};
     mb->edge = mb_edge;
     bm->edge = mb_edge;
 
-    _edgeSet.insert(cm_edge);
-    _edgeSet.insert(md_edge);
-    _edgeSet.insert(am_edge);
-    _edgeSet.insert(mb_edge);
+    _edgeMap[cm_edge->vertices] = cm_edge;
+    _edgeMap[md_edge->vertices] = md_edge;
+    _edgeMap[am_edge->vertices] = am_edge;
+    _edgeMap[mb_edge->vertices] = mb_edge;
 
     // am_edge and md_edge are the 'new' edges that subdivide needs
     newEdges->insert(am_edge);
@@ -788,7 +788,7 @@ Vertex* Mesh::split(Edge* edge, unordered_set<Edge*>* newEdges) {
     delete cb;
     delete bc;
 
-    _edgeSet.erase(edge);
+    _edgeMap.erase(edge->vertices);
     delete edge;
     return m;
 }
@@ -829,7 +829,10 @@ void Mesh::loopSubdivide() {
 
 
     // Make copy of edges pointers to iterate over
-    std::vector<Edge*> edgeCopy(_edgeSet.begin(), _edgeSet.end());
+    std::vector<Edge*> edgeCopy; // (_edgeMap.begin(), _edgeMap.end());
+    for (const auto& pair : _edgeMap) {
+        edgeCopy.push_back(pair.second);
+    }
 
     // Split each edge and store a set of new Vertices created
     std::unordered_set<Edge*> newEdges;
@@ -879,12 +882,13 @@ void Mesh::remesh(float w) {
     unordered_set<Edge*> edgesCopy;
 
     float L = 0.f;
-    // Make a shallow copy of _edgeSet while calculating average length
-    for (Edge* e: _edgeSet) {
+    // Make a shallow copy of _edgeMap while calculating average length
+    for (const auto& pair : _edgeMap) {
+        Edge *e = pair.second;
         L += (e->halfedge->destination->p - e->halfedge->source->p).norm();
         edgesCopy.insert(e);
     }
-    L = L / static_cast<float>(_edgeSet.size());
+    L = L / static_cast<float>(_edgeMap.size());
 
     // Split edges with length > 4/3 average length
     for (Edge* e: edgesCopy) {
@@ -895,9 +899,10 @@ void Mesh::remesh(float w) {
         }
     }
 
-    // Make a fresh shallow copy of the modified _edgeSet
+    // Make a fresh shallow copy of the modified _edgeMap
     edgesCopy.clear();
-    for (Edge* e: _edgeSet) {
+    for (const auto& pair : _edgeMap) {
+        Edge *e = pair.second;
         edgesCopy.insert(e);
     }
 
@@ -910,7 +915,7 @@ void Mesh::remesh(float w) {
 
     // Collapse edges with length < 4/5 average length to their midpoint
     for (Edge* e: edgesCopy) {
-        if (!_edgeSet.contains(e)) {
+        if (!_edgeMap.contains(e->vertices)) {
             continue;
         }
         float edgeLength = (e->halfedge->destination->p - e->halfedge->source->p).norm();
@@ -921,9 +926,10 @@ void Mesh::remesh(float w) {
         }
     }
 
-    // Make a fresh shallow copy of the modified _edgeSet
+    // Make a fresh shallow copy of the modified _edgeMap
     edgesCopy.clear();
-    for (Edge* e: _edgeSet) {
+    for (const auto& pair : _edgeMap) {
+        Edge *e = pair.second;
         edgesCopy.insert(e);
     }
 
@@ -984,7 +990,7 @@ void Mesh::remesh(float w) {
 }
 
 void Mesh::validate(){
-    assert(_faceMap.size() + _vertexMap.size() == _edgeSet.size()+2);
+    assert(_faceMap.size() + _vertexMap.size() == _edgeMap.size()+2);
     for (Halfedge* halfedge: _halfEdgeSet) {
         // Basic null checks
         assert(halfedge->twin != nullptr);
@@ -1025,8 +1031,9 @@ void Mesh::validate(){
     }
 
     // Edge checks
-    assert(_edgeSet.size() == _halfEdgeSet.size()/2);
-    for (Edge* edge: _edgeSet) {
+    assert(_edgeMap.size() == _halfEdgeSet.size()/2);
+    for (const auto& pair : _edgeMap) {
+        Edge *edge = pair.second;
         assert(edge->halfedge != nullptr);
         Halfedge* h = edge->halfedge;
         assert(h->edge == edge && h->twin->edge == edge);
@@ -1044,7 +1051,6 @@ void Mesh::validate(){
         }
         while (h != face->halfedge);
     }
-
 }
 
 vector<Vector3f> Mesh::getVertices() {
@@ -1055,10 +1061,14 @@ vector<Vector3i> Mesh::getFaces() {
     return _faces;
 }
 
-unordered_map<int, Vertex*> Mesh::getVertexMap() {
+unordered_map<int, Vertex*>& Mesh::getVertexMap() {
     return _vertexMap;
 }
 
-unordered_map<int, Face*> Mesh::getFaceMap() {
+unordered_map<int, Face*>& Mesh::getFaceMap() {
     return _faceMap;
+}
+
+unordered_map<pair<int, int>, Edge*, PairHash>& Mesh::getEdgeMap() {
+    return _edgeMap;
 }

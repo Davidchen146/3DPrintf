@@ -16,7 +16,7 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
 // Sample random directions
 void MeshOperations::sampleRandomDirections(std::vector<Eigen::Vector3f> &directions) {
     for (int i = 0; i < _num_random_dir_samples; i++) {
-        // randomly sample from the hemisphere
+        // randomly sample from the sphere
         float phi = 2.f * M_PI * (float) arc4random() / (float) UINT32_MAX;
         float theta = acos(2 * ((float) arc4random() / (float) UINT32_MAX) - 1);
 
@@ -39,7 +39,7 @@ bool MeshOperations::isFaceSupported(const int face, const Eigen::Vector3f &dire
 
 // Determine if a face is overhanging and requires support
 bool MeshOperations::isFaceOverhanging(const int face, const Eigen::Vector3f &direction) {
-    std::unordered_map<int, Face *> faceMap = _mesh.getFaceMap();
+    std::unordered_map<int, Face *>& faceMap = _mesh.getFaceMap();
     assert(faceMap.contains(face));
     Eigen::Vector3f faceNormal = faceMap[face]->normal;
 
@@ -53,24 +53,11 @@ bool MeshOperations::isFaceOverhanging(const int face, const Eigen::Vector3f &di
 // Determine if an edge is overhanging and requires support
 bool MeshOperations::isEdgeOverhanging(const std::pair<int, int> &edge, const Eigen::Vector3f &direction) {
     // find the shared edge between the two faces
-    std::unordered_map<int, Face *> faceMap = _mesh.getFaceMap();
-    assert(faceMap.contains(edge.first));
-    assert(faceMap.contains(edge.second));
-    Face *f1 = faceMap[edge.first];
-    Face *f2 = faceMap[edge.second];
-    Halfedge *h = f1->halfedge;
-    bool edgeFound = false;
-    Edge *sharedEdge = nullptr;
-    do {
-        edgeFound = (h->twin->face == f2);
-        sharedEdge = h->edge;
-        h = h->next;
-    } while (h != f1->halfedge && !edgeFound);
-    assert(edgeFound);
-    assert(sharedEdge);
+    std::unordered_map<std::pair<int, int>, Edge*, PairHash>& edgeMap = _mesh.getEdgeMap();
+    assert(edgeMap.contains(edge));
 
     // get angle between edge normal and printing direction (in degrees)
-    Eigen::Vector3f edgeNormal = sharedEdge->normal;
+    Eigen::Vector3f edgeNormal = edgeMap[edge]->normal;
     double angle = acos(edgeNormal.dot(direction) / (edgeNormal.norm() * direction.norm())) * 180 / M_PI;
 
     // compare with tolerance angle
@@ -79,7 +66,7 @@ bool MeshOperations::isEdgeOverhanging(const std::pair<int, int> &edge, const Ei
 
 // Determine if a vertex is overhanging and requires support
 bool MeshOperations::isVertexOverhanging(const int vertex, const Eigen::Vector3f &direction) {
-    std::unordered_map<int, Vertex *> vertexMap = _mesh.getVertexMap();
+    std::unordered_map<int, Vertex *>& vertexMap = _mesh.getVertexMap();
     assert(vertexMap.contains(vertex));
     Eigen::Vector3f vertexNormal = vertexMap[vertex]->normal;
 

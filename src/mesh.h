@@ -47,6 +47,7 @@ struct Halfedge {
 
 struct Edge {
     Halfedge* halfedge;
+    std::pair<int, int> vertices;
     Eigen::Vector3f normal;
     Eigen::Vector4f minCostPoint;
     float error;
@@ -66,6 +67,16 @@ struct Vector3fCompare {
         if (v1.y() < v2.y()) return true;
         if (v1.y() > v2.y()) return false;
         return v1.z() < v2.z();
+    }
+};
+
+// Really jank code that lets you hash pairs of integers
+struct PairHash
+{
+    template <class T1, class T2>
+    std::size_t operator() (const std::pair<T1, T2> &v) const
+    {
+        return std::hash<T1>()(v.first) ^ std::hash<T2>()(v.second) << 1;
     }
 };
 
@@ -105,15 +116,16 @@ public:
 
     std::vector<Eigen::Vector3f> getVertices();
     std::vector<Eigen::Vector3i> getFaces();
-    std::unordered_map<int, Vertex*> getVertexMap();
-    std::unordered_map<int, Face*> getFaceMap();
+    std::unordered_map<int, Vertex*>& getVertexMap();
+    std::unordered_map<int, Face*>& getFaceMap();
+    std::unordered_map<std::pair<int, int>, Edge*, PairHash>& getEdgeMap();
 
 private:
     int globalVertexIndex;
     std::unordered_map<int, Vertex*>                              _vertexMap;
     std::unordered_set<Halfedge*>                                 _halfEdgeSet;
     std::unordered_map<int, Face*>                                _faceMap;
-    std::unordered_set<Edge*>                                     _edgeSet;
+    std::unordered_map<std::pair<int, int>, Edge*, PairHash>      _edgeMap;
     std::multiset<Edge*, edgeCostComparator>                      _edgeQueue;
 
     std::vector<Eigen::Vector3f>       _vertices;
