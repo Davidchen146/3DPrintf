@@ -24,7 +24,6 @@ void MeshOperations::sampleRandomDirections(std::vector<Eigen::Vector3f> &direct
         float x = sin(theta) * cos(phi);
         float y = cos(theta);
         float z = sin(theta) * sin(phi);
-        // NOTE: issues with y-up vs z-up? not sure what our input files will assume
         Vector3f direction(x, y, z);
 
         // NOTE: assumes that directions starts off as an empty vector

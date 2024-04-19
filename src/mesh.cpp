@@ -113,6 +113,8 @@ void Mesh::preProcess() {
         _faceMap[i] = faceStruct;
     }
 
+    // NOTE: consider whether these normals should be area weighted
+
     // compute vertex normals (by interpolating from neighboring triangles)
     // do these normals need to be weighted by the area? --> they currently are not
     for (const auto& pair : _vertexMap) {
