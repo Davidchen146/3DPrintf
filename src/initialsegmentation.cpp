@@ -15,7 +15,21 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
 // Subroutines used for Phase 2 (Initial Segmentation)
 // Sample random directions
 void MeshOperations::sampleRandomDirections(std::vector<Eigen::Vector3f> &directions) {
-    return;
+    for (int i = 0; i < _num_random_dir_samples; i++) {
+        // randomly sample from the hemisphere
+        float phi = 2.f * M_PI * (float) arc4random() / (float) UINT32_MAX;
+        float theta = acos(2 * ((float) arc4random() / (float) UINT32_MAX) - 1);
+
+        // spherical to rectangular converion (with radius = 1)
+        float x = sin(theta) * cos(phi);
+        float y = cos(theta);
+        float z = sin(theta) * sin(phi);
+        // NOTE: issues with y-up vs z-up? not sure what our input files will assume
+        Vector3f direction(x, y, z);
+
+        // NOTE: assumes that directions starts off as an empty vector
+        directions.push_back(direction);
+    }
 }
 
 // Determine if a face should be supported
