@@ -79,6 +79,7 @@ void Mesh::preProcess() {
         // Populate vertex map, with position as the key and Vertex struct as value
         _vertexMap.insert({i, v});
     }
+    globalVertexIndex = _vertexMap.size();
 
     for (int i = 0; i < _faces.size(); i++) {
         // Loop through each face, construct pairs of half edges if it does not already exist
@@ -107,13 +108,36 @@ void Mesh::preProcess() {
         vertex2->halfedge->next = vertex3->halfedge;
         vertex3->halfedge->next = vertex1->halfedge;
 
-        // Add face to set
-        _faceSet.insert(faceStruct);
+        // Add face to map
+        assert(!_faceMap.contains(i));
+        _faceMap[i] = faceStruct;
     }
-    globalVertexIndex = _vertexMap.size();
+
+    // compute vertex normals (by interpolating from neighboring triangles)
+    // do these normals need to be weighted by the area? --> they currently are not
+    for (const auto& pair : _vertexMap) {
+        Vertex *v = pair.second;
+        Halfedge *h = v->halfedge;
+        Vector3f vertexNormal{0, 0, 0};
+        int numNeighbors = 0;
+        do {
+            vertexNormal += h->face->normal;
+            numNeighbors++;
+        } while (h != v->halfedge);
+        vertexNormal /= numNeighbors;
+        v->normal = vertexNormal;
+    }
+
+    // edge normal is just average of two adjacent faces
+    for (Edge *e : _edgeSet) {
+        Vector3f edgeNormal = e->halfedge->face->normal + e->halfedge->twin->face->normal;
+        edgeNormal /= 2;
+        e->normal = edgeNormal;
+    }
 
     // get neighbors for each face
-    for (Face *f_i : _faceSet) {
+    for (const auto& pair : _faceMap) {
+        Face *f_i = pair.second;
         Halfedge *h = f_i->halfedge;
         vector<Face *> neighbors(3);
         int neighbor_num = 0;
@@ -142,7 +166,8 @@ void Mesh::convert() {
     }
 
     // Loop through faces, record indices of each vertex and append to final faces list
-    for (Face* face: _faceSet) {
+    for (const auto& pair : _faceMap) {
+        Face *face = pair.second;
         vector<int> indices;
         Halfedge* h = face->halfedge;
 
@@ -461,8 +486,8 @@ Vertex* Mesh::collapse(Edge* edge, Vector4f point) {
     delete c;
     delete d;
 
-    _faceSet.erase(face);
-    _faceSet.erase(twinFace);
+    _faceMap.erase(face->index);
+    _faceMap.erase(twinFace->index);
     delete face;
     delete twinFace;
 
@@ -590,7 +615,7 @@ bool Mesh::removeSpecificEdgeFromEdgeQueue(Edge* e) {
 }
 
 void Mesh::simplify(int numFacesToRemove){
-    int targetNumFaces = _faceSet.size() - numFacesToRemove;
+    int targetNumFaces = _faceMap.size() - numFacesToRemove;
     targetNumFaces = std::max(4, targetNumFaces);
 
     // Initialize Q matrices
@@ -606,7 +631,7 @@ void Mesh::simplify(int numFacesToRemove){
 
     validate();
 
-    while (_faceSet.size() > targetNumFaces) {
+    while (_faceMap.size() > targetNumFaces) {
         // ** When getting neighbors, beware that some edges may be freed from memory after collapse()
         std::unordered_set<Edge*> neighboringEdges;
 
@@ -668,10 +693,13 @@ Vertex* Mesh::split(Edge* edge, unordered_set<Edge*>* newEdges) {
     globalVertexIndex++;
 
     // Make new vertices and faces
-    Face* face3 = new Face{};
-    Face* face4 = new Face{};
-    _faceSet.insert(face3);
-    _faceSet.insert(face4);
+    // NOTE: i don't see how we would ever need to split edges but if we do we need to give these new faces indices
+    int numFaces = _faceMap.size();
+    Face* face3 = new Face{numFaces};
+    Face* face4 = new Face{numFaces + 1};
+    assert(!_faceMap.contains(numFaces));
+    assert(!_faceMap.contains(numFaces + 1));
+    _faceMap[numFaces] = face3;
 
     // Make half edges
     Halfedge* cm = new Halfedge{nullptr, nullptr, c, m, face1, nullptr};
@@ -954,7 +982,7 @@ void Mesh::remesh(float w) {
 }
 
 void Mesh::validate(){
-    assert(_faceSet.size() + _vertexMap.size() == _edgeSet.size()+2);
+    assert(_faceMap.size() + _vertexMap.size() == _edgeSet.size()+2);
     for (Halfedge* halfedge: _halfEdgeSet) {
         // Basic null checks
         assert(halfedge->twin != nullptr);
@@ -1004,7 +1032,8 @@ void Mesh::validate(){
     }
 
     // Face checks
-    for (Face* face: _faceSet) {
+    for (const auto& pair : _faceMap) {
+        Face *face = pair.second;
         Halfedge* h = face->halfedge;
         assert(h != nullptr);
         do {
@@ -1024,35 +1053,10 @@ vector<Vector3i> Mesh::getFaces() {
     return _faces;
 }
 
-unordered_set<Face *> Mesh::getFaceSet() {
-    return _faceSet;
+unordered_map<int, Vertex*> Mesh::getVertexMap() {
+    return _vertexMap;
 }
 
-// TESTING BELOW //
-
-void Mesh::testAmbientOcclusion() {
-    MatrixXf V;
-    MatrixXi F;
-    MatrixXf N;
-    MatrixXf AO;
-
-    int numVertices = _vertices.size();
-    int numFaces = _faces.size();
-
-    V.resize(numVertices, 3);
-    F.resize(numFaces, 3);
-    N.resize(numVertices, 3);
-    AO.resize(numVertices, 3);
-
-    for (int i = 0; i < numVertices; i++) {
-        V.row(i) = _vertices[i];
-    }
-    for (int i = 0; i < numFaces; i++) {
-        F.row(i) = _faces[i];
-    }
-
-    igl::per_vertex_normals(V, F, N);
-    igl::embree::ambient_occlusion(V, F, V, N, 500, AO);
-
-    std::cout << AO << std::endl;
+unordered_map<int, Face*> Mesh::getFaceMap() {
+    return _faceMap;
 }

@@ -124,8 +124,9 @@ void MeshOperations::makeAdjacency() {
     std::vector<std::vector<bool>> matrix(_n, std::vector<bool>(_n, false));
     _adjacency = matrix;
 
-    unordered_set<Face *> faceSet = _mesh.getFaceSet();
-    for (Face* f: faceSet) {
+    unordered_map<int, Face *> faceMap = _mesh.getFaceMap();
+    for (const auto& pair : faceMap) {
+        Face *f = pair.second;
         for (Face* n: f->neighbors) {
             _adjacency[f->index][n->index] = true;
         }
@@ -149,8 +150,9 @@ void MeshOperations::geodesicDistance() {
 }
 
 void MeshOperations::angularDistance() {
-    unordered_set<Face *> faceSet = _mesh.getFaceSet();
-    for (Face *f_i : faceSet) {
+    unordered_map<int, Face *> faceMap = _mesh.getFaceMap();
+    for (const auto& pair : faceMap) {
+        Face *f_i = pair.second;
         Vector3f normal_i = f_i->normal;
         Halfedge *h = f_i->halfedge;
         // i think it's easier to do it this way so we know the edge the two adjacent faces share

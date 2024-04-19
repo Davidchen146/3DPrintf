@@ -21,11 +21,11 @@ struct Vertex;
 struct Face;
 struct Edge;
 
-
 struct Vertex {
     Halfedge* halfedge;
     int index;
     Eigen::Vector3f p; // p is the coordinates
+    Eigen::Vector3f normal;
     Eigen::Matrix4f Q;
 };
 
@@ -47,6 +47,7 @@ struct Halfedge {
 
 struct Edge {
     Halfedge* halfedge;
+    Eigen::Vector3f normal;
     Eigen::Vector4f minCostPoint;
     float error;
 };
@@ -104,13 +105,14 @@ public:
 
     std::vector<Eigen::Vector3f> getVertices();
     std::vector<Eigen::Vector3i> getFaces();
-    std::unordered_set<Face *> getFaceSet();
+    std::unordered_map<int, Vertex*> getVertexMap();
+    std::unordered_map<int, Face*> getFaceMap();
 
 private:
     int globalVertexIndex;
     std::unordered_map<int, Vertex*>                              _vertexMap;
     std::unordered_set<Halfedge*>                                 _halfEdgeSet;
-    std::unordered_set<Face*>                                     _faceSet;
+    std::unordered_map<int, Face*>                                _faceMap;
     std::unordered_set<Edge*>                                     _edgeSet;
     std::multiset<Edge*, edgeCostComparator>                      _edgeQueue;
 

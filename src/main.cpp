@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
         else if (method == "simplify") {
             // Determine how many faces to remove
             if (target_faces != 0) {
-                int num_mesh_faces = m.getFaceSet().size();
+                int num_mesh_faces = m.getFaceMap().size();
                 faces_to_remove = std::max(num_mesh_faces - target_faces, 0);
             }
             m.simplify(faces_to_remove);
