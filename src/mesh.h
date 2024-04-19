@@ -86,8 +86,11 @@ public:
 
     void flip(Edge* edge);
     Vertex* collapse(Edge* edge, Eigen::Vector4f point);
+    Vertex* split(Edge* edge, std::unordered_set<Edge*>* newEdges);
 
     void simplify(int numFacesToRemove);
+    void loopSubdivide();
+    void remesh(float w);
 
     bool removeSpecificEdgeFromEdgeQueue(Edge* e);
 

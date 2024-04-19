@@ -160,7 +160,6 @@ void Mesh::convert() {
     _faces = finalFacesList;
 }
 
-
 void Mesh::loadFromFile(const string &filePath)
 {
     tinyobj::attrib_t attrib;
@@ -502,7 +501,6 @@ bool isMatrixInvertible(Matrix4f* m) {
     return m->determinant() != 0.f;
 }
 
-
 unordered_set<Edge*> findEdgeNeighbors(Vertex* v) {
     unordered_set<Edge*> neighbors;
     Halfedge* h = v->halfedge;
@@ -643,57 +641,316 @@ void Mesh::simplify(int numFacesToRemove){
 
 }
 
-// ONLY FOR TESTING PURPOSES
-Edge* getRandomElement(const std::unordered_set<Edge*>& halfEdgeSet) {
-    if (halfEdgeSet.empty()) {
-        return nullptr; // Return nullptr if the set is empty
+Vertex* Mesh::split(Edge* edge, unordered_set<Edge*>* newEdges) {
+    Halfedge* h = edge->halfedge;
+
+    Halfedge* cb = h;
+    Halfedge* bd = cb->next;
+    Halfedge* dc = bd->next;
+
+    Halfedge* bc = cb->twin;
+    Halfedge* ca = bc->next;
+    Halfedge* ab = ca->next;
+
+    Vertex* c = cb->source;
+    Vertex* b = cb->destination;
+    Vertex* d = bd->destination;
+    Vertex* a = ca->destination;
+
+    Face* face1 = cb->face;
+    Face* face2 = bc->face;
+
+    // Make new vertex
+    Vector3f newVertexCoord = (c->p + b->p) / 2.f;
+    Vertex* m = new Vertex{nullptr, globalVertexIndex, newVertexCoord};
+    assert(!_vertexMap.contains(globalVertexIndex));
+    _vertexMap.insert({globalVertexIndex, m});
+    globalVertexIndex++;
+
+    // Make new vertices and faces
+    Face* face3 = new Face{};
+    Face* face4 = new Face{};
+    _faceSet.insert(face3);
+    _faceSet.insert(face4);
+
+    // Make half edges
+    Halfedge* cm = new Halfedge{nullptr, nullptr, c, m, face1, nullptr};
+    Halfedge* md = new Halfedge{nullptr, nullptr, m, d, face1, nullptr};
+    _halfEdgeSet.insert(cm);
+    _halfEdgeSet.insert(md);
+    face1->halfedge = cm;
+    m->halfedge = md;
+    cm->next = md;
+    md->next = dc;
+    dc->next = cm;
+
+    Halfedge* mc = new Halfedge{nullptr, nullptr, m, c, face2, nullptr};
+    Halfedge* am = new Halfedge{nullptr, nullptr, a, m, face2, nullptr};
+
+    _halfEdgeSet.insert(mc);
+    _halfEdgeSet.insert(am);
+    face2->halfedge = am;
+    am->next = mc;
+    mc->next = ca;
+    ca->next = am;
+
+
+    Halfedge* ma = new Halfedge{nullptr, nullptr, m, a, face3, nullptr};
+    Halfedge* bm = new Halfedge{nullptr, nullptr, b, m, face3, nullptr};
+    _halfEdgeSet.insert(ma);
+    _halfEdgeSet.insert(bm);
+    face3->halfedge = ma;
+    ab->face = face3;
+    ma->next = ab;
+    ab->next = bm;
+    bm->next = ma;
+
+    Halfedge* mb = new Halfedge{nullptr, nullptr, m, b, face4, nullptr};
+    Halfedge* dm = new Halfedge{nullptr, nullptr, d, m, face4, nullptr};
+    _halfEdgeSet.insert(mb);
+    _halfEdgeSet.insert(dm);
+    face4->halfedge = mb;
+    bd->face = face4;
+    mb->next = bd;
+    bd->next = dm;
+    dm->next = mb;
+
+    Edge* cm_edge = new Edge{cm};
+    cm->edge = cm_edge;
+    mc->edge = cm_edge;
+    Edge* md_edge = new Edge{md};
+    md->edge = md_edge;
+    dm->edge = md_edge;
+    Edge* am_edge = new Edge{am};
+    am->edge = am_edge;
+    ma->edge = am_edge;
+    Edge* mb_edge = new Edge{mb};
+    mb->edge = mb_edge;
+    bm->edge = mb_edge;
+
+    _edgeSet.insert(cm_edge);
+    _edgeSet.insert(md_edge);
+    _edgeSet.insert(am_edge);
+    _edgeSet.insert(mb_edge);
+
+    // am_edge and md_edge are the 'new' edges that subdivide needs
+    newEdges->insert(am_edge);
+    newEdges->insert(md_edge);
+
+    // Glue twins together
+    cm->twin = mc;
+    mc->twin = cm;
+    ma->twin = am;
+    am->twin = ma;
+    mb->twin = bm;
+    bm->twin = mb;
+    md->twin = dm;
+    dm->twin = md;
+
+    c->halfedge = cm;
+    d->halfedge = dm;
+    a->halfedge = am;
+    b->halfedge = bm;
+
+    // Delete original edge
+    _halfEdgeSet.erase(cb);
+    _halfEdgeSet.erase(bc);
+    delete cb;
+    delete bc;
+
+    _edgeSet.erase(edge);
+    delete edge;
+    return m;
+}
+
+void Mesh::loopSubdivide() {
+    std::unordered_map<Vertex*, Vector3f> vertexToOldPosition;
+    // Make a reverse mapping from the Vertex struct to its position
+    for (auto const& [key, val] : _vertexMap) {
+        vertexToOldPosition[val] = val->p;
     }
 
-    // Generate a random index between 0 and the size of the set - 1
-    int randomIndex = rand() % halfEdgeSet.size();
+    // Calculate the new positions of the old vertices
+    for (auto const& [key, val] : vertexToOldPosition) {
+        // key is vertex pointer, value is its old position
+        Vector3f newPosition(0.f, 0.f, 0.f);
+        int n = countDegree(key);
+        float u = 0.f;
+        if (n == 3) {
+            u = 3.f/16.f;
+        } else {
+            float x = (3.f/8.f) + ((1.f/4.f)*std::cos((2.f*M_PI)/static_cast<float>(n)));
+            u = (1.f/static_cast<float>(n))*((5.f/8.f) - std::pow(x, 2.f));
+        }
 
-    // Iterate to the random position in the set
-    auto it = std::next(halfEdgeSet.begin(), randomIndex);
+        // Loop over neighbors
+        Halfedge* h = key->halfedge;
+        do {
+            // Get old position of each neighbor
+            newPosition += (vertexToOldPosition[h->destination])*u;
+            h = h->twin->next;
+        }
+        while (h != key->halfedge);
 
-    // Return the element at the random position
-    return *it;
+        newPosition += (1.f - static_cast<float>(n)*u)*val;
+
+        key->p = newPosition;
+    }
+
+
+    // Make copy of edges pointers to iterate over
+    std::vector<Edge*> edgeCopy(_edgeSet.begin(), _edgeSet.end());
+
+    // Split each edge and store a set of new Vertices created
+    std::unordered_set<Edge*> newEdges;
+    std::unordered_set<Vertex*> newVertices;
+    for (Edge* e: edgeCopy) {
+        newVertices.insert(split(e, &newEdges));
+    }
+
+    // std::cout << newEdges.size() << std::endl;
+
+    // Flip all new edges that touch an old and new vertex
+    for (Edge* e: newEdges) {
+        Halfedge* h = e->halfedge;
+        Vertex* s = h->source;
+        Vertex* d = h->destination;
+        // Either if s is old and d is new or if d is old and s is new
+        if (vertexToOldPosition.contains(s) != vertexToOldPosition.contains(d)) {
+            flip(e);
+        }
+    }
+
+    // Calculate position for all new vertices
+    for (Vertex* v: newVertices) {
+        // Get the halfedge that points to an old vertex
+        Halfedge* h = v->halfedge;
+        do {
+            h = h->twin->next;
+        }
+        while (!vertexToOldPosition.contains(h->destination));
+
+        Vertex* v2 = h->destination;
+        Vertex* v4 = h->next->next->twin->next->next->twin->next->destination;
+        Vertex* v1 = h->next->next->twin->next->twin->next->destination;
+        Vertex* v3 = h->twin->next->twin->next->next->twin->next->destination;
+
+        Vector3f p2 = vertexToOldPosition[v2];
+        Vector3f p4 = vertexToOldPosition[v4];
+        Vector3f p1 = vertexToOldPosition[v1];
+        Vector3f p3 = vertexToOldPosition[v3];
+
+        v->p = (1.f/8.f)*p1 + (1.f/8.f)*p3 + (3.f/8.f)*p2 + (3.f/8.f)*p4;
+    }
+
 }
 
-void Mesh::testCollapse(int n) {
-    // Collapse a random edge to the midpoint
-    // int numHalfEdges = _halfEdgeSet.size();
-    // int numVertices = _vertexMap.size();
-    // int numFaces = _faceSet.size();
-    // int numEdges = _edgeSet.size();
-    Edge* randEdge = getRandomElement(_edgeSet);
-    Vector3f point = (randEdge->halfedge->source->p + randEdge->halfedge->destination->p) / 2.f;
-    Vector4f p(point[0], point[1], point[2], 1.f);
+void Mesh::remesh(float w) {
+    unordered_set<Edge*> edgesCopy;
 
-    // collapse(randEdge, p);
+    float L = 0.f;
+    // Make a shallow copy of _edgeSet while calculating average length
+    for (Edge* e: _edgeSet) {
+        L += (e->halfedge->destination->p - e->halfedge->source->p).norm();
+        edgesCopy.insert(e);
+    }
+    L = L / static_cast<float>(_edgeSet.size());
 
-    // assert(_halfEdgeSet.size() == numHalfEdges - 6);
-    // assert(_vertexMap.size() == numVertices - 1);
-    // assert(_faceSet.size() == numFaces - 2);
-    // assert(_edgeSet.size() == numEdges - 3);
+    // Split edges with length > 4/3 average length
+    for (Edge* e: edgesCopy) {
+        float edgeLength = (e->halfedge->destination->p - e->halfedge->source->p).norm();
+        unordered_set<Edge*> newEdges; // unused
+        if (edgeLength > (4.f/3.f)*L) {
+            split(e, &newEdges);
+        }
+    }
 
-    validate();
-}
+    // Make a fresh shallow copy of the modified _edgeSet
+    edgesCopy.clear();
+    for (Edge* e: _edgeSet) {
+        edgesCopy.insert(e);
+    }
 
-void Mesh::testFlip(int n) {
-    // Flip half of the edges randomly, then validate
-    int numHalfEdges = _halfEdgeSet.size();
-    int numVertices = _vertexMap.size();
-    int numFaces = _faceSet.size();
-    int numEdges = _edgeSet.size();
+    for (Edge* e: edgesCopy) {
+        assert(e->halfedge != nullptr);
+        Halfedge* h = e->halfedge;
+        assert(h->edge == e && h->twin->edge == e);
+        assert(h == h->twin->twin);
+    }
 
-    flip(getRandomElement(_edgeSet));
+    // Collapse edges with length < 4/5 average length to their midpoint
+    for (Edge* e: edgesCopy) {
+        if (!_edgeSet.contains(e)) {
+            continue;
+        }
+        float edgeLength = (e->halfedge->destination->p - e->halfedge->source->p).norm();
+        Vector3f midPoint = (e->halfedge->source->p + e->halfedge->destination->p) / 2.f;
+        Vector4f mp(midPoint[0], midPoint[1], midPoint[2], 1.f);
+        if (edgeLength < (4.f/5.f)*L) {
+            collapse(e, mp);
+        }
+    }
 
-    assert(_halfEdgeSet.size() == numHalfEdges);
-    assert(_vertexMap.size() == numVertices);
-    assert(_faceSet.size() == numFaces);
-    assert(_edgeSet.size() == numEdges);
+    // Make a fresh shallow copy of the modified _edgeSet
+    edgesCopy.clear();
+    for (Edge* e: _edgeSet) {
+        edgesCopy.insert(e);
+    }
 
-    validate();
+    for (Edge* e: edgesCopy) {
+        // Vertices currently connecting the edge
+        Vertex* v1 = e->halfedge->source;
+        Vertex* v2 = e->halfedge->destination;
+        // Vertices to be flipped to
+        Vertex* v3 = e->halfedge->next->destination;
+        Vertex* v4 = e->halfedge->twin->next->destination;
+
+        // This measures how much closer or farther we will get from both vertices having degree 6 if
+        // we were to flip this edge
+        int preFlipErrorV1V2 = std::abs(countDegree(v1) - 6) + std::abs(countDegree(v2) - 6);
+        int postFlipErrorV1V2 = std::abs(countDegree(v1) - 6 - 1) + std::abs(countDegree(v2) - 6 - 1);
+        // Are we reducing error by flipping v1, v2?
+        int V1V2 = postFlipErrorV1V2 - preFlipErrorV1V2;
+        // This measures how much closer or farther the two vertices being flipped to will be from having degree 6
+        int preFlipErrorV3V4 = std::abs(countDegree(v3) - 6) + std::abs(countDegree(v4) - 6);
+        int postFlipErrorV3V4 = std::abs(countDegree(v3) - 6 + 1) + std::abs(countDegree(v4) - 6 + 1);
+        // Are we reducing error by flipping into v3, v4?
+        int V3V4 = postFlipErrorV3V4 - preFlipErrorV3V4;
+
+        if (V1V2 + V3V4 < 0) {
+            // If we are reducing error overall
+            flip(e);
+        }
+    }
+
+    // Tangential smoothing
+    for (auto const& [index, vertex] : _vertexMap) {
+        Vector3f x = vertex->p;
+        Vector3f n(0, 0, 0);
+        Vector3f c(0, 0, 0);
+        Halfedge* h = vertex->halfedge;
+        int numFaces = 0;
+        do {
+            Vector3f v1 = h->source->p;
+            Vector3f v2 = h->next->source->p;
+            Vector3f v3 = h->next->next->source->p;
+            n += calculateSurfaceNormal(v1, v2, v3);
+            c += v2;
+            numFaces++;
+            h = h->twin->next;
+        }
+        while (h != vertex->halfedge);
+        // Vertex normal calculated as average of adjacent face normals
+        n = n / static_cast<float>(numFaces);
+        n = n.normalized();
+        // Centroid calculated as average position of all neighbors
+        c = c / static_cast<float>(numFaces);
+
+        Vector3f v = c - x;
+        v = v - (n.dot(v))*n;
+
+        vertex->p = x + v*w;
+    }
 }
 
 void Mesh::validate(){
