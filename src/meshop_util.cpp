@@ -19,7 +19,10 @@ Eigen::Vector3f MeshOperations::getEdgeNormal(const std::pair<int, int> &edge) {
 
 // Normal computation for vertex
 Eigen::Vector3f MeshOperations::getVertexNormal(const int &vertex) {
-    return Eigen::Vector3f(0.0f, 0.0f, 0.0f);
+    std::unordered_map<int, Vertex *>& vertexMap = _mesh.getVertexMap();
+    assert(vertexMap.contains(vertex));
+    Eigen::Vector3f vertexNormal = vertexMap[vertex]->normal;
+    return vertexNormal;
 }
 
 // Computes area for a face
