@@ -36,7 +36,9 @@ void Mesh::makeHalfEdges(Vertex* vertex1, Vertex* vertex2, Face* faceStruct) {
         Halfedge* halfedge = new Halfedge{nullptr, nullptr, vertex1, vertex2, faceStruct, nullptr};
         Halfedge* twin = new Halfedge{halfedge, nullptr, vertex2, vertex1, nullptr, nullptr};
         Edge* edge = new Edge{halfedge, std::make_pair(vertex1->index, vertex2->index)};
-
+        if (vertex2->index < vertex1->index) {
+            edge->vertices = std::make_pair(vertex2->index, vertex1->index);
+        }
         // Set the first half edge's twin
         halfedge->twin = twin;
         // Set the vertex's half edge
@@ -307,6 +309,9 @@ void Mesh::flip(Edge* edge){
 
     // Create new edge
     Edge* ad_edge = new Edge{ad, std::make_pair(a->index, d->index)};
+    if (d->index < a->index) {
+        ad_edge->vertices = std::make_pair(d->index, a->index);
+    }
     ad->edge = ad_edge;
     da->edge = ad_edge;
 
@@ -746,15 +751,27 @@ Vertex* Mesh::split(Edge* edge, unordered_set<Edge*>* newEdges) {
     dm->next = mb;
 
     Edge* cm_edge = new Edge{cm, std::make_pair(c->index, m->index)};
+    if (m->index < c->index) {
+        cm_edge->vertices = std::make_pair(m->index, c->index);
+    }
     cm->edge = cm_edge;
     mc->edge = cm_edge;
     Edge* md_edge = new Edge{md, std::make_pair(m->index, d->index)};
+    if (d->index < m->index) {
+        md_edge->vertices = std::make_pair(d->index, m->index);
+    }
     md->edge = md_edge;
     dm->edge = md_edge;
     Edge* am_edge = new Edge{am, std::make_pair(a->index, m->index)};
+    if (m->index < a->index) {
+        am_edge->vertices = std::make_pair(m->index, a->index);
+    }
     am->edge = am_edge;
     ma->edge = am_edge;
     Edge* mb_edge = new Edge{mb, std::make_pair(m->index, b->index)};
+    if (b->index < m->index) {
+        mb_edge->vertices = std::make_pair(b->index, m->index);
+    }
     mb->edge = mb_edge;
     bm->edge = mb_edge;
 

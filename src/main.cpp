@@ -94,6 +94,7 @@ int main(int argc, char *argv[])
     Mesh m;
     m.loadFromFile(infile.toStdString());
     m.preProcess();
+    m.validate();
     // TODO: Make this take a reference to an existing mesh instead to avoid copying?
     MeshOperations m_o(m);
 
@@ -117,9 +118,13 @@ int main(int argc, char *argv[])
         int remesh_num_iterations = settings.value("Remesh/num_iterations").toInt();
         double smoothing_weight = settings.value("Remesh/smoothing_weight").toDouble();
 
-        // Case on the method
+        // Case on method
         if (method == "subdivide") {
-            std::cerr << "Error: Mesh loop subdivision operation not yet supported" << std::endl;
+            for (int i = 0; i < subdivide_num_iterations; i++) {
+                m.loopSubdivide();
+            }
+            m.validate();
+            m.convert();
         }
         else if (method == "simplify") {
             // Determine how many faces to remove
@@ -128,6 +133,8 @@ int main(int argc, char *argv[])
                 faces_to_remove = std::max(num_mesh_faces - target_faces, 0);
             }
             m.simplify(faces_to_remove);
+            m.validate();
+            m.convert();
         }
         else if (method == "remesh") {
             std::cerr << "Error: Mesh isotropic remeshing operation not yet supported" << std::endl;

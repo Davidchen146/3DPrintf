@@ -39,40 +39,27 @@ bool MeshOperations::isFaceSupported(const int face, const Eigen::Vector3f &dire
 
 // Determine if a face is overhanging and requires support
 bool MeshOperations::isFaceOverhanging(const int face, const Eigen::Vector3f &direction) {
-    std::unordered_map<int, Face *>& faceMap = _mesh.getFaceMap();
-    assert(faceMap.contains(face));
-    Eigen::Vector3f faceNormal = faceMap[face]->normal;
-
+    Eigen::Vector3f faceNormal = getFaceNormal(face);
     // get angle between face normal and printing direction (in degrees)
     double angle = acos(faceNormal.dot(direction) / (faceNormal.norm() * direction.norm())) * 180 / M_PI;
-
     // compare with tolerance angle
     return angle > _printer_tolerance_angle;
 }
 
 // Determine if an edge is overhanging and requires support
 bool MeshOperations::isEdgeOverhanging(const std::pair<int, int> &edge, const Eigen::Vector3f &direction) {
-    // find the shared edge between the two faces
-    std::unordered_map<std::pair<int, int>, Edge*, PairHash>& edgeMap = _mesh.getEdgeMap();
-    assert(edgeMap.contains(edge));
-
+    Eigen::Vector3f edgeNormal = getEdgeNormal(edge);
     // get angle between edge normal and printing direction (in degrees)
-    Eigen::Vector3f edgeNormal = edgeMap[edge]->normal;
     double angle = acos(edgeNormal.dot(direction) / (edgeNormal.norm() * direction.norm())) * 180 / M_PI;
-
     // compare with tolerance angle
     return angle > _printer_tolerance_angle;
 }
 
 // Determine if a vertex is overhanging and requires support
 bool MeshOperations::isVertexOverhanging(const int vertex, const Eigen::Vector3f &direction) {
-    std::unordered_map<int, Vertex *>& vertexMap = _mesh.getVertexMap();
-    assert(vertexMap.contains(vertex));
-    Eigen::Vector3f vertexNormal = vertexMap[vertex]->normal;
-
+    Eigen::Vector3f vertexNormal = getVertexNormal(vertex);
     // get angle between vertex normal and printing direction (in degrees)
     double angle = acos(vertexNormal.dot(direction) / (vertexNormal.norm() * direction.norm())) * 180 / M_PI;
-
     // compare with tolerance angle
     return angle > _printer_tolerance_angle;
 }

@@ -3,26 +3,18 @@
 
 // Computes normal for a face
 Eigen::Vector3f MeshOperations::getFaceNormal(const int &face) {
-    assert(face >= 0 && face < _faces.size());
-
-    // Obtain 3 vertices of the face
-    Eigen::Vector3i face_vertices = _faces[face];
-    Eigen::Vector3f A = _vertices[face_vertices(0)];
-    Eigen::Vector3f B = _vertices[face_vertices(1)];
-    Eigen::Vector3f C = _vertices[face_vertices(2)];
-
-    // Create the edges that define the cross product (these lie on the plane of the face)
-    Eigen::Vector3f AB = B - A;
-    Eigen::Vector3f AC = C - A;
-
-    // Do the cross product (this is a normal vector to the face)
-    Eigen::Vector3f cross = AC.cross(AB);
-    return cross.normalized();
+    std::unordered_map<int, Face *>& faceMap = _mesh.getFaceMap();
+    assert(faceMap.contains(face));
+    Eigen::Vector3f faceNormal = faceMap[face]->normal;
+    return faceNormal;
 }
 
 // Normal computation for edge
 Eigen::Vector3f MeshOperations::getEdgeNormal(const std::pair<int, int> &edge) {
-    return Eigen::Vector3f(0.0f, 0.0f, 0.0f);
+    std::unordered_map<std::pair<int, int>, Edge*, PairHash>& edgeMap = _mesh.getEdgeMap();
+    assert(edgeMap.contains(edge));
+    Eigen::Vector3f edgeNormal = edgeMap[edge]->normal;
+    return edgeNormal;
 }
 
 // Normal computation for vertex
