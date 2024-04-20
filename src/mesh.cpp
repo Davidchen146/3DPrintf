@@ -115,6 +115,7 @@ void Mesh::preProcess() {
     }
 
     // NOTE: consider whether these normals should be area weighted
+    // Imma go with "No"
 
     // compute vertex normals (by interpolating from neighboring triangles)
     // do these normals need to be weighted by the area? --> they currently are not
@@ -1078,14 +1079,29 @@ vector<Vector3i> Mesh::getFaces() {
     return _faces;
 }
 
-unordered_map<int, Vertex*>& Mesh::getVertexMap() {
+const unordered_map<int, Vertex*>& Mesh::getVertexMap() {
     return _vertexMap;
 }
 
-unordered_map<int, Face*>& Mesh::getFaceMap() {
+const unordered_map<int, Face*>& Mesh::getFaceMap() {
     return _faceMap;
 }
 
-unordered_map<pair<int, int>, Edge*, PairHash>& Mesh::getEdgeMap() {
+const unordered_map<pair<int, int>, Edge*, PairHash>& Mesh::getEdgeMap() {
     return _edgeMap;
+}
+
+const Vertex* Mesh::getVertex(int vertex) {
+    assert(_vertexMap.contains(vertex));
+    return _vertexMap[vertex];
+}
+
+const Face* Mesh::getFace(int face) {
+    assert(_faceMap.contains(face));
+    return _faceMap[face];
+}
+
+const Edge* Mesh::getEdge(std::pair<int, int> edge) {
+    assert(_edgeMap.contains(edge));
+    return _edgeMap[edge];
 }

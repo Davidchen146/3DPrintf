@@ -114,11 +114,17 @@ public:
 
     void testAmbientOcclusion();
 
+    // Accessors for collections of elements
     std::vector<Eigen::Vector3f> getVertices();
     std::vector<Eigen::Vector3i> getFaces();
-    std::unordered_map<int, Vertex*>& getVertexMap();
-    std::unordered_map<int, Face*>& getFaceMap();
-    std::unordered_map<std::pair<int, int>, Edge*, PairHash>& getEdgeMap();
+    const std::unordered_map<int, Vertex*>& getVertexMap();
+    const std::unordered_map<int, Face*>& getFaceMap();
+    const std::unordered_map<std::pair<int, int>, Edge*, PairHash>& getEdgeMap();
+
+    // Accessors for individual elements
+    const Vertex* getVertex(int vertex);
+    const Face* getFace(int face);
+    const Edge* getEdge(std::pair<int, int> edge);
 
 private:
     int globalVertexIndex;

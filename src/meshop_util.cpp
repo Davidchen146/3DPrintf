@@ -3,25 +3,19 @@
 
 // Computes normal for a face
 Eigen::Vector3f MeshOperations::getFaceNormal(const int &face) {
-    std::unordered_map<int, Face *>& faceMap = _mesh.getFaceMap();
-    assert(faceMap.contains(face));
-    Eigen::Vector3f faceNormal = faceMap[face]->normal;
+    Eigen::Vector3f faceNormal = _mesh.getFace(face)->normal;
     return faceNormal;
 }
 
 // Normal computation for edge
 Eigen::Vector3f MeshOperations::getEdgeNormal(const std::pair<int, int> &edge) {
-    std::unordered_map<std::pair<int, int>, Edge*, PairHash>& edgeMap = _mesh.getEdgeMap();
-    assert(edgeMap.contains(edge));
-    Eigen::Vector3f edgeNormal = edgeMap[edge]->normal;
+    Eigen::Vector3f edgeNormal = _mesh.getEdge(edge)->normal;
     return edgeNormal;
 }
 
 // Normal computation for vertex
 Eigen::Vector3f MeshOperations::getVertexNormal(const int &vertex) {
-    std::unordered_map<int, Vertex *>& vertexMap = _mesh.getVertexMap();
-    assert(vertexMap.contains(vertex));
-    Eigen::Vector3f vertexNormal = vertexMap[vertex]->normal;
+    Eigen::Vector3f vertexNormal = _mesh.getVertex(vertex)->normal;
     return vertexNormal;
 }
 
