@@ -78,6 +78,7 @@ private:
 
     MatrixXf _V;
     MatrixXi _F;
+    MatrixXd _N;
     Eigen::MatrixXd _geodesicDistances;
     Eigen::MatrixXd _angularDistances;
     double _avgGeodesic;
@@ -172,7 +173,7 @@ private:
 
     // Initial Segmentation parameters
     int _num_random_dir_samples;
-    double _printer_tolerance_angle; // Measured in degrees
+    double _printer_tolerance_angle; // Measured in RADIANS (specified as degrees)
     double _ambient_occlusion_supports_alpha;
     double _ambient_occlusion_smoothing_alpha;
     double _smoothing_width_t;

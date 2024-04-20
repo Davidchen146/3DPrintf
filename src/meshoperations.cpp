@@ -19,7 +19,7 @@ MeshOperations::MeshOperations(Mesh m) {
 
     // Initial segmentation parameters
     _num_random_dir_samples = 512;
-    _printer_tolerance_angle = 55;
+    _printer_tolerance_angle = 55.f / 180.f * std::numbers::pi; // 55 degrees in radians
     _ambient_occlusion_supports_alpha = 0.5;
     _ambient_occlusion_smoothing_alpha = 0.5;
     _smoothing_width_t = 0.3;
@@ -71,7 +71,9 @@ void MeshOperations::setInitialSegmentationParameters(int num_random_dir_samples
     }
 
     if (printer_tolerance_angle != 0.0) {
-        _printer_tolerance_angle = printer_tolerance_angle;
+        // Convert the parameter to radians
+        double angle_rads = printer_tolerance_angle / 180.f * std::numbers::pi;
+        _printer_tolerance_angle = angle_rads;
     }
 
     if (ambient_occlusion_supports_alpha != 0.0) {
@@ -108,6 +110,8 @@ void MeshOperations::preprocess() {
     _geodesicDistances.setZero();
     _angularDistances.setZero();
     bbd = (_V.colwise().maxCoeff()- _V.colwise().minCoeff()).norm();
+
+    igl::per_vertex_normals(_V, _F, _N);
 
     _weightedDistances.setZero();
     makeAdjacency();
