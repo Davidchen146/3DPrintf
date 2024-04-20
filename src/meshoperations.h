@@ -102,6 +102,8 @@ private:
     bool isEdgeOverhanging(const std::pair<int, int> &edge, const Eigen::Vector3f &direction);
     bool isVertexOverhanging(const int vertex, const Eigen::Vector3f &direction);
     bool isFaceFooted(const int face, const Eigen::Vector3f &direction, const std::vector<std::unordered_set<int>> &patches);
+    void populateSupportMatrix();
+    void populateSmoothingMatrix();
     // Compute support coefficient for a face in direction
     double computeSupportCoefficient(const int face, const Eigen::Vector3f &direction,
                                      const std::vector<std::unordered_set<int>> &patches);
@@ -177,6 +179,8 @@ private:
     double _ambient_occlusion_supports_alpha;
     double _ambient_occlusion_smoothing_alpha;
     double _smoothing_width_t;
+    Eigen::MatrixXd _supportCoefficients;
+    Eigen::MatrixXd _smoothingCoefficients;
 };
 
 #endif // MESHOPERATIONS_H

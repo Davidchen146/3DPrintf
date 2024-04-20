@@ -124,3 +124,11 @@ void MeshOperations::generatePrintableComponents(const std::vector<std::vector<i
                                                  std::vector<Eigen::Vector3f> &component_printing_directions) {
     return;
 }
+
+void MeshOperations::populateSupportMatrix() {
+    return;
+}
+
+void MeshOperations::populateSmoothingMatrix() {
+    return;
+}
