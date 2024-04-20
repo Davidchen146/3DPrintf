@@ -9,6 +9,7 @@
 
 #include <unordered_map>
 #include <limits>
+#include <numbers>
 
 using namespace Eigen;
 using namespace std;

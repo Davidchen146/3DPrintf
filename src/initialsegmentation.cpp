@@ -15,10 +15,12 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
 // Subroutines used for Phase 2 (Initial Segmentation)
 // Sample random directions
 void MeshOperations::sampleRandomDirections(std::vector<Eigen::Vector3f> &directions) {
+    directions.clear();
+
     for (int i = 0; i < _num_random_dir_samples; i++) {
         // randomly sample from the sphere
-        float phi = 2.f * M_PI * (float) arc4random() / (float) UINT32_MAX;
-        float theta = acos(2 * ((float) arc4random() / (float) UINT32_MAX) - 1);
+        float phi = 2.f * std::numbers::pi * (float) rand() / (float) UINT32_MAX;
+        float theta = acos(2 * ((float) rand() / (float) UINT32_MAX) - 1);
 
         // spherical to rectangular converion (with radius = 1)
         float x = sin(theta) * cos(phi);
@@ -41,7 +43,7 @@ bool MeshOperations::isFaceSupported(const int face, const Eigen::Vector3f &dire
 bool MeshOperations::isFaceOverhanging(const int face, const Eigen::Vector3f &direction) {
     Eigen::Vector3f faceNormal = getFaceNormal(face);
     // get angle between face normal and printing direction (in degrees)
-    double angle = acos(faceNormal.dot(direction) / (faceNormal.norm() * direction.norm())) * 180 / M_PI;
+    double angle = acos(faceNormal.dot(direction) / (faceNormal.norm() * direction.norm())) * 180 / std::numbers::pi;
     // compare with tolerance angle
     return angle > _printer_tolerance_angle;
 }
@@ -50,7 +52,7 @@ bool MeshOperations::isFaceOverhanging(const int face, const Eigen::Vector3f &di
 bool MeshOperations::isEdgeOverhanging(const std::pair<int, int> &edge, const Eigen::Vector3f &direction) {
     Eigen::Vector3f edgeNormal = getEdgeNormal(edge);
     // get angle between edge normal and printing direction (in degrees)
-    double angle = acos(edgeNormal.dot(direction) / (edgeNormal.norm() * direction.norm())) * 180 / M_PI;
+    double angle = acos(edgeNormal.dot(direction) / (edgeNormal.norm() * direction.norm())) * 180 / std::numbers::pi;
     // compare with tolerance angle
     return angle > _printer_tolerance_angle;
 }
@@ -59,7 +61,7 @@ bool MeshOperations::isEdgeOverhanging(const std::pair<int, int> &edge, const Ei
 bool MeshOperations::isVertexOverhanging(const int vertex, const Eigen::Vector3f &direction) {
     Eigen::Vector3f vertexNormal = getVertexNormal(vertex);
     // get angle between vertex normal and printing direction (in degrees)
-    double angle = acos(vertexNormal.dot(direction) / (vertexNormal.norm() * direction.norm())) * 180 / M_PI;
+    double angle = acos(vertexNormal.dot(direction) / (vertexNormal.norm() * direction.norm())) * 180 / std::numbers::pi;
     // compare with tolerance angle
     return angle > _printer_tolerance_angle;
 }
