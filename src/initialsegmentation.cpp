@@ -100,6 +100,7 @@ bool MeshOperations::isFaceFooted(const int face, const Eigen::Vector3f &directi
 // Compute support coefficient for a face in direction
 double MeshOperations::computeSupportCoefficient(const int face, const Eigen::Vector3f &direction,
                                                  const std::vector<std::unordered_set<int>> &patches) {
+    // Area * ambient occlusion (exponentiated)
     return 0.0;
 }
 

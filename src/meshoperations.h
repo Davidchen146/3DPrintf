@@ -78,7 +78,7 @@ private:
 
     MatrixXf _V;
     MatrixXi _F;
-    MatrixXd _N;
+
     Eigen::MatrixXd _geodesicDistances;
     Eigen::MatrixXd _angularDistances;
     double _avgGeodesic;

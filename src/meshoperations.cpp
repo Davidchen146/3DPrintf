@@ -111,8 +111,6 @@ void MeshOperations::preprocess() {
     _angularDistances.setZero();
     bbd = (_V.colwise().maxCoeff()- _V.colwise().minCoeff()).norm();
 
-    igl::per_vertex_normals(_V, _F, _N);
-
     _weightedDistances.setZero();
     makeAdjacency();
     std::cout << "Performing geodesic distance computations" << std::endl;
