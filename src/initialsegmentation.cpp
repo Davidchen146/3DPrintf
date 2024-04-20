@@ -42,28 +42,52 @@ bool MeshOperations::isFaceSupported(const int face, const Eigen::Vector3f &dire
 // Determine if a face is overhanging and requires support
 bool MeshOperations::isFaceOverhanging(const int face, const Eigen::Vector3f &direction) {
     Eigen::Vector3f faceNormal = getFaceNormal(face);
-    // get angle between face normal and printing direction (in degrees)
-    double angle = acos(faceNormal.dot(direction) / (faceNormal.norm() * direction.norm())) * 180 / std::numbers::pi;
-    // compare with tolerance angle
-    return angle > _printer_tolerance_angle;
+
+    // No supports on inside of shell (normals should be pointing towards printing direction)
+    double dot = faceNormal.dot(direction);
+    if (dot > 0) {
+        return false;
+    }
+
+    // The face needs support if its angle is more than 90 degrees + printing tolerance angle away from the direction
+    double angle = acos(dot) / (faceNormal.norm() * direction.norm());
+
+    // compare with tolerance angle + right angle (90 degrees or 1/2 pi)
+    return angle > _printer_tolerance_angle + (std::numbers::pi / 2);
 }
 
 // Determine if an edge is overhanging and requires support
 bool MeshOperations::isEdgeOverhanging(const std::pair<int, int> &edge, const Eigen::Vector3f &direction) {
     Eigen::Vector3f edgeNormal = getEdgeNormal(edge);
-    // get angle between edge normal and printing direction (in degrees)
-    double angle = acos(edgeNormal.dot(direction) / (edgeNormal.norm() * direction.norm())) * 180 / std::numbers::pi;
-    // compare with tolerance angle
-    return angle > _printer_tolerance_angle;
+
+    // No supports on inside of shell (normals should be pointing towards printing direction)
+    double dot = edgeNormal.dot(direction);
+    if (dot > 0) {
+        return false;
+    }
+
+    // The edge needs support if its angle is more than 90 degrees + printing tolerance angle away from the direction
+    double angle = acos(dot) / (edgeNormal.norm() * direction.norm());
+
+    // compare with tolerance angle + right angle (90 degrees or 1/2 pi)
+    return angle > _printer_tolerance_angle + (std::numbers::pi / 2);
 }
 
 // Determine if a vertex is overhanging and requires support
 bool MeshOperations::isVertexOverhanging(const int vertex, const Eigen::Vector3f &direction) {
     Eigen::Vector3f vertexNormal = getVertexNormal(vertex);
-    // get angle between vertex normal and printing direction (in degrees)
-    double angle = acos(vertexNormal.dot(direction) / (vertexNormal.norm() * direction.norm())) * 180 / std::numbers::pi;
-    // compare with tolerance angle
-    return angle > _printer_tolerance_angle;
+
+    // No supports on inside of shell (normals should be pointing towards printing direction)
+    double dot = vertexNormal.dot(direction);
+    if (dot > 0) {
+        return false;
+    }
+
+    // The vertex needs support if its angle is more than 90 degrees + printing tolerance angle away from the direction
+    double angle = acos(dot) / (vertexNormal.norm() * direction.norm());
+
+    // compare with tolerance angle + right angle (90 degrees or 1/2 pi)
+    return angle > _printer_tolerance_angle + (std::numbers::pi / 2);
 }
 
 // Determine if a face is footing a supported face and requires support
