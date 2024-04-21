@@ -248,8 +248,8 @@ double MeshOperations::getEdgeAO(const std::pair<int, int> &edge) {
 
     edge_coords.row(0) = _V.row(edge.first);
     edge_coords.row(1) = _V.row(edge.second);
-    edge_normals.row(0) = getVertexNormal(edge.first);
-    edge_normals.row(1) = getVertexNormal(edge.second);
+    edge_normals.row(0) = getEdgeNormal(edge);
+    edge_normals.row(1) = getEdgeNormal(edge);
 
     igl::embree::ambient_occlusion(_V, _F, edge_coords, edge_normals, _ambient_occlusion_samples, AO);
     return AO.mean();
@@ -265,9 +265,9 @@ double MeshOperations::getFaceAO(const int &face) {
     face_coords.row(0) = _V.row(_F.row(face)(0));
     face_coords.row(1) = _V.row(_F.row(face)(1));
     face_coords.row(2) = _V.row(_F.row(face)(2));
-    face_normals.row(0) = getVertexNormal(_F.row(face)(0));
-    face_normals.row(1) = getVertexNormal(_F.row(face)(1));
-    face_normals.row(1) = getVertexNormal(_F.row(face)(2));
+    face_normals.row(0) = getFaceNormal(face);
+    face_normals.row(1) = getFaceNormal(face);
+    face_normals.row(2) = getFaceNormal(face);
 
     igl::embree::ambient_occlusion(_V, _F, face_coords, face_normals, _ambient_occlusion_samples, AO);
     return AO.mean();

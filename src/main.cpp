@@ -77,6 +77,7 @@ int main(int argc, char *argv[])
         // "Initial/ambient_occlusion_smoothing_alpha": alpha coefficient for ambient occlusion computations for smoothing cost
         // "Initial/smoothing_width_t": t coefficient for smoothing cost (measures size of cut)
         // "Initial/ambient_occlusion_samples": number of samples to cast for ambient occlusion; more samples is more accurate but takes longer
+        // "Initial/footing_samples": number of samples to cast for footing faces
         // Extension: specify faces to hardcode cost values for support (or a region of faces)
     // Refined:
         // TODO: Implement!
@@ -105,7 +106,7 @@ int main(int argc, char *argv[])
     // Determine operation
     // Control flow flag to determine if doing 3Dprintf or mesh operations
     bool is_mesh_operation = method == "subdivide" || method == "simplify" || method == "remesh";
-    bool is_3d_print_operation = method == "preprocess" || method == "oversegmentation" || method == "initial" || method == "refined" || method == "fabricate";
+    bool is_3d_print_operation = method == "preprocess" || method == "oversegmentation" || method == "initial" || method == "refined" || method == "fabricate" || method == "sanity";
 
     // Mesh project operations
     if (is_mesh_operation) {
@@ -203,6 +204,33 @@ int main(int argc, char *argv[])
         }
         else if (method == "fabricate") {
             std::cerr << "Error: This phase hasn't been implemented yet" << std::endl;
+        }
+        else if (method == "sanity") {
+            m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
+            m_o.preprocess();
+            m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
+
+            QString sanity_method  = settings.value("Global/sanity_method").toString();
+
+            if (sanity_method == "ao_face") {
+                m_o.visualizeFaceAO();
+            } else if (sanity_method == "ao_edge") {
+                m_o.visualizeEdgeAO();
+            }
+
+
+            // things to check
+
+            // pick one patch, get its neighboring patches, visualize coefficients for smoothing cost
+
+            // pick one printing direction, for this printing direction compute the cost of each patch, then visualize these costs (ex: higher costs are red)
+
+            // visualize ambient occlusion (get something similar to figure 5 from the paper)
+
+            // ambient occlusion of faces
+
+            // ambient occlusion of edges
+
         }
     }
     else {

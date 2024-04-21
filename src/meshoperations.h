@@ -3,6 +3,7 @@
 
 #include "src/mesh.h"
 #include "Eigen/StdVector"
+#include "ortools/linear_solver/linear_solver.h"
 
 #include <igl/exact_geodesic.h>
 #include <Eigen/Core>
@@ -16,7 +17,7 @@
 
 using namespace Eigen;
 using namespace std;
-
+using namespace operations_research;
 class MeshOperations
 {
 
@@ -69,6 +70,12 @@ public:
                                      std::vector<std::unordered_set<int>> &printable_components,
                                      std::vector<Eigen::Vector3f> &printing_directions);
 
+    // just for sanity checking
+    void visualizeFaceAO();
+    void visualizeEdgeAO();
+
+
+
 private:
     Mesh _mesh;
     std::vector<Eigen::Vector3f> _vertices;
@@ -118,13 +125,10 @@ private:
     // Compute smoothing coefficient between two sets of faces
     double computeSmoothingCoefficient(const std::unordered_set<int> &patch_one,
                                        const std::unordered_set<int> &patch_two);
-    // Interface to ILP
-    void assignPrintingDirections(const std::vector<std::vector<int>> &patches,
-                                  const std::vector<Eigen::Vector3f> &printing_directions,
-                                  std::vector<Eigen::Vector3f> &patch_printing_directions);
     // Assign results of the ILP to something we can return out
-    void generatePrintableComponents(const std::vector<std::vector<int>> &patches,
+    void generatePrintableComponents(const std::vector<std::unordered_set<int>> &patches,
                                      std::vector<unordered_set<int>> &printable_components,
+                                     const std::vector<std::vector<const MPVariable*>> &solutions,
                                      const std::vector<Eigen::Vector3f> &patch_printing_directions,
                                      std::vector<Eigen::Vector3f> &component_printing_directions);
 
@@ -167,6 +171,9 @@ private:
     double getTotalGeodesicDistanceToSet(const int &face, const std::unordered_set<int> &faces);
     double getTotalWeightedDistanceToSet(const int &face, const std::unordered_set<int> &faces);
 
+    // Support for ILP when doing initial segmentation
+    void addSupportCosts(std::vector<std::vector<const MPVariable*>> &variables, const std::vector<std::unordered_set<int>> &patches);
+    void addSmoothingCosts(std::vector<std::vector<const MPVariable*>> &variables);
 
     double bbd; // bounding box diagonal
     Eigen::MatrixXd _weightedDistances;
@@ -193,6 +200,7 @@ private:
     Eigen::MatrixXd _supportCoefficients;
     int _ambient_occlusion_samples;
     int _footing_samples;
+    operations_research::MPSolver* _solver;
 
     // Fields for raytracing
     igl::embree::EmbreeIntersector _intersector;
