@@ -17,7 +17,7 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
 
     // Step 2: Establish data structures to work with
     // these populate _supportCoefficients, _smoothingCoefficients respectively
-    populateSupportMatrix();
+    populateSupportMatrix(patches, directions);
     populateSmoothingMatrix();
 }
 
@@ -134,13 +134,52 @@ void MeshOperations::generatePrintableComponents(const std::vector<std::vector<i
     return;
 }
 
-void MeshOperations::populateSupportMatrix() {
+void MeshOperations::populateSupportMatrix(const std::vector<std::unordered_set<int>> &patches,
+                                           std::vector<Eigen::Vector3f> &directions) {
     // Goal: populate the PxD _supportCoefficients matrix with coefficients, w_ij
     // let P (N in paper) be size of set of patches
     // let D (h in paper) be size of set of directions
 
+    _supportCoefficients.resize(patches.size(), directions.size());
+    _supportCoefficients.setZero();
+
     // this coefficient is area of faces needing support, weighted by ambient occlusion
 
+    // following notations from paper
+    for (Eigen::Vector3f i : directions) {
+        for (std::unordered_set<int> j : patches) {
+            // Goal: sum the cost function over the faces in this patch
+            float costSum = 0.0f;
+            for (int f : j) { // over the faces
+
+                // Todo: determine whether face requires support and needs to incur a cost
+
+                // case a: face normal has angle w/ base greater than a threshold (paper uses 55)
+                if (isFaceOverhanging(f, i)) continue;
+                // get the edges to check each of them for overhang
+                Face* face = _mesh.getFaceMap().at(f);
+                int v1 = face->halfedge->source->index;
+                int v2 = face->halfedge->next->source->index;
+                int v3 = face->halfedge->next->next->source->index;
+                if (isVertexOverhanging(v1, i) || isVertexOverhanging(v2, i) || isVertexOverhanging(v3, i)) continue;
+                // establish pairs in ascending order to ensure compatibility
+                std::pair<int, int> e1 = (v1 < v2) ? std::make_pair(v1, v2) : std::make_pair(v2, v1);
+                std::pair<int, int> e2 = (v2 < v3) ? std::make_pair(v2, v3) : std::make_pair(v3, v2);
+                std::pair<int, int> e3 = (v3 < v1) ? std::make_pair(v3, v1) : std::make_pair(v1, v3);
+                if (isEdgeOverhanging(e1, i) || isEdgeOverhanging(e2, i) || isEdgeOverhanging(e3, i)) continue;
+
+
+
+
+            }
+
+
+
+
+        }
+
+
+    }
 
 
 }

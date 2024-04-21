@@ -68,12 +68,12 @@ private:
     Mesh _mesh;
     std::vector<Eigen::Vector3f> _vertices;
     std::vector<Eigen::Vector3i> _faces;
-  
+
     int numVertices;
     int numFaces;
     // Also the number of faces, I think?
     int _n;
-  
+
     std::vector<std::vector<bool>> _adjacency;
 
     MatrixXf _V;
@@ -102,7 +102,8 @@ private:
     bool isEdgeOverhanging(const std::pair<int, int> &edge, const Eigen::Vector3f &direction);
     bool isVertexOverhanging(const int vertex, const Eigen::Vector3f &direction);
     bool isFaceFooted(const int face, const Eigen::Vector3f &direction, const std::vector<std::unordered_set<int>> &patches);
-    void populateSupportMatrix();
+    void populateSupportMatrix(const std::vector<std::unordered_set<int>> &patches,
+                               std::vector<Eigen::Vector3f> &directions);
     void populateSmoothingMatrix();
     // Compute support coefficient for a face in direction
     double computeSupportCoefficient(const int face, const Eigen::Vector3f &direction,
