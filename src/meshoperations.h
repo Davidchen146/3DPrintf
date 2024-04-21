@@ -167,8 +167,10 @@ private:
     std::pair<double, int> getMaxWeightedDistanceToSet(const int &face, const std::unordered_set<int> &faces);
     double getTotalGeodesicDistanceToSet(const int &face, const std::unordered_set<int> &faces);
     double getTotalWeightedDistanceToSet(const int &face, const std::unordered_set<int> &faces);
+
+    // Support for ILP when doing initial segmentation
     void addSupportCosts(std::vector<std::vector<const MPVariable*>> &variables, const std::vector<std::unordered_set<int>> &patches);
-    void addSmoothingCosts(const std::vector<std::unordered_set<int>> &patches);
+    void addSmoothingCosts(std::vector<std::vector<const MPVariable*>> &variables);
 
     double bbd; // bounding box diagonal
     Eigen::MatrixXd _weightedDistances;

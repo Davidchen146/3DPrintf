@@ -120,7 +120,10 @@ void MeshOperations::findFootingFaces(const int face, const Eigen::Vector3f &dir
 double MeshOperations::computeSupportCoefficient(const int face, const Eigen::Vector3f &direction,
                                                  const std::vector<std::unordered_set<int>> &patches) {
     // Area * ambient occlusion (exponentiated)
-    return 0.0;
+    // get area
+    double area = getArea(face);
+    double faceAO = getFaceAO(face);
+    return area * std::pow(faceAO, _ambient_occlusion_smoothing_alpha);
 }
 
 // Compute smoothing coefficient between two sets of faces
@@ -166,18 +169,22 @@ void MeshOperations::populateSupportMatrix(const std::vector<std::unordered_set<
     // this coefficient is area of faces needing support, weighted by ambient occlusion
 
     // following notations from paper
-    for (Eigen::Vector3f i : directions) {
-        for (std::unordered_set<int> j : patches) {
+    //for (Eigen::Vector3f i : directions) {
+    for (int dirInd = 0; dirInd < directions.size(); dirInd++) {
+        // for (std::unordered_set<int> j : patches) {
+        for (int patchInd = 0; patchInd < patches.size(); patchInd++) {
+            Eigen::Vector3f dir = directions[dirInd];
+            std::unordered_set<int> currPatch = patches[patchInd];
             // Goal: sum the cost function over the faces in this patch
             double costSum = 0.0f;
-            //std::unordered_set<int>
+            std::unordered_set<int> footedFaces;
 
-            for (int f : j) { // over the faces
+            for (int f : currPatch) { // over the faces
 
                 // Todo: determine whether face requires support and needs to incur a cost
                 bool costNeeded = false;
                 // case a: face normal has angle w/ base greater than a threshold (paper uses 55)
-                if (isFaceOverhanging(f, i)) costNeeded = true;
+                if (isFaceOverhanging(f, dir)) costNeeded = true;
                 else {
                     // get the edges to check each of them for overhang
                     Face* face = _mesh.getFaceMap().at(f);
@@ -188,37 +195,26 @@ void MeshOperations::populateSupportMatrix(const std::vector<std::unordered_set<
                     std::pair<int, int> e2 = (v2 < v3) ? std::make_pair(v2, v3) : std::make_pair(v3, v2);
                     std::pair<int, int> e3 = (v3 < v1) ? std::make_pair(v3, v1) : std::make_pair(v1, v3);
                     // case b, c: edge or vertex normals form  angle w/ base greater than a threshold (paper uses 55)
-                    if (isVertexOverhanging(v1, i) || isVertexOverhanging(v2, i) || isVertexOverhanging(v3, i)) costNeeded = true;
-                    else if (isEdgeOverhanging(e1, i) || isEdgeOverhanging(e2, i) || isEdgeOverhanging(e3, i)) costNeeded = true;
+                    if (isVertexOverhanging(v1, dir) || isVertexOverhanging(v2, dir) || isVertexOverhanging(v3, dir)) costNeeded = true;
+                    else if (isEdgeOverhanging(e1, dir) || isEdgeOverhanging(e2, dir) || isEdgeOverhanging(e3, dir)) costNeeded = true;
                 }
                 // Now, handle getting the cost and seeing if there is another part of the mesh that will
                 // have to act as supports now.
                 if (costNeeded) {
-                    double cost = computeSupportCoefficient(f, i, patches);
-
-
-
-
+                    costSum += computeSupportCoefficient(f, dir, patches);
+                    std::vector<int> newFootedFaces;
+                    findFootingFaces(f, dir, newFootedFaces);
+                    for (int newFace : newFootedFaces) footedFaces.insert(newFace);
                 }
-
-
-
-
-
-                // check
-
-
             }
-
-
-
-
+            // Next -- loop over the footedFaces to have their corresponding matrix entry
+            // account for their being used as footing.
+            for (int footedFace : footedFaces) {
+                costSum += computeSupportCoefficient(footedFace, dir, patches);
+            }
+            _supportCoefficients(patchInd, dirInd) = costSum;
         }
-
-
     }
-
-
 }
 
 // REMEMBER TO DO SECOND LOOP FOR THE SUPPORTED FACES
@@ -266,6 +262,41 @@ void MeshOperations::addSupportCosts(std::vector<std::vector<const MPVariable*>>
     }
 }
 
-void MeshOperations::addSmoothingCosts(const std::vector<std::unordered_set<int>> &patches) {
+void MeshOperations::addSmoothingCosts(std::vector<std::vector<const MPVariable*>> &variables) {
+    const double infinity = _solver->infinity();
 
+    // For each pair of adjacent faces...
+    for (const auto& [patch_pair, smoothing_cost] : _smoothingCoefficients) {
+        // For each Direction:
+        for (int direction = 0; direction < _num_random_dir_samples; direction++) {
+            // Create a new variable corresponding to the relevant XOR in the solver
+            std::string var_name = "p" + std::to_string(patch_pair.first) + "d" + std::to_string(direction) + " " + "p" + std::to_string(patch_pair.second) + "d" + std::to_string(direction);
+            operations_research::MPVariable* const new_xor_var = _solver->MakeIntVar(0.0, 1.0, var_name);
+
+            // Set coeffs to the lookup in the map
+            operations_research::MPObjective* const objective = _solver->MutableObjective();
+            objective->SetCoefficient(new_xor_var, smoothing_cost);
+
+            // Set constraints on the variable so that it will take the xor value (we need 4)
+            operations_research::MPConstraint* const c1 = _solver->MakeRowConstraint(0.0, infinity, var_name + " v: -1, p1d: 1, p2d: 1 geq 0");
+            c1->SetCoefficient(new_xor_var, -1.0);
+            c1->SetCoefficient(variables[patch_pair.first][direction], 1.0);
+            c1->SetCoefficient(variables[patch_pair.second][direction], 1.0);
+
+            operations_research::MPConstraint* const c2 = _solver->MakeRowConstraint(0.0, infinity, var_name + " v: 1, p1d: -1, p2d: 1 geq 0");
+            c2->SetCoefficient(new_xor_var, 1.0);
+            c2->SetCoefficient(variables[patch_pair.first][direction], -1.0);
+            c2->SetCoefficient(variables[patch_pair.second][direction], 1.0);
+
+            operations_research::MPConstraint* const c3 = _solver->MakeRowConstraint(0.0, infinity, var_name + " v: 1, p1d: 1, p2d: -1 geq 0");
+            c3->SetCoefficient(new_xor_var, 1.0);
+            c3->SetCoefficient(variables[patch_pair.first][direction], 1.0);
+            c3->SetCoefficient(variables[patch_pair.second][direction], -1.0);
+
+            operations_research::MPConstraint* const c4 = _solver->MakeRowConstraint(-2.0, infinity, var_name + " v: -1, p1d: -1, p2d: -1 geq 2");
+            c4->SetCoefficient(new_xor_var, -1.0);
+            c4->SetCoefficient(variables[patch_pair.first][direction], -1.0);
+            c4->SetCoefficient(variables[patch_pair.second][direction], -1.0);
+        }
+    }
 }
