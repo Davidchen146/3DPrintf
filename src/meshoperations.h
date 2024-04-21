@@ -70,6 +70,12 @@ public:
                                      std::vector<std::unordered_set<int>> &printable_components,
                                      std::vector<Eigen::Vector3f> &printing_directions);
 
+    // just for sanity checking
+    void visualizeFaceAO();
+    void visualizeEdgeAO();
+
+
+
 private:
     Mesh _mesh;
     std::vector<Eigen::Vector3f> _vertices;
