@@ -109,7 +109,6 @@ private:
     // Sample random directions
     void sampleRandomDirections(std::vector<Eigen::Vector3f> &directions);
     // Determine if a face should be supported
-    bool isFaceSupported(const int face, const Eigen::Vector3f &direction, const std::vector<std::unordered_set<int>> &patches);
     bool isFaceOverhanging(const int face, const Eigen::Vector3f &direction);
     bool isEdgeOverhanging(const std::pair<int, int> &edge, const Eigen::Vector3f &direction);
     bool isVertexOverhanging(const int vertex, const Eigen::Vector3f &direction);
@@ -120,8 +119,7 @@ private:
     void findFootingFaces(const int face, const Eigen::Vector3f &direction, std::vector<int> &footing_faces);
     void populateSmoothingMatrix(const std::vector<std::unordered_set<int>> &patches);
     // Compute support coefficient for a face in direction
-    double computeSupportCoefficient(const int face, const Eigen::Vector3f &direction,
-                                     const std::vector<std::unordered_set<int>> &patches);
+    double computeSupportCoefficient(const int &face);
     // Compute smoothing coefficient between two sets of faces
     double computeSmoothingCoefficient(const std::unordered_set<int> &patch_one,
                                        const std::unordered_set<int> &patch_two);

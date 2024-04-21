@@ -17,7 +17,9 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
 
     // Step 2: Establish data structures to work with
     // these populate _supportCoefficients, _smoothingCoefficients respectively
+    std::cout << "Populating matrix with cost of supports" << std::endl;
     populateSupportMatrix(patches, directions);
+    std::cout << "Populating matrix with smoothing cost between pairs" << std::endl;
     populateSmoothingMatrix(patches);
 
     // OK WE ARE GOING TO DO THE THING
@@ -43,6 +45,7 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
     assert(supportVariables + (_smoothingCoefficients.size() * _num_random_dir_samples) == totalVariables);
 
     // SOLVE THIS
+    std::cout << "Solving initial segmentation optimization. This may take a while..." << std::endl;
     MPObjective* const objective = _solver->MutableObjective();
     objective->SetMinimization();
     _solver->Solve();
@@ -54,6 +57,7 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
     // }
   
     // Use the solutions to generate the printable componenets
+    std::cout << "Generating printable components" << std::endl;
     generatePrintableComponents(patches, printable_components, printing_direction_vars, directions, printing_directions);
 }
 
@@ -68,12 +72,6 @@ void MeshOperations::sampleRandomDirections(std::vector<Eigen::Vector3f> &direct
         // NOTE: assumes that directions starts off as an empty vector
         directions.push_back(direction);
     }
-}
-
-// Determine if a face should be supported
-// Note: this might need to be computed for all faces in a patch at once; not sure
-bool MeshOperations::isFaceSupported(const int face, const Eigen::Vector3f &direction, const std::vector<std::unordered_set<int>> &patches) {
-    return false;
 }
 
 // Determine if a face is overhanging and requires support
@@ -139,19 +137,22 @@ void MeshOperations::findFootingFaces(const int face, const Eigen::Vector3f &dir
         int intersected_face = getIntersection(ray_origin, -direction);
 
         if (intersected_face >= 0) {
+            // The ray's direction should be opposite the normal and a different face
+            if (intersected_face == face || getFaceNormal(intersected_face).dot(direction) < 0) {
+                continue;
+            }
             footing_faces.push_back(intersected_face);
         }
     }
 }
 
 // Compute support coefficient for a face in direction
-double MeshOperations::computeSupportCoefficient(const int face, const Eigen::Vector3f &direction,
-                                                 const std::vector<std::unordered_set<int>> &patches) {
+double MeshOperations::computeSupportCoefficient(const int &face) {
     // Area * ambient occlusion (exponentiated)
     // get area
     double area = getArea(face);
     double faceAO = getFaceAO(face);
-    return area * std::pow(faceAO, _ambient_occlusion_smoothing_alpha);
+    return area * std::pow(faceAO, _ambient_occlusion_supports_alpha);
 }
 
 // Compute smoothing coefficient between two sets of faces
@@ -211,6 +212,17 @@ void MeshOperations::generatePrintableComponents(const std::vector<std::unordere
             printable_components[direction_to_idx[patch_directions[patch]]].insert(face);
         }
     }
+    std::cout << "Printable component assignment completed" << std::endl;
+
+    // How many faces got assigned to each direction
+    // DEBUG Information
+    for (int component = 0; component < printable_components.size(); component++) {
+        Eigen::Vector3f direction = component_printing_directions[component];
+        float x = direction(0);
+        float y = direction(1);
+        float z = direction(2);
+        std::cout << "Direction (" << x << ", " << y << ", " << z << ") has " << printable_components[component].size() << " faces" << std::endl;
+    }
 }
 
 void MeshOperations::populateSupportMatrix(const std::vector<std::unordered_set<int>> &patches,
@@ -227,54 +239,59 @@ void MeshOperations::populateSupportMatrix(const std::vector<std::unordered_set<
     // following notations from paper
     //for (Eigen::Vector3f i : directions) {
     for (int dirInd = 0; dirInd < directions.size(); dirInd++) {
-        // for (std::unordered_set<int> j : patches) {
+        // Determine what faces need support in this direction
+        std::unordered_set<int> supporting_faces;
+        Eigen::Vector3f dir = directions[dirInd];
+
+        for (int face = 0; face < _F.rows(); face++) {
+            // Todo: determine whether face requires support and needs to incur a cost
+            bool costNeeded = false;
+            // case a: face normal has angle w/ base greater than a threshold (paper uses 55)
+            if (isFaceOverhanging(face, dir)) {
+                costNeeded = true;
+            }
+            else {
+                // get the edges to check each of them for overhang
+                int v1 = _F.row(face)(0);
+                int v2 = _F.row(face)(1);
+                int v3 = _F.row(face)(2);
+                std::pair<int, int> e1 = (v1 < v2) ? std::make_pair(v1, v2) : std::make_pair(v2, v1);
+                std::pair<int, int> e2 = (v2 < v3) ? std::make_pair(v2, v3) : std::make_pair(v3, v2);
+                std::pair<int, int> e3 = (v3 < v1) ? std::make_pair(v3, v1) : std::make_pair(v1, v3);
+                // case b, c: edge or vertex normals form  angle w/ base greater than a threshold (paper uses 55)
+                if (isVertexOverhanging(v1, dir) || isVertexOverhanging(v2, dir) || isVertexOverhanging(v3, dir)) {
+                    costNeeded = true;
+                }
+                else if (isEdgeOverhanging(e1, dir) || isEdgeOverhanging(e2, dir) || isEdgeOverhanging(e3, dir)) {
+                    costNeeded = true;
+                }
+            }
+            // This face is supported, determine any footing faces for this face
+            if (costNeeded) {
+                supporting_faces.insert(face);
+                std::vector<int> newFootedFaces;
+                findFootingFaces(face, dir, newFootedFaces);
+                for (const int &newFace : newFootedFaces) {
+                    supporting_faces.insert(newFace);
+                }
+            }
+        }
+
+        // We have determined all faces that need support (either overhanging or footing), compute the cost for each patch
         for (int patchInd = 0; patchInd < patches.size(); patchInd++) {
-            Eigen::Vector3f dir = directions[dirInd];
-            std::unordered_set<int> currPatch = patches[patchInd];
-            // Goal: sum the cost function over the faces in this patch
-            double costSum = 0.0f;
-            std::unordered_set<int> footedFaces;
-
-            for (int f : currPatch) { // over the faces
-
-                // Todo: determine whether face requires support and needs to incur a cost
-                bool costNeeded = false;
-                // case a: face normal has angle w/ base greater than a threshold (paper uses 55)
-                if (isFaceOverhanging(f, dir)) costNeeded = true;
-                else {
-                    // get the edges to check each of them for overhang
-                    Face* face = _mesh.getFaceMap().at(f);
-                    int v1 = face->halfedge->source->index;
-                    int v2 = face->halfedge->next->source->index;
-                    int v3 = face->halfedge->next->next->source->index;
-                    std::pair<int, int> e1 = (v1 < v2) ? std::make_pair(v1, v2) : std::make_pair(v2, v1);
-                    std::pair<int, int> e2 = (v2 < v3) ? std::make_pair(v2, v3) : std::make_pair(v3, v2);
-                    std::pair<int, int> e3 = (v3 < v1) ? std::make_pair(v3, v1) : std::make_pair(v1, v3);
-                    // case b, c: edge or vertex normals form  angle w/ base greater than a threshold (paper uses 55)
-                    if (isVertexOverhanging(v1, dir) || isVertexOverhanging(v2, dir) || isVertexOverhanging(v3, dir)) costNeeded = true;
-                    else if (isEdgeOverhanging(e1, dir) || isEdgeOverhanging(e2, dir) || isEdgeOverhanging(e3, dir)) costNeeded = true;
-                }
-                // Now, handle getting the cost and seeing if there is another part of the mesh that will
-                // have to act as supports now.
-                if (costNeeded) {
-                    costSum += computeSupportCoefficient(f, dir, patches);
-                    std::vector<int> newFootedFaces;
-                    findFootingFaces(f, dir, newFootedFaces);
-                    for (int newFace : newFootedFaces) footedFaces.insert(newFace);
+            double patch_cost = 0.0;
+            // Patch cost is entirely determined by supporting faces
+            for (int f : patches[patchInd]) {
+                if (supporting_faces.contains(f)) {
+                    patch_cost += computeSupportCoefficient(f);
                 }
             }
-            // Next -- loop over the footedFaces to have their corresponding matrix entry
-            // account for their being used as footing.
-            for (int footedFace : footedFaces) {
-                costSum += computeSupportCoefficient(footedFace, dir, patches);
-            }
-            _supportCoefficients(patchInd, dirInd) = costSum;
+
+            // Update value
+            _supportCoefficients(patchInd, dirInd) = patch_cost;
         }
     }
 }
-
-// REMEMBER TO DO SECOND LOOP FOR THE SUPPORTED FACES
-
 
 void MeshOperations::populateSmoothingMatrix(const std::vector<std::unordered_set<int>> &patches) {
     int numPatches = patches.size();
