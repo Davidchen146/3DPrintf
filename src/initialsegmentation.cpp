@@ -46,6 +46,11 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
     MPObjective* const objective = _solver->MutableObjective();
     objective->SetMinimization();
     _solver->Solve();
+    // for (int i = 0; i < 1; i++) {
+    //     for (int j = 0; j < _num_random_dir_samples; j++) {
+    //         LOG(INFO) << "ASSIGNMENT: " << printing_direction_vars[i][j]->solution_value();
+    //     }
+    // }
 }
 
 // Subroutines used for Phase 2 (Initial Segmentation)
