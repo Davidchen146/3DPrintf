@@ -238,10 +238,10 @@ void MeshOperations::populateSmoothingMatrix(const std::vector<std::unordered_se
     }
 }
 
-void MeshOperations::addSupportCosts(std::vector<std::vector<const MPVariable*>> &variables, int patch) {
-
+void MeshOperations::addSupportCosts(std::vector<std::vector<const MPVariable*>> &variables, const std::vector<std::unordered_set<int>> &patches) {
+    // Initialize variables
 }
 
-void MeshOperations::addSmoothingCosts(int patch) {
+void MeshOperations::addSmoothingCosts(const std::vector<std::unordered_set<int>> &patches) {
 
 }
