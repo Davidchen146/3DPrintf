@@ -199,7 +199,7 @@ private:
 
     // A very small number
     double epsilon = 0.0001;
-    std::unordered_map<std::pair<int, int>, double> _smoothingCoefficients;
+    std::unordered_map<std::pair<int, int>, double, PairHash> _smoothingCoefficients;
 };
 
 #endif // MESHOPERATIONS_H
