@@ -46,11 +46,15 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
     MPObjective* const objective = _solver->MutableObjective();
     objective->SetMinimization();
     _solver->Solve();
+  
     // for (int i = 0; i < 1; i++) {
     //     for (int j = 0; j < _num_random_dir_samples; j++) {
     //         LOG(INFO) << "ASSIGNMENT: " << printing_direction_vars[i][j]->solution_value();
     //     }
     // }
+  
+    // Use the solutions to generate the printable componenets
+    generatePrintableComponents(patches, printable_components, printing_direction_vars, directions, printing_directions);
 }
 
 // Subroutines used for Phase 2 (Initial Segmentation)
@@ -166,19 +170,47 @@ double MeshOperations::computeSmoothingCoefficient(const std::unordered_set<int>
     return weight * _smoothing_width_t;
 }
 
-// Interface to ILP
-void MeshOperations::assignPrintingDirections(const std::vector<std::vector<int>> &patches,
-                                              const std::vector<Eigen::Vector3f> &printing_directions,
-                                              std::vector<Eigen::Vector3f> &patch_printing_directions) {
-    return;
-}
-
 // Assign results of the ILP to something we can return out
-void MeshOperations::generatePrintableComponents(const std::vector<std::vector<int>> &patches,
+void MeshOperations::generatePrintableComponents(const std::vector<std::unordered_set<int>> &patches,
                                                  std::vector<unordered_set<int>> &printable_components,
+                                                 const std::vector<std::vector<const MPVariable*>> &solutions,
                                                  const std::vector<Eigen::Vector3f> &patch_printing_directions,
                                                  std::vector<Eigen::Vector3f> &component_printing_directions) {
-    return;
+    // For each patch, determine its printing direction
+    std::vector<int> patch_directions;
+    patch_directions.resize(patches.size(), -1);
+    std::unordered_set<int> used_printing_directions;
+
+    for (int patch = 0; patch < patches.size(); patch++) {
+        // Find the value
+        for (int direction = 0; direction < _num_random_dir_samples; direction++) {
+            int solver_value = solutions[patch][direction]->solution_value();
+            if (solver_value == 1) {
+                // This is the optimal direction for this patch
+                patch_directions[patch] = direction;
+                used_printing_directions.insert(direction);
+                break;
+            }
+        }
+        assert(patch_directions[patch] != -1);
+    }
+
+    // Group the patches based on their direction
+    printable_components.resize(used_printing_directions.size());
+
+    // Determine which printing directions were actually used and collect them
+    std::unordered_map<int, int> direction_to_idx;
+    for (const int &direction : used_printing_directions) {
+        direction_to_idx[direction] = component_printing_directions.size();
+        component_printing_directions.push_back(patch_printing_directions[direction]);
+    }
+
+    // Now we can group all the patches by the printing directions
+    for (int patch = 0; patch < patches.size(); patch++) {
+        for (const int &face : patches[patch]) {
+            printable_components[direction_to_idx[patch_directions[patch]]].insert(face);
+        }
+    }
 }
 
 void MeshOperations::populateSupportMatrix(const std::vector<std::unordered_set<int>> &patches,
