@@ -133,19 +133,19 @@ void MeshOperations::preprocess() {
     _angularDistances.setZero();
     bbd = (_V.colwise().maxCoeff()- _V.colwise().minCoeff()).norm();
 
-    _weightedDistances.setZero();
-    makeAdjacency();
-    std::cout << "Performing geodesic distance computations" << std::endl;
-    geodesicDistance();
-    std::cout << "Performing angular distance computations" << std::endl;
-    angularDistance();
-    calculateAvgDistances();
-    weightedDistance();
-    assert(_weightedDistances.isApprox(_weightedDistances.transpose()));
+    // _weightedDistances.setZero();
+    // makeAdjacency();
+    // std::cout << "Performing geodesic distance computations" << std::endl;
+    // geodesicDistance();
+    // std::cout << "Performing angular distance computations" << std::endl;
+    // angularDistance();
+    // calculateAvgDistances();
+    // weightedDistance();
+    // assert(_weightedDistances.isApprox(_weightedDistances.transpose()));
 
-    // Prepare raytracer
-    std::cout << "Loading mesh into Embree raytracer" << std::endl;
-    _intersector.init(_V, _F);
+    // // Prepare raytracer
+    // std::cout << "Loading mesh into Embree raytracer" << std::endl;
+    // _intersector.init(_V, _F);
 }
 
 void MeshOperations::makeAdjacency() {

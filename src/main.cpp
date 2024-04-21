@@ -207,6 +207,7 @@ int main(int argc, char *argv[])
         else if (method == "sanity") {
             m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
             m_o.preprocess();
+            m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
 
             QString sanity_method  = settings.value("Global/sanity_method").toString();
 
