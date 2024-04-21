@@ -19,6 +19,8 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
     // these populate _supportCoefficients, _smoothingCoefficients respectively
     populateSupportMatrix(patches, directions);
     populateSmoothingMatrix(patches);
+
+    // OK WE ARE GOING TO DO THE THING
 }
 
 // Subroutines used for Phase 2 (Initial Segmentation)
@@ -121,7 +123,7 @@ double MeshOperations::computeSupportCoefficient(const int face, const Eigen::Ve
 // Compute smoothing coefficient between two sets of faces
 double MeshOperations::computeSmoothingCoefficient(const std::unordered_set<int> &patch_one,
                                                    const std::unordered_set<int> &patch_two) {
-    std::unordered_set<std::pair<int, int>> boundaryEdges;
+    std::unordered_set<std::pair<int, int>, PairHash> boundaryEdges;
     getBoundaryEdges(patch_one, patch_two, boundaryEdges);
     double weight = 0;
     for (std::pair<int, int> edge: boundaryEdges) {
