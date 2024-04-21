@@ -3,6 +3,7 @@
 
 #include "src/mesh.h"
 #include "Eigen/StdVector"
+#include "ortools/linear_solver/linear_solver.h"
 
 #include <igl/exact_geodesic.h>
 #include <Eigen/Core>
@@ -16,7 +17,7 @@
 
 using namespace Eigen;
 using namespace std;
-
+using namespace operations_research;
 class MeshOperations
 {
 
@@ -167,7 +168,6 @@ private:
     double getTotalGeodesicDistanceToSet(const int &face, const std::unordered_set<int> &faces);
     double getTotalWeightedDistanceToSet(const int &face, const std::unordered_set<int> &faces);
 
-
     double bbd; // bounding box diagonal
     Eigen::MatrixXd _weightedDistances;
 
@@ -193,6 +193,7 @@ private:
     Eigen::MatrixXd _supportCoefficients;
     int _ambient_occlusion_samples;
     int _footing_samples;
+    operations_research::MPSolver* _solver;
 
     // Fields for raytracing
     igl::embree::EmbreeIntersector _intersector;

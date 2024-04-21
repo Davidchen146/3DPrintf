@@ -21,6 +21,12 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
     populateSmoothingMatrix(patches);
 
     // OK WE ARE GOING TO DO THE THING
+    _solver = MPSolver::CreateSolver("SCIP");
+    if (!_solver) {
+        LOG(WARNING) << "SCIP solver unavailable.";
+        return;
+    }
+
 }
 
 // Subroutines used for Phase 2 (Initial Segmentation)
@@ -230,4 +236,12 @@ void MeshOperations::populateSmoothingMatrix(const std::vector<std::unordered_se
             }
         }
     }
+}
+
+void MeshOperations::addSupportCosts(std::vector<std::vector<const MPVariable*>> &variables, int patch) {
+
+}
+
+void MeshOperations::addSmoothingCosts(int patch) {
+
 }
