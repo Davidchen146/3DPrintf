@@ -247,61 +247,9 @@ void MeshOperations::visualize(vector<unordered_set<int>>& coloringGroups) {
         C.row(i) = groupToColor[faceToGroup[i]];
     }
 
-    // Find the bounding box
-    Eigen::Vector3d m = _V.cast<double>().colwise().minCoeff();
-    Eigen::Vector3d M = _V.cast<double>().colwise().maxCoeff();
-
-    // Corners of the bounding box
-    Eigen::MatrixXd V_box(8,3);
-    V_box <<
-        m(0), m(1), m(2),
-        M(0), m(1), m(2),
-        M(0), M(1), m(2),
-        m(0), M(1), m(2),
-        m(0), m(1), M(2),
-        M(0), m(1), M(2),
-        M(0), M(1), M(2),
-        m(0), M(1), M(2);
-
-    // Edges of the bounding box
-    Eigen::MatrixXi E_box(12,2);
-    E_box <<
-        0, 1,
-        1, 2,
-        2, 3,
-        3, 0,
-        4, 5,
-        5, 6,
-        6, 7,
-        7, 4,
-        0, 4,
-        1, 5,
-        2, 6,
-        7 ,3;
-
     igl::opengl::glfw::Viewer viewer;
     viewer.data().set_mesh(_V.cast<double>(), _F);
     viewer.data().set_colors(C);
-    // Plot the corners of the bounding box as points
-    viewer.data().add_points(V_box,Eigen::RowVector3d(1,0,0));
-
-    // Plot the edges of the bounding box
-    for (unsigned i=0;i<E_box.rows(); ++i)
-        viewer.data().add_edges
-            (
-                V_box.row(E_box(i,0)),
-                V_box.row(E_box(i,1)),
-                Eigen::RowVector3d(1,0,0)
-                );
-    // Plot labels with the coordinates of bounding box vertices
-    std::stringstream l1;
-    l1 << m(0) << ", " << m(1) << ", " << m(2);
-    viewer.data().add_label(m+Eigen::Vector3d(-0.007, 0, 0),l1.str());
-    std::stringstream l2;
-    l2 << M(0) << ", " << M(1) << ", " << M(2);
-    viewer.data().add_label(M+Eigen::Vector3d(0.007, 0, 0),l2.str());
-    // activate label rendering
-    viewer.data().show_custom_labels = true;
     viewer.launch();
 }
 
