@@ -161,26 +161,43 @@ void MeshOperations::populateSupportMatrix(const std::vector<std::unordered_set<
     for (Eigen::Vector3f i : directions) {
         for (std::unordered_set<int> j : patches) {
             // Goal: sum the cost function over the faces in this patch
-            float costSum = 0.0f;
+            double costSum = 0.0f;
+            //std::unordered_set<int>
+
             for (int f : j) { // over the faces
 
                 // Todo: determine whether face requires support and needs to incur a cost
-
+                bool costNeeded = false;
                 // case a: face normal has angle w/ base greater than a threshold (paper uses 55)
-                if (isFaceOverhanging(f, i)) continue;
-                // get the edges to check each of them for overhang
-                Face* face = _mesh.getFaceMap().at(f);
-                int v1 = face->halfedge->source->index;
-                int v2 = face->halfedge->next->source->index;
-                int v3 = face->halfedge->next->next->source->index;
-                if (isVertexOverhanging(v1, i) || isVertexOverhanging(v2, i) || isVertexOverhanging(v3, i)) continue;
-                // establish pairs in ascending order to ensure compatibility
-                std::pair<int, int> e1 = (v1 < v2) ? std::make_pair(v1, v2) : std::make_pair(v2, v1);
-                std::pair<int, int> e2 = (v2 < v3) ? std::make_pair(v2, v3) : std::make_pair(v3, v2);
-                std::pair<int, int> e3 = (v3 < v1) ? std::make_pair(v3, v1) : std::make_pair(v1, v3);
-                if (isEdgeOverhanging(e1, i) || isEdgeOverhanging(e2, i) || isEdgeOverhanging(e3, i)) continue;
+                if (isFaceOverhanging(f, i)) costNeeded = true;
+                else {
+                    // get the edges to check each of them for overhang
+                    Face* face = _mesh.getFaceMap().at(f);
+                    int v1 = face->halfedge->source->index;
+                    int v2 = face->halfedge->next->source->index;
+                    int v3 = face->halfedge->next->next->source->index;
+                    std::pair<int, int> e1 = (v1 < v2) ? std::make_pair(v1, v2) : std::make_pair(v2, v1);
+                    std::pair<int, int> e2 = (v2 < v3) ? std::make_pair(v2, v3) : std::make_pair(v3, v2);
+                    std::pair<int, int> e3 = (v3 < v1) ? std::make_pair(v3, v1) : std::make_pair(v1, v3);
+                    // case b, c: edge or vertex normals form  angle w/ base greater than a threshold (paper uses 55)
+                    if (isVertexOverhanging(v1, i) || isVertexOverhanging(v2, i) || isVertexOverhanging(v3, i)) costNeeded = true;
+                    else if (isEdgeOverhanging(e1, i) || isEdgeOverhanging(e2, i) || isEdgeOverhanging(e3, i)) costNeeded = true;
+                }
+                // Now, handle getting the cost and seeing if there is another part of the mesh that will
+                // have to act as supports now.
+                if (costNeeded) {
+                    double cost = computeSupportCoefficient(f, i, patches);
 
 
+
+
+                }
+
+
+
+
+
+                // check
 
 
             }
@@ -195,6 +212,9 @@ void MeshOperations::populateSupportMatrix(const std::vector<std::unordered_set<
 
 
 }
+
+// REMEMBER TO DO SECOND LOOP FOR THE SUPPORTED FACES
+
 
 void MeshOperations::populateSmoothingMatrix(const std::vector<std::unordered_set<int>> &patches) {
     int numPatches = patches.size();
