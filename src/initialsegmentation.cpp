@@ -240,6 +240,30 @@ void MeshOperations::populateSmoothingMatrix(const std::vector<std::unordered_se
 
 void MeshOperations::addSupportCosts(std::vector<std::vector<const MPVariable*>> &variables, const std::vector<std::unordered_set<int>> &patches) {
     // Initialize variables
+    int numPatches = patches.size();
+    for (int i = 0; i < numPatches; i++) {
+        for (int j = 0; j < _num_random_dir_samples; j++) {
+            // Remember to initialize the variables array correctly
+            variables[i][j] = _solver->MakeIntVar(0.0, 1.0, "");
+        }
+    }
+    LOG(INFO) << "Number of variables = " << _solver->NumVariables();
+    // Create Constraint such that all the rows add up to exactly one
+    for (int i = 0; i < numPatches; i++) {
+        MPConstraint* constraint = _solver->MakeRowConstraint(1.0, 1.0, "");
+        for (int j = 0; j < _num_random_dir_samples; j++) {
+            constraint->SetCoefficient(variables[i][j], 1.0);
+        }
+    }
+    LOG(INFO) << "Number of constraints = " << _solver->NumConstraints();
+    assert(_solver->NumConstraints == _supportCoefficients.rows());
+    // Add supp coefficients to the objective function
+    MPObjective* const objective = _solver->MutableObjective();
+    for (int i = 0; i < numPatches; i++) {
+        for (int j = 0; j < _num_random_dir_samples; j++) {
+            objective->SetCoefficient(variables[i][j], _supportCoefficients(i, j));
+        }
+    }
 }
 
 void MeshOperations::addSmoothingCosts(const std::vector<std::unordered_set<int>> &patches) {
