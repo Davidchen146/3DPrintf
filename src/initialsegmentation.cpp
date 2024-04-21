@@ -242,6 +242,41 @@ void MeshOperations::addSupportCosts(std::vector<std::vector<const MPVariable*>>
     // Initialize variables
 }
 
-void MeshOperations::addSmoothingCosts(const std::vector<std::unordered_set<int>> &patches) {
+void MeshOperations::addSmoothingCosts(std::vector<std::vector<const MPVariable*>> &variables) {
+    const double infinity = _solver->infinity();
 
+    // For each pair of adjacent faces...
+    for (const auto& [patch_pair, smoothing_cost] : _smoothingCoefficients) {
+        // For each Direction:
+        for (int direction = 0; direction < _num_random_dir_samples; direction++) {
+            // Create a new variable corresponding to the relevant XOR in the solver
+            std::string var_name = "p" + std::to_string(patch_pair.first) + "d" + std::to_string(direction) + " " + "p" + std::to_string(patch_pair.second) + "d" + std::to_string(direction);
+            operations_research::MPVariable* const new_xor_var = _solver->MakeIntVar(0.0, 1.0, var_name);
+
+            // Set coeffs to the lookup in the map
+            operations_research::MPObjective* const objective = _solver->MutableObjective();
+            objective->SetCoefficient(new_xor_var, smoothing_cost);
+
+            // Set constraints on the variable so that it will take the xor value (we need 4)
+            operations_research::MPConstraint* const c1 = _solver->MakeRowConstraint(0.0, infinity, var_name + " v: -1, p1d: 1, p2d: 1 geq 0");
+            c1->SetCoefficient(new_xor_var, -1.0);
+            c1->SetCoefficient(variables[patch_pair.first][direction], 1.0);
+            c1->SetCoefficient(variables[patch_pair.second][direction], 1.0);
+
+            operations_research::MPConstraint* const c2 = _solver->MakeRowConstraint(0.0, infinity, var_name + " v: 1, p1d: -1, p2d: 1 geq 0");
+            c2->SetCoefficient(new_xor_var, 1.0);
+            c2->SetCoefficient(variables[patch_pair.first][direction], -1.0);
+            c2->SetCoefficient(variables[patch_pair.second][direction], 1.0);
+
+            operations_research::MPConstraint* const c3 = _solver->MakeRowConstraint(0.0, infinity, var_name + " v: 1, p1d: 1, p2d: -1 geq 0");
+            c3->SetCoefficient(new_xor_var, 1.0);
+            c3->SetCoefficient(variables[patch_pair.first][direction], 1.0);
+            c3->SetCoefficient(variables[patch_pair.second][direction], -1.0);
+
+            operations_research::MPConstraint* const c4 = _solver->MakeRowConstraint(-2.0, infinity, var_name + " v: -1, p1d: -1, p2d: -1 geq 2");
+            c4->SetCoefficient(new_xor_var, -1.0);
+            c4->SetCoefficient(variables[patch_pair.first][direction], -1.0);
+            c4->SetCoefficient(variables[patch_pair.second][direction], -1.0);
+        }
+    }
 }
