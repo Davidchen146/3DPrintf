@@ -23,10 +23,14 @@ MeshOperations::MeshOperations(Mesh m) {
     _ambient_occlusion_supports_alpha = 0.5;
     _ambient_occlusion_smoothing_alpha = 0.5;
     _smoothing_width_t = 0.3;
+    _ambient_occlusion_samples = 500;
+    _footing_samples = 1;
 }
 
 // Configure parameters for 3D printing operations
-void MeshOperations::setPreprocessingParameters(double geodesic_weight, double convex_coeff, double concave_coeff) {
+void MeshOperations::setPreprocessingParameters(double geodesic_weight,
+                                                double convex_coeff,
+                                                double concave_coeff) {
     // Check against default value (0) to prevent loading in unspecified parameters
     if (geodesic_weight != 0.0) {
         _geodesic_distance_weight = geodesic_weight;
@@ -41,7 +45,11 @@ void MeshOperations::setPreprocessingParameters(double geodesic_weight, double c
     }
 }
 
-void MeshOperations::setOversegmentationParameters(int num_seed_faces, double proportion_seed_faces, double bounding_box_coeff, int num_iterations, bool seeds_only) {
+void MeshOperations::setOversegmentationParameters(int num_seed_faces,
+                                                   double proportion_seed_faces,
+                                                   double bounding_box_coeff,
+                                                   int num_iterations,
+                                                   bool seeds_only) {
     // Check against default value (0) to prevent loading in unspecified parameters
     if (num_seed_faces != 0.0) {
         _num_seed_faces = num_seed_faces;
@@ -64,7 +72,13 @@ void MeshOperations::setOversegmentationParameters(int num_seed_faces, double pr
     }
 }
 
-void MeshOperations::setInitialSegmentationParameters(int num_random_dir_samples, double printer_tolerance_angle, double ambient_occlusion_supports_alpha, double ambient_occlusion_smoothing_alpha, double smoothing_width_t) {
+void MeshOperations::setInitialSegmentationParameters(int num_random_dir_samples,
+                                                      double printer_tolerance_angle,
+                                                      double ambient_occlusion_supports_alpha,
+                                                      double ambient_occlusion_smoothing_alpha,
+                                                      double smoothing_width_t,
+                                                      int ambient_occlusion_samples,
+                                                      int footing_samples) {
     // Check against default value (0) to prevent loading in unspecified parameters
     if (num_random_dir_samples != 0) {
         _num_random_dir_samples = num_random_dir_samples;
@@ -86,6 +100,14 @@ void MeshOperations::setInitialSegmentationParameters(int num_random_dir_samples
 
     if (smoothing_width_t != 0.0) {
         _smoothing_width_t = smoothing_width_t;
+    }
+
+    if (ambient_occlusion_samples != 0) {
+        _ambient_occlusion_samples = ambient_occlusion_samples;
+    }
+
+    if (footing_samples != 0) {
+        _footing_samples = footing_samples;
     }
 }
 
@@ -120,6 +142,10 @@ void MeshOperations::preprocess() {
     calculateAvgDistances();
     weightedDistance();
     assert(_weightedDistances.isApprox(_weightedDistances.transpose()));
+
+    // Prepare raytracer
+    std::cout << "Loading mesh into Embree raytracer" << std::endl;
+    _intersector.init(_V, _F);
 }
 
 void MeshOperations::makeAdjacency() {
