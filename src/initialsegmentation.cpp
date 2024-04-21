@@ -112,7 +112,10 @@ void MeshOperations::findFootingFaces(const int face, const Eigen::Vector3f &dir
 double MeshOperations::computeSupportCoefficient(const int face, const Eigen::Vector3f &direction,
                                                  const std::vector<std::unordered_set<int>> &patches) {
     // Area * ambient occlusion (exponentiated)
-    return 0.0;
+    // get area
+    double area = getArea(face);
+    double faceAO = getFaceAO(face);
+    return area * std::pow(faceAO, _ambient_occlusion_smoothing_alpha);
 }
 
 // Compute smoothing coefficient between two sets of faces
@@ -158,18 +161,22 @@ void MeshOperations::populateSupportMatrix(const std::vector<std::unordered_set<
     // this coefficient is area of faces needing support, weighted by ambient occlusion
 
     // following notations from paper
-    for (Eigen::Vector3f i : directions) {
-        for (std::unordered_set<int> j : patches) {
+    //for (Eigen::Vector3f i : directions) {
+    for (int dirInd = 0; dirInd < directions.size(); dirInd++) {
+        // for (std::unordered_set<int> j : patches) {
+        for (int patchInd = 0; patchInd < patches.size(); patchInd++) {
+            Eigen::Vector3f dir = directions[dirInd];
+            std::unordered_set<int> currPatch = patches[patchInd];
             // Goal: sum the cost function over the faces in this patch
             double costSum = 0.0f;
-            //std::unordered_set<int>
+            std::unordered_set<int> footedFaces;
 
-            for (int f : j) { // over the faces
+            for (int f : currPatch) { // over the faces
 
                 // Todo: determine whether face requires support and needs to incur a cost
                 bool costNeeded = false;
                 // case a: face normal has angle w/ base greater than a threshold (paper uses 55)
-                if (isFaceOverhanging(f, i)) costNeeded = true;
+                if (isFaceOverhanging(f, dir)) costNeeded = true;
                 else {
                     // get the edges to check each of them for overhang
                     Face* face = _mesh.getFaceMap().at(f);
@@ -180,37 +187,26 @@ void MeshOperations::populateSupportMatrix(const std::vector<std::unordered_set<
                     std::pair<int, int> e2 = (v2 < v3) ? std::make_pair(v2, v3) : std::make_pair(v3, v2);
                     std::pair<int, int> e3 = (v3 < v1) ? std::make_pair(v3, v1) : std::make_pair(v1, v3);
                     // case b, c: edge or vertex normals form  angle w/ base greater than a threshold (paper uses 55)
-                    if (isVertexOverhanging(v1, i) || isVertexOverhanging(v2, i) || isVertexOverhanging(v3, i)) costNeeded = true;
-                    else if (isEdgeOverhanging(e1, i) || isEdgeOverhanging(e2, i) || isEdgeOverhanging(e3, i)) costNeeded = true;
+                    if (isVertexOverhanging(v1, dir) || isVertexOverhanging(v2, dir) || isVertexOverhanging(v3, dir)) costNeeded = true;
+                    else if (isEdgeOverhanging(e1, dir) || isEdgeOverhanging(e2, dir) || isEdgeOverhanging(e3, dir)) costNeeded = true;
                 }
                 // Now, handle getting the cost and seeing if there is another part of the mesh that will
                 // have to act as supports now.
                 if (costNeeded) {
-                    double cost = computeSupportCoefficient(f, i, patches);
-
-
-
-
+                    costSum += computeSupportCoefficient(f, dir, patches);
+                    std::vector<int> newFootedFaces;
+                    findFootingFaces(f, dir, newFootedFaces);
+                    for (int newFace : newFootedFaces) footedFaces.insert(newFace);
                 }
-
-
-
-
-
-                // check
-
-
             }
-
-
-
-
+            // Next -- loop over the footedFaces to have their corresponding matrix entry
+            // account for their being used as footing.
+            for (int footedFace : footedFaces) {
+                costSum += computeSupportCoefficient(footedFace, dir, patches);
+            }
+            _supportCoefficients(patchInd, dirInd) = costSum;
         }
-
-
     }
-
-
 }
 
 // REMEMBER TO DO SECOND LOOP FOR THE SUPPORTED FACES
