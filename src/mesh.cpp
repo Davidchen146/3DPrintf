@@ -29,16 +29,21 @@ Halfedge* Mesh::checkHalfEdges(Vertex* source, Vertex* destination) {
     return nullptr;
 }
 
+std::pair<int, int> Mesh::getSortedPair(int x, int y) {
+    assert(x != y);
+    if (x < y) {
+        return std::make_pair(x, y);
+    }
+    return std::make_pair(y, x);
+}
+
 void Mesh::makeHalfEdges(Vertex* vertex1, Vertex* vertex2, Face* faceStruct) {
     Halfedge* existingHalfEdge = checkHalfEdges(vertex1, vertex2);
     if (existingHalfEdge == nullptr) {
         // If half edge twins don't exist, make them
         Halfedge* halfedge = new Halfedge{nullptr, nullptr, vertex1, vertex2, faceStruct, nullptr};
         Halfedge* twin = new Halfedge{halfedge, nullptr, vertex2, vertex1, nullptr, nullptr};
-        Edge* edge = new Edge{halfedge, std::make_pair(vertex1->index, vertex2->index)};
-        if (vertex2->index < vertex1->index) {
-            edge->vertices = std::make_pair(vertex2->index, vertex1->index);
-        }
+        Edge *edge = new Edge{halfedge, getSortedPair(vertex1->index, vertex2->index)};
         // Set the first half edge's twin
         halfedge->twin = twin;
         // Set the vertex's half edge
@@ -117,8 +122,7 @@ void Mesh::preProcess() {
     // NOTE: consider whether these normals should be area weighted
     // Imma go with "No"
 
-    // compute vertex normals (by interpolating from neighboring triangles)
-    // do these normals need to be weighted by the area? --> they currently are not
+    // compute vertex normals (by averaging the normals of all neighboring faces)
     for (const auto& pair : _vertexMap) {
         Vertex *v = pair.second;
         Halfedge *h = v->halfedge;
@@ -140,7 +144,7 @@ void Mesh::preProcess() {
         e->normal = edgeNormal;
     }
 
-    // get neighbors for each face
+    // get neighboring faces for each face (to store in face struct)
     for (const auto& pair : _faceMap) {
         Face *f_i = pair.second;
         Halfedge *h = f_i->halfedge;
@@ -154,7 +158,7 @@ void Mesh::preProcess() {
         } while (h != f_i->halfedge);
         assert(neighbor_num == 3);
         f_i->neighbors = neighbors;
-    }
+    }   
 }
 
 // Converts our data structure back into the original format of _vertices and _faces
@@ -309,10 +313,7 @@ void Mesh::flip(Edge* edge){
     d->halfedge = da;
 
     // Create new edge
-    Edge* ad_edge = new Edge{ad, std::make_pair(a->index, d->index)};
-    if (d->index < a->index) {
-        ad_edge->vertices = std::make_pair(d->index, a->index);
-    }
+    Edge *ad_edge = new Edge{ad, getSortedPair(a->index, d->index)};
     ad->edge = ad_edge;
     da->edge = ad_edge;
 
@@ -751,28 +752,16 @@ Vertex* Mesh::split(Edge* edge, unordered_set<Edge*>* newEdges) {
     bd->next = dm;
     dm->next = mb;
 
-    Edge* cm_edge = new Edge{cm, std::make_pair(c->index, m->index)};
-    if (m->index < c->index) {
-        cm_edge->vertices = std::make_pair(m->index, c->index);
-    }
+    Edge *cm_edge = new Edge{cm, getSortedPair(c->index, m->index)};
     cm->edge = cm_edge;
     mc->edge = cm_edge;
-    Edge* md_edge = new Edge{md, std::make_pair(m->index, d->index)};
-    if (d->index < m->index) {
-        md_edge->vertices = std::make_pair(d->index, m->index);
-    }
+    Edge *md_edge = new Edge{md, getSortedPair(m->index, d->index)};
     md->edge = md_edge;
     dm->edge = md_edge;
-    Edge* am_edge = new Edge{am, std::make_pair(a->index, m->index)};
-    if (m->index < a->index) {
-        am_edge->vertices = std::make_pair(m->index, a->index);
-    }
+    Edge *am_edge = new Edge{am, getSortedPair(a->index, m->index)};
     am->edge = am_edge;
     ma->edge = am_edge;
-    Edge* mb_edge = new Edge{mb, std::make_pair(m->index, b->index)};
-    if (b->index < m->index) {
-        mb_edge->vertices = std::make_pair(b->index, m->index);
-    }
+    Edge *mb_edge = new Edge{mb, getSortedPair(m->index, b->index)};
     mb->edge = mb_edge;
     bm->edge = mb_edge;
 

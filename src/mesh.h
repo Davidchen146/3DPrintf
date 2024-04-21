@@ -91,6 +91,7 @@ public:
     void loadFromFile(const std::string &filePath);
     void saveToFile(const std::string &filePath);
     void preProcess();
+    std::pair<int, int> getSortedPair(int x, int y);
     Halfedge* checkHalfEdges(Vertex* source, Vertex* destination);
     void makeHalfEdges(Vertex* vertex1, Vertex* vertex2, Face* faceStruct);
     void convert();

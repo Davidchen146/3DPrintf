@@ -199,9 +199,44 @@ int MeshOperations::getIntersection(const Eigen::Vector3f &ray_position, const E
     return -1;
 }
 
-// Gets intersection of edges (or faces, TBD) between two patches
-void MeshOperations::getBoundaryEdges(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two, std::unordered_set<std::pair<int, int>> &boundaryEdges) {
-    return;
+void MeshOperations::updateBoundarySet(const std::pair<int, int> edge, std::unordered_set<std::pair<int, int>, PairHash>& boundary_set) {
+    // NOTE: if this seems buggy use a map that keeps track of edge count instead
+    // but each edge should either have a count of 1 or 2
+    if (boundary_set.contains(edge)) {
+        boundary_set.erase(edge);
+    } else {
+        boundary_set.insert(edge);
+    }
+}
+
+void MeshOperations::getPatchBoundary(const std::unordered_set<int>& patch, std::unordered_set<std::pair<int, int>, PairHash>& patch_boundary) {
+    for (int face : patch) {
+        Eigen::Vector3i vertexIndices = _faces[face];
+        std::pair<int, int> e1 = _mesh.getSortedPair(vertexIndices[0], vertexIndices[1]);
+        std::pair<int, int> e2 = _mesh.getSortedPair(vertexIndices[1], vertexIndices[2]);
+        std::pair<int, int> e3 = _mesh.getSortedPair(vertexIndices[0], vertexIndices[2]);
+        updateBoundarySet(e1, patch_boundary);
+        updateBoundarySet(e2, patch_boundary);
+        updateBoundarySet(e3, patch_boundary);
+    }
+}
+
+// Gets intersection of edges between two patches
+void MeshOperations::getBoundaryEdges(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two, std::unordered_set<std::pair<int, int>, PairHash> &boundaryEdges) {
+    // get the boundary of patch one (set of edges)
+    std::unordered_set<std::pair<int, int>, PairHash> patch_one_boundary;
+    getPatchBoundary(patch_one, patch_one_boundary);
+
+    // get the boundary of patch two (set of edges)
+    std::unordered_set<std::pair<int, int>, PairHash> patch_two_boundary;
+    getPatchBoundary(patch_two, patch_two_boundary);
+
+    // get the intersection between these two sets
+    for (std::pair<int, int> patchOneEdge : patch_one_boundary) {
+        if (patch_two_boundary.contains(patchOneEdge)) {
+            boundaryEdges.insert(patchOneEdge);
+        }
+    }
 }
 
 // Ambient occlusion operation (edge)

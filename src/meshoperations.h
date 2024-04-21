@@ -144,8 +144,12 @@ private:
     // If using BVH, may need to make BVH initialization a preprocessing step
     int getIntersection(const Eigen::Vector3f &ray_position, const Eigen::Vector3f &ray_direction);
 
+    // helper for getPatchBoundary
+    void updateBoundarySet(const std::pair<int, int> edge, std::unordered_set<std::pair<int, int>, PairHash>& boundary_set);
+    // given a patch, populate the set which contains the edges of the boundary
+    void getPatchBoundary(const std::unordered_set<int>& patch, std::unordered_set<std::pair<int, int>, PairHash>& patch_boundary);
     // Gets intersection of edges between two patches
-    void getBoundaryEdges(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two, std::unordered_set<std::pair<int, int>> &boundaryEdges);
+    void getBoundaryEdges(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two, std::unordered_set<std::pair<int, int>, PairHash> &boundaryEdges);
 
     // Basic utility functions for faces
     Eigen::Vector3f getCentroid(const int &face);
