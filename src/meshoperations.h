@@ -119,13 +119,10 @@ private:
     // Compute smoothing coefficient between two sets of faces
     double computeSmoothingCoefficient(const std::unordered_set<int> &patch_one,
                                        const std::unordered_set<int> &patch_two);
-    // Interface to ILP
-    void assignPrintingDirections(const std::vector<std::vector<int>> &patches,
-                                  const std::vector<Eigen::Vector3f> &printing_directions,
-                                  std::vector<Eigen::Vector3f> &patch_printing_directions);
     // Assign results of the ILP to something we can return out
-    void generatePrintableComponents(const std::vector<std::vector<int>> &patches,
+    void generatePrintableComponents(const std::vector<std::unordered_set<int>> &patches,
                                      std::vector<unordered_set<int>> &printable_components,
+                                     const std::vector<std::vector<const MPVariable*>> &solutions,
                                      const std::vector<Eigen::Vector3f> &patch_printing_directions,
                                      std::vector<Eigen::Vector3f> &component_printing_directions);
 
