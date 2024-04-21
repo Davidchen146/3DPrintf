@@ -170,7 +170,7 @@ Eigen::Vector3f MeshOperations::generateRandomVector() {
 }
 
 // Sample a random point on a face
-Eigen::Vector3f MeshOperations::sampleRandomPoin(const int &face) {
+Eigen::Vector3f MeshOperations::sampleRandomPoint(const int &face) {
     // Draw two random numbers
     float r1 = rand() / (float) RAND_MAX;
     float r2 = rand() / (float) RAND_MAX;
@@ -179,13 +179,8 @@ Eigen::Vector3f MeshOperations::sampleRandomPoin(const int &face) {
     float v2_coeff = sqrt(r1) * (1 - r2);
     float v3_coeff = r2 * sqrt(r1);
 
-    // Points on triangle that barycentric coordinates interpolate
-    Eigen::Vector3f _v1 = _V.row(_F.row(face)(0));
-    Eigen::Vector3f _v2 = _V.row(_F.row(face)(1));
-    Eigen::Vector3f _v3 = _V.row(_F.row(face)(2));
-
-
-    return (v1_coeff * _v1) + (v2_coeff * _v2) + (v3_coeff * _v3);
+    // These are barycentric coordinates used to interpolate points on the triangle
+    return (v1_coeff * _V.row(_F.row(face)(0))) + (v2_coeff * _V.row(_F.row(face)(1))) + (v3_coeff * _V.row(_F.row(face)(2)));
 }
 
 // For determining intersections with other faces

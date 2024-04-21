@@ -106,8 +106,8 @@ private:
     bool isFaceOverhanging(const int face, const Eigen::Vector3f &direction);
     bool isEdgeOverhanging(const std::pair<int, int> &edge, const Eigen::Vector3f &direction);
     bool isVertexOverhanging(const int vertex, const Eigen::Vector3f &direction);
-    // TODO: Fix this function
-    bool isFaceFooted(const int face, const Eigen::Vector3f &direction, const std::vector<std::unordered_set<int>> &patches);
+    // For a supported face, find its footing faces (if any)
+    void findFootingFaces(const int face, const Eigen::Vector3f &direction, std::vector<int> &footing_faces);
     // Compute support coefficient for a face in direction
     double computeSupportCoefficient(const int face, const Eigen::Vector3f &direction,
                                      const std::vector<std::unordered_set<int>> &patches);
@@ -133,7 +133,7 @@ private:
 
     // Random sampling
     Eigen::Vector3f generateRandomVector();
-    Eigen::Vector3f sampleRandomPoin(const int &face);
+    Eigen::Vector3f sampleRandomPoint(const int &face);
 
     // For determining intersections with other faces
     // Should use BVH, some other structure, or there might be something in libigl/VCGlib we can use
@@ -187,6 +187,9 @@ private:
 
     // Fields for raytracing
     igl::embree::EmbreeIntersector _intersector;
+
+    // A very small number
+    double epsilon = 0.0001;
 };
 
 #endif // MESHOPERATIONS_H
