@@ -128,11 +128,6 @@ private:
     Eigen::Vector3f getEdgeNormal(const std::pair<int, int> &edge);
     Eigen::Vector3f getVertexNormal(const int &vertex);
 
-    // Ambient Occlusion
-    // Could cache this as a preprocessing step?
-    double getFaceAmbientOcclusion(const int &face);
-    double getEdgeAmbientOcclusion(const std::pair<int, int> &edge);
-
     // For random direction generation
     Eigen::Vector3f generateRandomVector();
 

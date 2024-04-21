@@ -155,17 +155,6 @@ double MeshOperations::getTotalWeightedDistanceToSet(const int &face, const std:
     return total_dist;
 }
 
-// Ambient Occlusion (use libigl)
-// Could cache this as a preprocessing step?
-double MeshOperations::getFaceAmbientOcclusion(const int &face) {
-    return 0.0f;
-}
-
-// Ambient occlusion but for edges (use libigl)
-double MeshOperations::getEdgeAmbientOcclusion(const std::pair<int, int> &edge) {
-    return 0.0f;
-}
-
 // For random direction generation
 Eigen::Vector3f MeshOperations::generateRandomVector() {
     return Eigen::Vector3f(0.0f, 0.0f, 0.0f);
