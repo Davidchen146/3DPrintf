@@ -6,6 +6,7 @@
 
 #include <igl/exact_geodesic.h>
 #include <Eigen/Core>
+#include <igl/embree/ambient_occlusion.h>
 
 #include <unordered_map>
 #include <limits>
@@ -50,7 +51,8 @@ public:
                                           double printer_tolerance_angle = 55,
                                           double ambient_occlusion_supports_alpha = 0.5,
                                           double ambient_occlusion_smoothing_alpha = 0.5,
-                                          double smoothing_width_t = 0.3);
+                                          double smoothing_width_t = 0.3,
+                                          int ambient_occlusion_samples = 500);
 
     // Oversegmentation: returns list of lists of faces
     // Each list of faces represents a connected patch (to be merged and assigned a printing direction)
@@ -101,6 +103,7 @@ private:
     bool isFaceOverhanging(const int face, const Eigen::Vector3f &direction);
     bool isEdgeOverhanging(const std::pair<int, int> &edge, const Eigen::Vector3f &direction);
     bool isVertexOverhanging(const int vertex, const Eigen::Vector3f &direction);
+    // TODO: Fix this function
     bool isFaceFooted(const int face, const Eigen::Vector3f &direction, const std::vector<std::unordered_set<int>> &patches);
     // Compute support coefficient for a face in direction
     double computeSupportCoefficient(const int face, const Eigen::Vector3f &direction,
@@ -142,9 +145,12 @@ private:
     void getBoundaryEdges(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two);
 
     // Basic utility functions for faces
-    // TODO: Change these functions to do lookups to values stored in the face struct
     Eigen::Vector3f getCentroid(const int &face);
     double getArea(const int &face);
+
+    // Ambient occlusion
+    double getEdgeAO(const std::pair<int, int> &edge);
+    double getFaceAO(const int &face);
 
     // Distances to sets of points
     std::pair<double, int> getMinGeodesicDistanceToSet(const int &face, const std::unordered_set<int> &faces, bool include_self = false);
@@ -177,6 +183,7 @@ private:
     double _ambient_occlusion_supports_alpha;
     double _ambient_occlusion_smoothing_alpha;
     double _smoothing_width_t;
+    int _ambient_occlusion_samples;
 };
 
 #endif // MESHOPERATIONS_H

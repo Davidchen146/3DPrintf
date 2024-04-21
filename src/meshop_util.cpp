@@ -183,3 +183,37 @@ int MeshOperations::getIntersection(const Eigen::Vector3f &ray_position, const E
 void MeshOperations::getBoundaryEdges(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two) {
     return;
 }
+
+// Ambient occlusion operation (edge)
+double MeshOperations::getEdgeAO(const std::pair<int, int> &edge) {
+    // Initialize params to for libigl call (see https://github.com/libigl/libigl/blob/main/tutorial/606_AmbientOcclusion/main.cpp)
+    Eigen::Matrix <float, 2, 3> edge_coords;
+    Eigen::Matrix <float, 2, 3> edge_normals;
+    Eigen::Vector2d AO;
+
+    edge_coords.row(0) = _V.row(edge.first);
+    edge_coords.row(1) = _V.row(edge.second);
+    edge_normals.row(0) = getVertexNormal(edge.first);
+    edge_normals.row(1) = getVertexNormal(edge.second);
+
+    igl::embree::ambient_occlusion(_V, _F, edge_coords, edge_normals, _ambient_occlusion_samples, AO);
+    return AO.mean();
+}
+
+// Ambient occlusion operation (face)
+double MeshOperations::getFaceAO(const int &face) {
+    // Initialize params to for libigl call (see https://github.com/libigl/libigl/blob/main/tutorial/606_AmbientOcclusion/main.cpp)
+    Eigen::Matrix <float, 3, 3> face_coords;
+    Eigen::Matrix <float, 3, 3> face_normals;
+    Eigen::Vector3d AO;
+
+    face_coords.row(0) = _V.row(_F.row(face)(0));
+    face_coords.row(1) = _V.row(_F.row(face)(1));
+    face_coords.row(2) = _V.row(_F.row(face)(2));
+    face_normals.row(0) = getVertexNormal(_F.row(face)(0));
+    face_normals.row(1) = getVertexNormal(_F.row(face)(1));
+    face_normals.row(1) = getVertexNormal(_F.row(face)(2));
+
+    igl::embree::ambient_occlusion(_V, _F, face_coords, face_normals, _ambient_occlusion_samples, AO);
+    return AO.mean();
+}
