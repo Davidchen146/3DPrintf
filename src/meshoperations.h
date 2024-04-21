@@ -109,15 +109,15 @@ private:
     bool isFaceFooted(const int face, const Eigen::Vector3f &direction, const std::vector<std::unordered_set<int>> &patches);
     void populateSupportMatrix(const std::vector<std::unordered_set<int>> &patches,
                                std::vector<Eigen::Vector3f> &directions);
-    void populateSmoothingMatrix();
     // For a supported face, find its footing faces (if any)
     void findFootingFaces(const int face, const Eigen::Vector3f &direction, std::vector<int> &footing_faces);
+    void populateSmoothingMatrix(const std::vector<std::unordered_set<int>> &patches);
     // Compute support coefficient for a face in direction
     double computeSupportCoefficient(const int face, const Eigen::Vector3f &direction,
                                      const std::vector<std::unordered_set<int>> &patches);
     // Compute smoothing coefficient between two sets of faces
-    double computeSmoothingCoefficient(const std::vector<std::unordered_set<int>> &patch_one,
-                                       const std::vector<std::unordered_set<int>> &patch_two);
+    double computeSmoothingCoefficient(const std::unordered_set<int> &patch_one,
+                                       const std::unordered_set<int> &patch_two);
     // Interface to ILP
     void assignPrintingDirections(const std::vector<std::vector<int>> &patches,
                                   const std::vector<Eigen::Vector3f> &printing_directions,
@@ -144,8 +144,8 @@ private:
     // If using BVH, may need to make BVH initialization a preprocessing step
     int getIntersection(const Eigen::Vector3f &ray_position, const Eigen::Vector3f &ray_direction);
 
-    // Gets intersection of edges (or faces, TBD) between two patches
-    void getBoundaryEdges(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two);
+    // Gets intersection of edges between two patches
+    void getBoundaryEdges(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two, std::unordered_set<std::pair<int, int>> &boundaryEdges);
 
     // Basic utility functions for faces
     Eigen::Vector3f getCentroid(const int &face);
@@ -187,7 +187,6 @@ private:
     double _ambient_occlusion_smoothing_alpha;
     double _smoothing_width_t;
     Eigen::MatrixXd _supportCoefficients;
-    Eigen::MatrixXd _smoothingCoefficients;
     int _ambient_occlusion_samples;
     int _footing_samples;
 
@@ -196,6 +195,7 @@ private:
 
     // A very small number
     double epsilon = 0.0001;
+    std::unordered_map<std::pair<int, int>, double> _smoothingCoefficients;
 };
 
 #endif // MESHOPERATIONS_H

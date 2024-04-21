@@ -200,7 +200,7 @@ int MeshOperations::getIntersection(const Eigen::Vector3f &ray_position, const E
 }
 
 // Gets intersection of edges (or faces, TBD) between two patches
-void MeshOperations::getBoundaryEdges(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two) {
+void MeshOperations::getBoundaryEdges(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two, std::unordered_set<std::pair<int, int>> &boundaryEdges) {
     return;
 }
 

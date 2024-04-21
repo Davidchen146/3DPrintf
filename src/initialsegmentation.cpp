@@ -18,7 +18,7 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
     // Step 2: Establish data structures to work with
     // these populate _supportCoefficients, _smoothingCoefficients respectively
     populateSupportMatrix(patches, directions);
-    populateSmoothingMatrix();
+    populateSmoothingMatrix(patches);
 }
 
 // Subroutines used for Phase 2 (Initial Segmentation)
@@ -116,9 +116,19 @@ double MeshOperations::computeSupportCoefficient(const int face, const Eigen::Ve
 }
 
 // Compute smoothing coefficient between two sets of faces
-double MeshOperations::computeSmoothingCoefficient(const std::vector<std::unordered_set<int>> &patch_one,
-                                                   const std::vector<std::unordered_set<int>> &patch_two) {
-    return 0.0;
+double MeshOperations::computeSmoothingCoefficient(const std::unordered_set<int> &patch_one,
+                                                   const std::unordered_set<int> &patch_two) {
+    std::unordered_set<std::pair<int, int>> boundaryEdges;
+    getBoundaryEdges(patch_one, patch_two, boundaryEdges);
+    double weight = 0;
+    for (std::pair<int, int> edge: boundaryEdges) {
+        Vector3f start = _vertices[edge.first];
+        Vector3f end = _vertices[edge.second];
+        double length = (start - end).norm();
+        double AO = getEdgeAO(edge);
+        weight += length * std::pow(AO, _ambient_occlusion_smoothing_alpha);
+    }
+    return weight * _smoothing_width_t;
 }
 
 // Interface to ILP
@@ -186,6 +196,16 @@ void MeshOperations::populateSupportMatrix(const std::vector<std::unordered_set<
 
 }
 
-void MeshOperations::populateSmoothingMatrix() {
-    return;
+void MeshOperations::populateSmoothingMatrix(const std::vector<std::unordered_set<int>> &patches) {
+    int numPatches = patches.size();
+    for (int i = 0; i < numPatches; i++) {
+        for (int j = i+1; j < numPatches; j++) {
+            double cost = computeSmoothingCoefficient(patches[i], patches[j]);
+            if (cost > 0.f) {
+                // The pair here is the pair of PATCH indices, where j > i
+                std::pair<int, int> pair = std::make_pair(i, j);
+                _smoothingCoefficients[pair] = cost;
+            }
+        }
+    }
 }
