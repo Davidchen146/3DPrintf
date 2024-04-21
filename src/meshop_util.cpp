@@ -157,7 +157,16 @@ double MeshOperations::getTotalWeightedDistanceToSet(const int &face, const std:
 
 // For random direction generation
 Eigen::Vector3f MeshOperations::generateRandomVector() {
-    return Eigen::Vector3f(0.0f, 0.0f, 0.0f);
+    // randomly sample from the sphere
+    float phi = 2.f * std::numbers::pi * (float) rand() / (float) UINT32_MAX;
+    float theta = acos(2 * ((float) rand() / (float) UINT32_MAX) - 1);
+
+    // spherical to rectangular converion (with radius = 1)
+    float x = sin(theta) * cos(phi);
+    float y = cos(theta);
+    float z = sin(theta) * sin(phi);
+    Vector3f direction(x, y, z);
+    return direction;
 }
 
 // For determining intersections with other faces

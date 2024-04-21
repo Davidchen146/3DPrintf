@@ -128,8 +128,9 @@ private:
     Eigen::Vector3f getEdgeNormal(const std::pair<int, int> &edge);
     Eigen::Vector3f getVertexNormal(const int &vertex);
 
-    // For random direction generation
+    // Random sampling
     Eigen::Vector3f generateRandomVector();
+    Eigen::Vector3f sampleRandomPoin(const int &face);
 
     // For determining intersections with other faces
     // Should use BVH, some other structure, or there might be something in libigl/VCGlib we can use
