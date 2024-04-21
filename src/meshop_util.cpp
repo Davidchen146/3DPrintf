@@ -155,31 +155,85 @@ double MeshOperations::getTotalWeightedDistanceToSet(const int &face, const std:
     return total_dist;
 }
 
-// Ambient Occlusion (use libigl)
-// Could cache this as a preprocessing step?
-double MeshOperations::getFaceAmbientOcclusion(const int &face) {
-    return 0.0f;
-}
-
-// Ambient occlusion but for edges (use libigl)
-double MeshOperations::getEdgeAmbientOcclusion(const std::pair<int, int> &edge) {
-    return 0.0f;
-}
-
 // For random direction generation
 Eigen::Vector3f MeshOperations::generateRandomVector() {
-    return Eigen::Vector3f(0.0f, 0.0f, 0.0f);
+    // randomly sample from the sphere
+    float phi = 2.f * std::numbers::pi * (float) rand() / (float) UINT32_MAX;
+    float theta = acos(2 * ((float) rand() / (float) UINT32_MAX) - 1);
+
+    // spherical to rectangular converion (with radius = 1)
+    float x = sin(theta) * cos(phi);
+    float y = cos(theta);
+    float z = sin(theta) * sin(phi);
+    Vector3f direction(x, y, z);
+    return direction;
+}
+
+// Sample a random point on a face
+Eigen::Vector3f MeshOperations::sampleRandomPoint(const int &face) {
+    // Draw two random numbers
+    float r1 = rand() / (float) RAND_MAX;
+    float r2 = rand() / (float) RAND_MAX;
+
+    float v1_coeff = 1 - sqrt(r1);
+    float v2_coeff = sqrt(r1) * (1 - r2);
+    float v3_coeff = r2 * sqrt(r1);
+
+    // These are barycentric coordinates used to interpolate points on the triangle
+    return (v1_coeff * _V.row(_F.row(face)(0))) + (v2_coeff * _V.row(_F.row(face)(1))) + (v3_coeff * _V.row(_F.row(face)(2)));
 }
 
 // For determining intersections with other faces
 // Should use BVH, some other structure, or there might be something in libigl/VCGlib we can use
 // If using BVH, may need to make BVH initialization a preprocessing step
 // It should return the face it intersects
-int MeshOperations::getIntersection(const Eigen::Vector3f &ray_position, const Eigen::Vector3f ray_direction) {
-    return 0;
+// Returns -1 if no face was intersected
+int MeshOperations::getIntersection(const Eigen::Vector3f &ray_position, const Eigen::Vector3f &ray_direction) {
+    // Invoke the Embree raytracer, baby!
+    igl::Hit hit;
+    if (_intersector.intersectRay(ray_position, ray_direction, hit)) {
+        // This is the ID (number) of the intersected face
+        return hit.id;
+    }
+    // -1 Means that no face was hit (duh)
+    return -1;
 }
 
 // Gets intersection of edges (or faces, TBD) between two patches
 void MeshOperations::getBoundaryEdges(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two) {
     return;
+}
+
+// Ambient occlusion operation (edge)
+double MeshOperations::getEdgeAO(const std::pair<int, int> &edge) {
+    // Initialize params to for libigl call (see https://github.com/libigl/libigl/blob/main/tutorial/606_AmbientOcclusion/main.cpp)
+    Eigen::Matrix <float, 2, 3> edge_coords;
+    Eigen::Matrix <float, 2, 3> edge_normals;
+    Eigen::Vector2d AO;
+
+    edge_coords.row(0) = _V.row(edge.first);
+    edge_coords.row(1) = _V.row(edge.second);
+    edge_normals.row(0) = getVertexNormal(edge.first);
+    edge_normals.row(1) = getVertexNormal(edge.second);
+
+    igl::embree::ambient_occlusion(_V, _F, edge_coords, edge_normals, _ambient_occlusion_samples, AO);
+    return AO.mean();
+}
+
+// Ambient occlusion operation (face)
+double MeshOperations::getFaceAO(const int &face) {
+    // Initialize params to for libigl call (see https://github.com/libigl/libigl/blob/main/tutorial/606_AmbientOcclusion/main.cpp)
+    Eigen::Matrix <float, 3, 3> face_coords;
+    Eigen::Matrix <float, 3, 3> face_normals;
+    Eigen::Vector3d AO;
+
+    face_coords.row(0) = _V.row(_F.row(face)(0));
+    face_coords.row(1) = _V.row(_F.row(face)(1));
+    face_coords.row(2) = _V.row(_F.row(face)(2));
+    face_normals.row(0) = getVertexNormal(_F.row(face)(0));
+    face_normals.row(1) = getVertexNormal(_F.row(face)(1));
+    face_normals.row(1) = getVertexNormal(_F.row(face)(2));
+
+    igl::embree::ambient_occlusion(_V, _F, face_coords, face_normals, _ambient_occlusion_samples, AO);
+    return AO.mean();
 }

@@ -27,15 +27,7 @@ void MeshOperations::sampleRandomDirections(std::vector<Eigen::Vector3f> &direct
     directions.clear();
 
     for (int i = 0; i < _num_random_dir_samples; i++) {
-        // randomly sample from the sphere
-        float phi = 2.f * std::numbers::pi * (float) rand() / (float) UINT32_MAX;
-        float theta = acos(2 * ((float) rand() / (float) UINT32_MAX) - 1);
-
-        // spherical to rectangular converion (with radius = 1)
-        float x = sin(theta) * cos(phi);
-        float y = cos(theta);
-        float z = sin(theta) * sin(phi);
-        Vector3f direction(x, y, z);
+        Vector3f direction = generateRandomVector();
 
         // NOTE: assumes that directions starts off as an empty vector
         directions.push_back(direction);
@@ -102,8 +94,18 @@ bool MeshOperations::isVertexOverhanging(const int vertex, const Eigen::Vector3f
 // Determine if a face is footing a supported face and requires support
 // Note: this function might not have enough parameters to complete its implementation; not sure
 // It may need to keep track of what faces have already been supported and what patches they belong to
-bool MeshOperations::isFaceFooted(const int face, const Eigen::Vector3f &direction, const std::vector<std::unordered_set<int>> &patches) {
-    return false;
+void MeshOperations::findFootingFaces(const int face, const Eigen::Vector3f &direction, std::vector<int> &footing_faces) {
+    footing_faces.clear();
+
+    // Shoot random rays from this face
+    for (int ray = 0; ray < _footing_samples; ray++) {
+        Eigen::Vector3f ray_origin = sampleRandomPoint(face) + (epsilon * getFaceNormal(face));
+        int intersected_face = getIntersection(ray_origin, -direction);
+
+        if (intersected_face >= 0) {
+            footing_faces.push_back(intersected_face);
+        }
+    }
 }
 
 // Compute support coefficient for a face in direction
