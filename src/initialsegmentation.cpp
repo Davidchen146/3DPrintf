@@ -9,7 +9,16 @@
 void MeshOperations::generateInitialSegmentation(const std::vector<std::unordered_set<int>> &patches,
                                                  std::vector<std::unordered_set<int>> &printable_components,
                                                  std::vector<Eigen::Vector3f> &printing_directions) {
-    return;
+    // goal: populate printable_components, printing_directions
+
+    // Step 1: get printing directions to work with, d
+    std::vector<Eigen::Vector3f> directions(_num_random_dir_samples);
+    sampleRandomDirections(directions);
+
+    // Step 2: Establish data structures to work with
+    // these populate _supportCoefficients, _smoothingCoefficients respectively
+    populateSupportMatrix();
+    populateSmoothingMatrix();
 }
 
 // Subroutines used for Phase 2 (Initial Segmentation)
@@ -126,7 +135,14 @@ void MeshOperations::generatePrintableComponents(const std::vector<std::vector<i
 }
 
 void MeshOperations::populateSupportMatrix() {
-    return;
+    // Goal: populate the PxD _supportCoefficients matrix with coefficients, w_ij
+    // let P (N in paper) be size of set of patches
+    // let D (h in paper) be size of set of directions
+
+    // this coefficient is area of faces needing support, weighted by ambient occlusion
+
+
+
 }
 
 void MeshOperations::populateSmoothingMatrix() {
