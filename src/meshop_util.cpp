@@ -169,12 +169,39 @@ Eigen::Vector3f MeshOperations::generateRandomVector() {
     return direction;
 }
 
+// Sample a random point on a face
+Eigen::Vector3f MeshOperations::sampleRandomPoin(const int &face) {
+    // Draw two random numbers
+    float r1 = rand() / (float) RAND_MAX;
+    float r2 = rand() / (float) RAND_MAX;
+
+    float v1_coeff = 1 - sqrt(r1);
+    float v2_coeff = sqrt(r1) * (1 - r2);
+    float v3_coeff = r2 * sqrt(r1);
+
+    // Points on triangle that barycentric coordinates interpolate
+    Eigen::Vector3f _v1 = _V.row(_F.row(face)(0));
+    Eigen::Vector3f _v2 = _V.row(_F.row(face)(1));
+    Eigen::Vector3f _v3 = _V.row(_F.row(face)(2));
+
+
+    return (v1_coeff * _v1) + (v2_coeff * _v2) + (v3_coeff * _v3);
+}
+
 // For determining intersections with other faces
 // Should use BVH, some other structure, or there might be something in libigl/VCGlib we can use
 // If using BVH, may need to make BVH initialization a preprocessing step
 // It should return the face it intersects
-int MeshOperations::getIntersection(const Eigen::Vector3f &ray_position, const Eigen::Vector3f ray_direction) {
-    return 0;
+// Returns -1 if no face was intersected
+int MeshOperations::getIntersection(const Eigen::Vector3f &ray_position, const Eigen::Vector3f &ray_direction) {
+    // Invoke the Embree raytracer, baby!
+    igl::Hit hit;
+    if (_intersector.intersectRay(ray_position, ray_direction, hit)) {
+        // This is the ID (number) of the intersected face
+        return hit.id;
+    }
+    // -1 Means that no face was hit (duh)
+    return -1;
 }
 
 // Gets intersection of edges (or faces, TBD) between two patches

@@ -7,6 +7,8 @@
 #include <igl/exact_geodesic.h>
 #include <Eigen/Core>
 #include <igl/embree/ambient_occlusion.h>
+#include <igl/embree/EmbreeIntersector.h>
+#include <igl/Hit.h>
 
 #include <unordered_map>
 #include <limits>
@@ -52,7 +54,8 @@ public:
                                           double ambient_occlusion_supports_alpha = 0.5,
                                           double ambient_occlusion_smoothing_alpha = 0.5,
                                           double smoothing_width_t = 0.3,
-                                          int ambient_occlusion_samples = 500);
+                                          int ambient_occlusion_samples = 500,
+                                          int footing_samples = 1);
 
     // Oversegmentation: returns list of lists of faces
     // Each list of faces represents a connected patch (to be merged and assigned a printing direction)
@@ -135,7 +138,7 @@ private:
     // For determining intersections with other faces
     // Should use BVH, some other structure, or there might be something in libigl/VCGlib we can use
     // If using BVH, may need to make BVH initialization a preprocessing step
-    int getIntersection(const Eigen::Vector3f &ray_position, const Eigen::Vector3f ray_direction);
+    int getIntersection(const Eigen::Vector3f &ray_position, const Eigen::Vector3f &ray_direction);
 
     // Gets intersection of edges (or faces, TBD) between two patches
     void getBoundaryEdges(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two);
@@ -180,6 +183,10 @@ private:
     double _ambient_occlusion_smoothing_alpha;
     double _smoothing_width_t;
     int _ambient_occlusion_samples;
+    int _footing_samples;
+
+    // Fields for raytracing
+    igl::embree::EmbreeIntersector _intersector;
 };
 
 #endif // MESHOPERATIONS_H

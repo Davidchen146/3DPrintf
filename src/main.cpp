@@ -162,6 +162,7 @@ int main(int argc, char *argv[])
         double ambient_occlusion_smoothing_alpha = settings.value("Initial/ambient_occlusion_smoothing_alpha").toDouble();
         double smoothing_width_t = settings.value("Initial/smoothing_width_t").toDouble();
         int ambient_occlusion_samples = settings.value("Initial/ambient_occlusion_samples").toInt();
+        int footing_samples = settings.value("Initial/footing_samples").toInt();
 
         // Case on the method
         if (method == "preprocess") {
@@ -192,7 +193,7 @@ int main(int argc, char *argv[])
             std::vector<std::unordered_set<int>> printable_components;
             // Printing directions for each component
             std::vector<Eigen::Vector3f> printing_directions;
-            m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples);
+            m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
             m_o.generateInitialSegmentation(patches, printable_components, printing_directions);
             m_o.visualize(printable_components);
             // TODO: Include a way to orient/visualize printing directions for each printable component

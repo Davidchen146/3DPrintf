@@ -24,6 +24,7 @@ MeshOperations::MeshOperations(Mesh m) {
     _ambient_occlusion_smoothing_alpha = 0.5;
     _smoothing_width_t = 0.3;
     _ambient_occlusion_samples = 500;
+    _footing_samples = 1;
 }
 
 // Configure parameters for 3D printing operations
@@ -76,7 +77,8 @@ void MeshOperations::setInitialSegmentationParameters(int num_random_dir_samples
                                                       double ambient_occlusion_supports_alpha,
                                                       double ambient_occlusion_smoothing_alpha,
                                                       double smoothing_width_t,
-                                                      int ambient_occlusion_samples) {
+                                                      int ambient_occlusion_samples,
+                                                      int footing_samples) {
     // Check against default value (0) to prevent loading in unspecified parameters
     if (num_random_dir_samples != 0) {
         _num_random_dir_samples = num_random_dir_samples;
@@ -102,6 +104,10 @@ void MeshOperations::setInitialSegmentationParameters(int num_random_dir_samples
 
     if (ambient_occlusion_samples != 0) {
         _ambient_occlusion_samples = ambient_occlusion_samples;
+    }
+
+    if (footing_samples != 0) {
+        _footing_samples = footing_samples;
     }
 }
 
@@ -136,6 +142,10 @@ void MeshOperations::preprocess() {
     calculateAvgDistances();
     weightedDistance();
     assert(_weightedDistances.isApprox(_weightedDistances.transpose()));
+
+    // Prepare raytracer
+    std::cout << "Loading mesh into Embree raytracer" << std::endl;
+    _intersector.init(_V, _F);
 }
 
 void MeshOperations::makeAdjacency() {
