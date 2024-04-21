@@ -27,6 +27,24 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
         return;
     }
 
+    // Allocate space for all the items poggers
+    std::vector<std::vector<const MPVariable*>> printing_direction_vars;
+    printing_direction_vars.resize(patches.size());
+    for (int patch = 0; patch < patches.size(); patch++) {
+        printing_direction_vars[patch].resize(_num_random_dir_samples);
+    }
+
+    // Support costs
+    addSupportCosts(printing_direction_vars, patches);
+    // Smoothing costs
+    addSmoothingCosts(printing_direction_vars);
+
+    // SOLVE THIS
+    MPObjective* const objective = _solver->MutableObjective();
+    objective->SetMinimization();
+    _solver->Solve();
+
+
 }
 
 // Subroutines used for Phase 2 (Initial Segmentation)

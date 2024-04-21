@@ -77,6 +77,7 @@ int main(int argc, char *argv[])
         // "Initial/ambient_occlusion_smoothing_alpha": alpha coefficient for ambient occlusion computations for smoothing cost
         // "Initial/smoothing_width_t": t coefficient for smoothing cost (measures size of cut)
         // "Initial/ambient_occlusion_samples": number of samples to cast for ambient occlusion; more samples is more accurate but takes longer
+        // "Initial/footing_samples": number of samples to cast for footing faces
         // Extension: specify faces to hardcode cost values for support (or a region of faces)
     // Refined:
         // TODO: Implement!
