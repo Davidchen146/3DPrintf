@@ -36,8 +36,11 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
 
     // Support costs
     addSupportCosts(printing_direction_vars, patches);
+    int supportVariables = _solver->NumVariables();
     // Smoothing costs
     addSmoothingCosts(printing_direction_vars);
+    int totalVariables = _solver->NumVariables();
+    assert(supportVariables + (_smoothingCoefficients.size() * _num_random_dir_samples) == totalVariables);
 
     // SOLVE THIS
     MPObjective* const objective = _solver->MutableObjective();
@@ -280,7 +283,8 @@ void MeshOperations::addSupportCosts(std::vector<std::vector<const MPVariable*>>
 
 void MeshOperations::addSmoothingCosts(std::vector<std::vector<const MPVariable*>> &variables) {
     const double infinity = _solver->infinity();
-
+    LOG(INFO) << "Num Constraints Pre-XOR: " << _solver->NumConstraints();
+    LOG(INFO) << "Num Neighboring Patch Pairs: " << _smoothingCoefficients.size();
     // For each pair of adjacent faces...
     for (const auto& [patch_pair, smoothing_cost] : _smoothingCoefficients) {
         // For each Direction:
@@ -315,4 +319,5 @@ void MeshOperations::addSmoothingCosts(std::vector<std::vector<const MPVariable*
             c4->SetCoefficient(variables[patch_pair.second][direction], -1.0);
         }
     }
+    LOG(INFO) << "Num Constraints Post-XOR: " << _solver->NumConstraints();
 }
