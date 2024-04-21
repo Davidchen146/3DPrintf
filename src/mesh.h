@@ -34,6 +34,7 @@ struct Face {
     Halfedge* halfedge;
     Eigen::Vector3f normal;
     std::vector<Face *> neighbors;
+    std::vector<Edge *> edges;
 };
 
 struct Halfedge {

@@ -117,8 +117,7 @@ void Mesh::preProcess() {
     // NOTE: consider whether these normals should be area weighted
     // Imma go with "No"
 
-    // compute vertex normals (by interpolating from neighboring triangles)
-    // do these normals need to be weighted by the area? --> they currently are not
+    // compute vertex normals (by averaging the normals of all neighboring faces)
     for (const auto& pair : _vertexMap) {
         Vertex *v = pair.second;
         Halfedge *h = v->halfedge;
@@ -140,21 +139,25 @@ void Mesh::preProcess() {
         e->normal = edgeNormal;
     }
 
-    // get neighbors for each face
+    // get neighboring faces and edges for each face (to store in face struct)
     for (const auto& pair : _faceMap) {
         Face *f_i = pair.second;
         Halfedge *h = f_i->halfedge;
         vector<Face *> neighbors(3);
+        vector<Edge *> edges(3);
         int neighbor_num = 0;
         do {
             Face *f_j = h->twin->face;
             neighbors[neighbor_num] = f_j;
+            Edge *e = h->edge;
+            edges[neighbor_num] = e;
             neighbor_num++;
             h = h->next;
         } while (h != f_i->halfedge);
         assert(neighbor_num == 3);
         f_i->neighbors = neighbors;
-    }
+        f_i->edges = edges;
+    }   
 }
 
 // Converts our data structure back into the original format of _vertices and _faces

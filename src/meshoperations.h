@@ -140,8 +140,8 @@ private:
     // If using BVH, may need to make BVH initialization a preprocessing step
     int getIntersection(const Eigen::Vector3f &ray_position, const Eigen::Vector3f ray_direction);
 
-    // Gets intersection of edges (or faces, TBD) between two patches
-    void getBoundaryEdges(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two);
+    // Gets intersection of edges between two patches
+    void getBoundaryEdges(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two, std::unordered_set<std::pair<int, int>> &boundaryEdges);
 
     // Basic utility functions for faces
     // TODO: Change these functions to do lookups to values stored in the face struct
