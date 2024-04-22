@@ -243,6 +243,8 @@ void MeshOperations::getBoundaryEdges(const std::unordered_set<int> &patch_one, 
 }
 
 // Ambient occlusion operation (edge)
+// 0 is completely occluded, 1 is completely visible
+// This is different from the results of the libigl function, where 0 is completely visible and 1 is completely occluded
 double MeshOperations::getEdgeAO(const std::pair<int, int> &edge) {
     // Initialize params to for libigl call (see https://github.com/libigl/libigl/blob/main/tutorial/606_AmbientOcclusion/main.cpp)
     Eigen::Matrix <float, 2, 3> edge_coords;
@@ -255,10 +257,12 @@ double MeshOperations::getEdgeAO(const std::pair<int, int> &edge) {
     edge_normals.row(1) = getEdgeNormal(edge);
 
     igl::embree::ambient_occlusion(_V, _F, edge_coords, edge_normals, _ambient_occlusion_samples, AO);
-    return AO.mean();
+    return 1 - AO.mean();
 }
 
 // Ambient occlusion operation (face)
+// 0 is completely occluded, 1 is completely visible
+// This is different from the results of the libigl function, where 0 is completely visible and 1 is completely occluded
 double MeshOperations::getFaceAO(const int &face) {
     // Initialize params to for libigl call (see https://github.com/libigl/libigl/blob/main/tutorial/606_AmbientOcclusion/main.cpp)
     Eigen::Matrix <float, 3, 3> face_coords;
@@ -273,5 +277,5 @@ double MeshOperations::getFaceAO(const int &face) {
     face_normals.row(2) = getFaceNormal(face);
 
     igl::embree::ambient_occlusion(_V, _F, face_coords, face_normals, _ambient_occlusion_samples, AO);
-    return AO.mean();
+    return 1 - AO.mean();
 }
