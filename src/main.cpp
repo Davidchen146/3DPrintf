@@ -197,8 +197,7 @@ int main(int argc, char *argv[])
             m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
             m_o.generateInitialSegmentation(patches, printable_components, printing_directions);
             m_o.visualize(printable_components);
-
-            m_o.visualize_printable_components();
+            m_o.visualize_printable_components(printable_components, printing_directions);
         }
         else if (method == "refined") {
             std::cerr << "Error: This phase hasn't been implemented yet" << std::endl;

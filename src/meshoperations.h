@@ -32,8 +32,6 @@ public:
     void angularDistance();
 
     // Distances between arbitrary faces
-    void visualize(std::vector<std::unordered_set<int>>& coloringGroups);
-
     void weightedDistance();
     void calculateAvgDistances();
     void makeAdjacency();
@@ -70,11 +68,13 @@ public:
                                      std::vector<std::unordered_set<int>> &printable_components,
                                      std::vector<Eigen::Vector3f> &printing_directions);
 
-    // just for sanity checking
+    // Visualization routines
+    void visualize(const std::vector<std::unordered_set<int>>& coloringGroups);
+    void visualize_printable_components(const std::vector<std::unordered_set<int>> &printable_components, const std::vector<Eigen::Vector3f> &printing_directions);
+
+    // Debug options for visualization
     void visualizeFaceAO();
     void visualizeEdgeAO();
-
-
 
 private:
     Mesh _mesh;

@@ -215,44 +215,6 @@ void MeshOperations::angularDistance() {
     }
 }
 
-void MeshOperations::visualize(vector<unordered_set<int>>& coloringGroups) {
-    // generate a certain number of colors based on coloringGroups
-    Eigen::MatrixXd C;
-    C.resize(_faces.size(), 3);
-
-    std::unordered_map<int, int> faceToGroup;
-    for (int i = 0; i < coloringGroups.size(); i++) {
-        std::unordered_set<int> group_i = coloringGroups[i];
-        for (auto j = group_i.begin(); j != group_i.end(); j++) {
-            int face_index = *j;
-            assert(!faceToGroup.contains(face_index));
-            faceToGroup[face_index] = i;
-        }
-    }
-
-    std::unordered_map<int, Vector3d> groupToColor;
-    for (int i = 0; i < coloringGroups.size(); i++) {
-        double m_red = static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
-        double m_green = static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
-        double m_blue = static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
-        Vector3d RGB = {m_red, m_green, m_blue};
-        groupToColor[i] = RGB;
-    }
-
-    for (int i = 0; i < _faces.size(); i++) {
-        if (!_seeds_only) {
-            assert(faceToGroup.contains(i));
-            assert(groupToColor.contains(faceToGroup[i]));
-        }
-        C.row(i) = groupToColor[faceToGroup[i]];
-    }
-
-    igl::opengl::glfw::Viewer viewer;
-    viewer.data().set_mesh(_V.cast<double>(), _F);
-    viewer.data().set_colors(C);
-    viewer.launch();
-}
-
 void MeshOperations::weightedDistance() {
     for (int i = 0; i < _n; i++) {
         VectorXd distances = dijkstra(i);
