@@ -198,7 +198,14 @@ private:
     Eigen::MatrixXd _supportCoefficients;
     int _ambient_occlusion_samples;
     int _footing_samples;
+
+    // Refined Segmentation parameters
+    // TODO: Add them
+
+    // ILP solver used for phases 2 and 3 (should be cleared)
     operations_research::MPSolver* _solver;
+
+
 
     // Fields for raytracing
     igl::embree::EmbreeIntersector _intersector;
