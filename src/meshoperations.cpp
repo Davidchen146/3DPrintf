@@ -16,10 +16,21 @@ MeshOperations::MeshOperations(Mesh m) {
     _oversegmentation_bounding_box_coeff = 0.01;
     _num_oversegmentation_iterations = 3;
     _seeds_only = false;
+
+    // Initial segmentation parameters
+    _num_random_dir_samples = 512;
+    _printer_tolerance_angle = 55.f / 180.f * std::numbers::pi; // 55 degrees in radians
+    _ambient_occlusion_supports_alpha = 0.5;
+    _ambient_occlusion_smoothing_alpha = 0.5;
+    _smoothing_width_t = 0.3;
+    _ambient_occlusion_samples = 500;
+    _footing_samples = 1;
 }
 
 // Configure parameters for 3D printing operations
-void MeshOperations::setPreprocessingParameters(double geodesic_weight, double convex_coeff, double concave_coeff) {
+void MeshOperations::setPreprocessingParameters(double geodesic_weight,
+                                                double convex_coeff,
+                                                double concave_coeff) {
     // Check against default value (0) to prevent loading in unspecified parameters
     if (geodesic_weight != 0.0) {
         _geodesic_distance_weight = geodesic_weight;
@@ -34,7 +45,11 @@ void MeshOperations::setPreprocessingParameters(double geodesic_weight, double c
     }
 }
 
-void MeshOperations::setOversegmentationParameters(int num_seed_faces, double proportion_seed_faces, double bounding_box_coeff, int num_iterations, bool seeds_only) {
+void MeshOperations::setOversegmentationParameters(int num_seed_faces,
+                                                   double proportion_seed_faces,
+                                                   double bounding_box_coeff,
+                                                   int num_iterations,
+                                                   bool seeds_only) {
     // Check against default value (0) to prevent loading in unspecified parameters
     if (num_seed_faces != 0.0) {
         _num_seed_faces = num_seed_faces;
@@ -54,6 +69,45 @@ void MeshOperations::setOversegmentationParameters(int num_seed_faces, double pr
 
     if (seeds_only) {
         _seeds_only = seeds_only;
+    }
+}
+
+void MeshOperations::setInitialSegmentationParameters(int num_random_dir_samples,
+                                                      double printer_tolerance_angle,
+                                                      double ambient_occlusion_supports_alpha,
+                                                      double ambient_occlusion_smoothing_alpha,
+                                                      double smoothing_width_t,
+                                                      int ambient_occlusion_samples,
+                                                      int footing_samples) {
+    // Check against default value (0) to prevent loading in unspecified parameters
+    if (num_random_dir_samples != 0) {
+        _num_random_dir_samples = num_random_dir_samples;
+    }
+
+    if (printer_tolerance_angle != 0.0) {
+        // Convert the parameter to radians
+        double angle_rads = printer_tolerance_angle / 180.f * std::numbers::pi;
+        _printer_tolerance_angle = angle_rads;
+    }
+
+    if (ambient_occlusion_supports_alpha != 0.0) {
+        _ambient_occlusion_supports_alpha = ambient_occlusion_supports_alpha;
+    }
+
+    if (ambient_occlusion_smoothing_alpha != 0.0) {
+        _ambient_occlusion_smoothing_alpha = ambient_occlusion_smoothing_alpha;
+    }
+
+    if (smoothing_width_t != 0.0) {
+        _smoothing_width_t = smoothing_width_t;
+    }
+
+    if (ambient_occlusion_samples != 0) {
+        _ambient_occlusion_samples = ambient_occlusion_samples;
+    }
+
+    if (footing_samples != 0) {
+        _footing_samples = footing_samples;
     }
 }
 
@@ -88,14 +142,19 @@ void MeshOperations::preprocess() {
     calculateAvgDistances();
     weightedDistance();
     assert(_weightedDistances.isApprox(_weightedDistances.transpose()));
+
+    // Prepare raytracer
+    std::cout << "Loading mesh into Embree raytracer" << std::endl;
+    _intersector.init(_V, _F);
 }
 
 void MeshOperations::makeAdjacency() {
     std::vector<std::vector<bool>> matrix(_n, std::vector<bool>(_n, false));
     _adjacency = matrix;
 
-    unordered_set<Face *> faceSet = _mesh.getFaceSet();
-    for (Face* f: faceSet) {
+    unordered_map<int, Face *> faceMap = _mesh.getFaceMap();
+    for (const auto& pair : faceMap) {
+        Face *f = pair.second;
         for (Face* n: f->neighbors) {
             _adjacency[f->index][n->index] = true;
         }
@@ -119,8 +178,9 @@ void MeshOperations::geodesicDistance() {
 }
 
 void MeshOperations::angularDistance() {
-    unordered_set<Face *> faceSet = _mesh.getFaceSet();
-    for (Face *f_i : faceSet) {
+    unordered_map<int, Face *> faceMap = _mesh.getFaceMap();
+    for (const auto& pair : faceMap) {
+        Face *f_i = pair.second;
         Vector3f normal_i = f_i->normal;
         Halfedge *h = f_i->halfedge;
         // i think it's easier to do it this way so we know the edge the two adjacent faces share
@@ -187,61 +247,9 @@ void MeshOperations::visualize(vector<unordered_set<int>>& coloringGroups) {
         C.row(i) = groupToColor[faceToGroup[i]];
     }
 
-    // Find the bounding box
-    Eigen::Vector3d m = _V.cast<double>().colwise().minCoeff();
-    Eigen::Vector3d M = _V.cast<double>().colwise().maxCoeff();
-
-    // Corners of the bounding box
-    Eigen::MatrixXd V_box(8,3);
-    V_box <<
-        m(0), m(1), m(2),
-        M(0), m(1), m(2),
-        M(0), M(1), m(2),
-        m(0), M(1), m(2),
-        m(0), m(1), M(2),
-        M(0), m(1), M(2),
-        M(0), M(1), M(2),
-        m(0), M(1), M(2);
-
-    // Edges of the bounding box
-    Eigen::MatrixXi E_box(12,2);
-    E_box <<
-        0, 1,
-        1, 2,
-        2, 3,
-        3, 0,
-        4, 5,
-        5, 6,
-        6, 7,
-        7, 4,
-        0, 4,
-        1, 5,
-        2, 6,
-        7 ,3;
-
     igl::opengl::glfw::Viewer viewer;
     viewer.data().set_mesh(_V.cast<double>(), _F);
     viewer.data().set_colors(C);
-    // Plot the corners of the bounding box as points
-    viewer.data().add_points(V_box,Eigen::RowVector3d(1,0,0));
-
-    // Plot the edges of the bounding box
-    for (unsigned i=0;i<E_box.rows(); ++i)
-        viewer.data().add_edges
-            (
-                V_box.row(E_box(i,0)),
-                V_box.row(E_box(i,1)),
-                Eigen::RowVector3d(1,0,0)
-                );
-    // Plot labels with the coordinates of bounding box vertices
-    std::stringstream l1;
-    l1 << m(0) << ", " << m(1) << ", " << m(2);
-    viewer.data().add_label(m+Eigen::Vector3d(-0.007, 0, 0),l1.str());
-    std::stringstream l2;
-    l2 << M(0) << ", " << M(1) << ", " << M(2);
-    viewer.data().add_label(M+Eigen::Vector3d(0.007, 0, 0),l2.str());
-    // activate label rendering
-    viewer.data().show_custom_labels = true;
     viewer.launch();
 }
 

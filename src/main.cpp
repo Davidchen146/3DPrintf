@@ -71,7 +71,13 @@ int main(int argc, char *argv[])
         // "Oversegmentation/num_iterations": number of iterations to recenter and regrow seeds; 0 means patches will be regrown, but will not recenter
         // "Oversegmentation/seeds_only": only returns the center seed faces of patches
     // Initial:
-        // TODO: Implement!
+        // "Intital/num_random_dir_samples": number of directions to randomly sample
+        // "Initial/printer_tolerance_angle": how far faces can deviate from the printing direction without requiring supports (in degrees)
+        // "Initial/ambient_occlusion_supports_alpha": alpha coefficient for ambient occlusion computations for support cost
+        // "Initial/ambient_occlusion_smoothing_alpha": alpha coefficient for ambient occlusion computations for smoothing cost
+        // "Initial/smoothing_width_t": t coefficient for smoothing cost (measures size of cut)
+        // "Initial/ambient_occlusion_samples": number of samples to cast for ambient occlusion; more samples is more accurate but takes longer
+        // "Initial/footing_samples": number of samples to cast for footing faces
         // Extension: specify faces to hardcode cost values for support (or a region of faces)
     // Refined:
         // TODO: Implement!
@@ -90,6 +96,7 @@ int main(int argc, char *argv[])
     Mesh m;
     m.loadFromFile(infile.toStdString());
     m.preProcess();
+    m.validate();
     // TODO: Make this take a reference to an existing mesh instead to avoid copying?
     MeshOperations m_o(m);
 
@@ -99,7 +106,7 @@ int main(int argc, char *argv[])
     // Determine operation
     // Control flow flag to determine if doing 3Dprintf or mesh operations
     bool is_mesh_operation = method == "subdivide" || method == "simplify" || method == "remesh";
-    bool is_3d_print_operation = method == "preprocess" || method == "oversegmentation" || method == "initial" || method == "refined" || method == "fabricate";
+    bool is_3d_print_operation = method == "preprocess" || method == "oversegmentation" || method == "initial" || method == "refined" || method == "fabricate" || method == "sanity";
 
     // Mesh project operations
     if (is_mesh_operation) {
@@ -113,17 +120,23 @@ int main(int argc, char *argv[])
         int remesh_num_iterations = settings.value("Remesh/num_iterations").toInt();
         double smoothing_weight = settings.value("Remesh/smoothing_weight").toDouble();
 
-        // Case on the method
+        // Case on method
         if (method == "subdivide") {
-            std::cerr << "Error: Mesh loop subdivision operation not yet supported" << std::endl;
+            for (int i = 0; i < subdivide_num_iterations; i++) {
+                m.loopSubdivide();
+            }
+            m.validate();
+            m.convert();
         }
         else if (method == "simplify") {
             // Determine how many faces to remove
             if (target_faces != 0) {
-                int num_mesh_faces = m.getFaceSet().size();
+                int num_mesh_faces = m.getFaceMap().size();
                 faces_to_remove = std::max(num_mesh_faces - target_faces, 0);
             }
             m.simplify(faces_to_remove);
+            m.validate();
+            m.convert();
         }
         else if (method == "remesh") {
             std::cerr << "Error: Mesh isotropic remeshing operation not yet supported" << std::endl;
@@ -143,6 +156,14 @@ int main(int argc, char *argv[])
         double e_patch = settings.value("Oversegmentation/e_patch").toDouble();
         int num_iterations = settings.value("Oversegmentation/num_iterations").toInt();
         bool seeds_only = settings.value("Oversegmentation/seeds_only").toBool();
+        // Initial Segmentation
+        int num_random_dir_samples = settings.value("Intital/num_random_dir_samples").toInt();
+        double printer_tolerance_angle = settings.value("Initial/printer_tolerance_angle").toDouble(); // In degrees
+        double ambient_occlusion_supports_alpha = settings.value("Initial/ambient_occlusion_supports_alpha").toDouble();
+        double ambient_occlusion_smoothing_alpha = settings.value("Initial/ambient_occlusion_smoothing_alpha").toDouble();
+        double smoothing_width_t = settings.value("Initial/smoothing_width_t").toDouble();
+        int ambient_occlusion_samples = settings.value("Initial/ambient_occlusion_samples").toInt();
+        int footing_samples = settings.value("Initial/footing_samples").toInt();
 
         // Case on the method
         if (method == "preprocess") {
@@ -160,13 +181,56 @@ int main(int argc, char *argv[])
             m_o.visualize(patches);
         }
         else if (method == "initial") {
-            std::cerr << "Error: This phase hasn't been implemented yet" << std::endl;
+            m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
+            m_o.preprocess();
+
+            // This vec will hold the labelings
+            std::vector<std::unordered_set<int>> patches;
+            m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, seeds_only);
+            m_o.generateOversegmentation(patches);
+            m_o.visualize(patches);
+
+            // The printable components
+            std::vector<std::unordered_set<int>> printable_components;
+            // Printing directions for each component
+            std::vector<Eigen::Vector3f> printing_directions;
+            m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
+            m_o.generateInitialSegmentation(patches, printable_components, printing_directions);
+            m_o.visualize(printable_components);
+            // TODO: Include a way to orient/visualize printing directions for each printable component
         }
         else if (method == "refined") {
             std::cerr << "Error: This phase hasn't been implemented yet" << std::endl;
         }
         else if (method == "fabricate") {
             std::cerr << "Error: This phase hasn't been implemented yet" << std::endl;
+        }
+        else if (method == "sanity") {
+            m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
+            m_o.preprocess();
+            m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
+
+            QString sanity_method  = settings.value("Global/sanity_method").toString();
+
+            if (sanity_method == "ao_face") {
+                m_o.visualizeFaceAO();
+            } else if (sanity_method == "ao_edge") {
+                m_o.visualizeEdgeAO();
+            }
+
+
+            // things to check
+
+            // pick one patch, get its neighboring patches, visualize coefficients for smoothing cost
+
+            // pick one printing direction, for this printing direction compute the cost of each patch, then visualize these costs (ex: higher costs are red)
+
+            // visualize ambient occlusion (get something similar to figure 5 from the paper)
+
+            // ambient occlusion of faces
+
+            // ambient occlusion of edges
+
         }
     }
     else {

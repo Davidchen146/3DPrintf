@@ -53,6 +53,8 @@ add_executable(${PROJECT_NAME}
     src/meshoperations.cpp
     src/oversegmentation.cpp
     src/meshop_util.cpp
+    src/initialsegmentation.cpp
+    src/sanitycheck.cpp
 )
 
 # Specifies libraries to be linked (Qt components, glew, etc)

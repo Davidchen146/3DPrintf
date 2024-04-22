@@ -2,22 +2,21 @@
 #include <limits.h>
 
 // Computes normal for a face
-Eigen::Vector3f MeshOperations::getNormal(const int &face) {
-    assert(face >= 0 && face < _faces.size());
+Eigen::Vector3f MeshOperations::getFaceNormal(const int &face) {
+    Eigen::Vector3f faceNormal = _mesh.getFace(face)->normal;
+    return faceNormal;
+}
 
-    // Obtain 3 vertices of the face
-    Eigen::Vector3i face_vertices = _faces[face];
-    Eigen::Vector3f A = _vertices[face_vertices(0)];
-    Eigen::Vector3f B = _vertices[face_vertices(1)];
-    Eigen::Vector3f C = _vertices[face_vertices(2)];
+// Normal computation for edge
+Eigen::Vector3f MeshOperations::getEdgeNormal(const std::pair<int, int> &edge) {
+    Eigen::Vector3f edgeNormal = _mesh.getEdge(edge)->normal;
+    return edgeNormal;
+}
 
-    // Create the edges that define the cross product (these lie on the plane of the face)
-    Eigen::Vector3f AB = B - A;
-    Eigen::Vector3f AC = C - A;
-
-    // Do the cross product (this is a normal vector to the face)
-    Eigen::Vector3f cross = AC.cross(AB);
-    return cross.normalized();
+// Normal computation for vertex
+Eigen::Vector3f MeshOperations::getVertexNormal(const int &vertex) {
+    Eigen::Vector3f vertexNormal = _mesh.getVertex(vertex)->normal;
+    return vertexNormal;
 }
 
 // Computes area for a face
@@ -154,4 +153,125 @@ double MeshOperations::getTotalWeightedDistanceToSet(const int &face, const std:
     }
 
     return total_dist;
+}
+
+// For random direction generation
+Eigen::Vector3f MeshOperations::generateRandomVector() {
+    // randomly sample from the sphere
+    float r1 = rand() / (float) RAND_MAX;
+    float r2 = rand() / (float) RAND_MAX;
+    float phi = 2 * std::numbers::pi * r1;
+    float theta = acos(1 - (2 * r2));
+
+    // spherical to rectangular converion (with radius = 1)
+    float x = sin(theta) * cos(phi);
+    float y = cos(theta);
+    float z = sin(theta) * sin(phi);
+    Vector3f direction(x, y, z);
+    std::cout << "Sampled random vector (" << x << ", " << y << ", " << z << ")" << std::endl;
+    return direction.normalized();
+}
+
+// Sample a random point on a face
+Eigen::Vector3f MeshOperations::sampleRandomPoint(const int &face) {
+    // Draw two random numbers
+    float r1 = rand() / (float) RAND_MAX;
+    float r2 = rand() / (float) RAND_MAX;
+
+    float v1_coeff = 1 - sqrt(r1);
+    float v2_coeff = sqrt(r1) * (1 - r2);
+    float v3_coeff = r2 * sqrt(r1);
+
+    // These are barycentric coordinates used to interpolate points on the triangle
+    return (v1_coeff * _V.row(_F.row(face)(0))) + (v2_coeff * _V.row(_F.row(face)(1))) + (v3_coeff * _V.row(_F.row(face)(2)));
+}
+
+// For determining intersections with other faces
+// Should use BVH, some other structure, or there might be something in libigl/VCGlib we can use
+// If using BVH, may need to make BVH initialization a preprocessing step
+// It should return the face it intersects
+// Returns -1 if no face was intersected
+int MeshOperations::getIntersection(const Eigen::Vector3f &ray_position, const Eigen::Vector3f &ray_direction) {
+    // Invoke the Embree raytracer, baby!
+    igl::Hit hit;
+    if (_intersector.intersectRay(ray_position, ray_direction, hit)) {
+        // This is the ID (number) of the intersected face
+        return hit.id;
+    }
+    // -1 Means that no face was hit (duh)
+    return -1;
+}
+
+void MeshOperations::updateBoundarySet(const std::pair<int, int> edge, std::unordered_set<std::pair<int, int>, PairHash>& boundary_set) {
+    // NOTE: if this seems buggy use a map that keeps track of edge count instead
+    // but each edge should either have a count of 1 or 2
+    if (boundary_set.contains(edge)) {
+        boundary_set.erase(edge);
+    } else {
+        boundary_set.insert(edge);
+    }
+}
+
+void MeshOperations::getPatchBoundary(const std::unordered_set<int>& patch, std::unordered_set<std::pair<int, int>, PairHash>& patch_boundary) {
+    for (int face : patch) {
+        Eigen::Vector3i vertexIndices = _faces[face];
+        std::pair<int, int> e1 = _mesh.getSortedPair(vertexIndices[0], vertexIndices[1]);
+        std::pair<int, int> e2 = _mesh.getSortedPair(vertexIndices[1], vertexIndices[2]);
+        std::pair<int, int> e3 = _mesh.getSortedPair(vertexIndices[0], vertexIndices[2]);
+        updateBoundarySet(e1, patch_boundary);
+        updateBoundarySet(e2, patch_boundary);
+        updateBoundarySet(e3, patch_boundary);
+    }
+}
+
+// Gets intersection of edges between two patches
+void MeshOperations::getBoundaryEdges(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two, std::unordered_set<std::pair<int, int>, PairHash> &boundaryEdges) {
+    // get the boundary of patch one (set of edges)
+    std::unordered_set<std::pair<int, int>, PairHash> patch_one_boundary;
+    getPatchBoundary(patch_one, patch_one_boundary);
+
+    // get the boundary of patch two (set of edges)
+    std::unordered_set<std::pair<int, int>, PairHash> patch_two_boundary;
+    getPatchBoundary(patch_two, patch_two_boundary);
+
+    // get the intersection between these two sets
+    for (std::pair<int, int> patchOneEdge : patch_one_boundary) {
+        if (patch_two_boundary.contains(patchOneEdge)) {
+            boundaryEdges.insert(patchOneEdge);
+        }
+    }
+}
+
+// Ambient occlusion operation (edge)
+double MeshOperations::getEdgeAO(const std::pair<int, int> &edge) {
+    // Initialize params to for libigl call (see https://github.com/libigl/libigl/blob/main/tutorial/606_AmbientOcclusion/main.cpp)
+    Eigen::Matrix <float, 2, 3> edge_coords;
+    Eigen::Matrix <float, 2, 3> edge_normals;
+    Eigen::Vector2d AO;
+
+    edge_coords.row(0) = _V.row(edge.first);
+    edge_coords.row(1) = _V.row(edge.second);
+    edge_normals.row(0) = getEdgeNormal(edge);
+    edge_normals.row(1) = getEdgeNormal(edge);
+
+    igl::embree::ambient_occlusion(_V, _F, edge_coords, edge_normals, _ambient_occlusion_samples, AO);
+    return AO.mean();
+}
+
+// Ambient occlusion operation (face)
+double MeshOperations::getFaceAO(const int &face) {
+    // Initialize params to for libigl call (see https://github.com/libigl/libigl/blob/main/tutorial/606_AmbientOcclusion/main.cpp)
+    Eigen::Matrix <float, 3, 3> face_coords;
+    Eigen::Matrix <float, 3, 3> face_normals;
+    Eigen::Vector3d AO;
+
+    face_coords.row(0) = _V.row(_F.row(face)(0));
+    face_coords.row(1) = _V.row(_F.row(face)(1));
+    face_coords.row(2) = _V.row(_F.row(face)(2));
+    face_normals.row(0) = getFaceNormal(face);
+    face_normals.row(1) = getFaceNormal(face);
+    face_normals.row(2) = getFaceNormal(face);
+
+    igl::embree::ambient_occlusion(_V, _F, face_coords, face_normals, _ambient_occlusion_samples, AO);
+    return AO.mean();
 }
