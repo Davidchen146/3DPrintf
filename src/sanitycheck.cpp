@@ -1,21 +1,20 @@
 #include "src/meshoperations.h"
 #include <igl/opengl/glfw/Viewer.h>
 
-double max_ao;
-
 // Linear interpolation function
 Eigen::Vector3d lerp(const Eigen::Vector3d& color1, const Eigen::Vector3d& color2, double t) {
     return color1 + t * (color2 - color1);
 }
 
-Eigen::Vector3d mapAOToColor(double ao_value) {
+// Blue is small, green/yellow is medium, and red is high
+Eigen::Vector3d mapValueToColor(double value, double max_value) {
     // Interpolate between blue (low AO), green/yellow (medium AO), and red (high AO)
-    if (ao_value <= (max_ao / 2)) {
+    if (value <= (max_value / 2)) {
         // Blue to green/yellow interpolation
-        return lerp(Eigen::Vector3d(0.0, 0.0, 1.0), Eigen::Vector3d(0.0, 1.0, 0.0), ao_value * 2 / max_ao);
+        return lerp(Eigen::Vector3d(0.0, 0.0, 1.0), Eigen::Vector3d(0.0, 1.0, 0.0), value * 2 / max_value);
     } else {
         // Green/yellow to red interpolation
-        return lerp(Eigen::Vector3d(0.0, 1.0, 0.0), Eigen::Vector3d(1.0, 0.0, 0.0), (ao_value - (max_ao / 2)) / (max_ao / 2));
+        return lerp(Eigen::Vector3d(0.0, 1.0, 0.0), Eigen::Vector3d(1.0, 0.0, 0.0), (value - (max_value / 2)) / (max_value / 2));
     }
 }
 
@@ -23,7 +22,7 @@ void MeshOperations::visualizeFaceAO() {
     Eigen::MatrixXd C;
     C.resize(_faces.size(), 3);
 
-    max_ao = 0;
+    double max_ao = 0;
     vector<double> ao_vals;
     for (int i = 0; i < _faces.size(); i++) {
         double ao = getFaceAO(i);
@@ -32,7 +31,7 @@ void MeshOperations::visualizeFaceAO() {
     }
 
     for (int i = 0; i < _faces.size(); i++) {
-        C.row(i) = mapAOToColor(max_ao - ao_vals[i]);
+        C.row(i) = mapValueToColor(max_ao - ao_vals[i], max_ao);
     }
 
     igl::opengl::glfw::Viewer viewer;
@@ -45,7 +44,7 @@ void MeshOperations::visualizeEdgeAO() {
     Eigen::MatrixXd C;
     C.resize(_faces.size(), 3);
 
-    max_ao = 0;
+    double max_ao = 0;
     vector<double> ao_vals;
     for (int i = 0; i < _faces.size(); i++) {
         Eigen::Vector3i vertexIndices = _faces[i];
@@ -61,7 +60,7 @@ void MeshOperations::visualizeEdgeAO() {
     }
 
     for (int i = 0; i < _faces.size(); i++) {
-        C.row(i) = mapAOToColor(max_ao - ao_vals[i]);
+        C.row(i) = mapValueToColor(max_ao - ao_vals[i], max_ao);
     }
 
     igl::opengl::glfw::Viewer viewer;

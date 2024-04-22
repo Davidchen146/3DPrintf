@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
         int num_iterations = settings.value("Oversegmentation/num_iterations").toInt();
         bool seeds_only = settings.value("Oversegmentation/seeds_only").toBool();
         // Initial Segmentation
-        int num_random_dir_samples = settings.value("Intital/num_random_dir_samples").toInt();
+        int num_random_dir_samples = settings.value("Initial/num_random_dir_samples").toInt();
         double printer_tolerance_angle = settings.value("Initial/printer_tolerance_angle").toDouble(); // In degrees
         double ambient_occlusion_supports_alpha = settings.value("Initial/ambient_occlusion_supports_alpha").toDouble();
         double ambient_occlusion_smoothing_alpha = settings.value("Initial/ambient_occlusion_smoothing_alpha").toDouble();
@@ -197,7 +197,8 @@ int main(int argc, char *argv[])
             m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
             m_o.generateInitialSegmentation(patches, printable_components, printing_directions);
             m_o.visualize(printable_components);
-            // TODO: Include a way to orient/visualize printing directions for each printable component
+
+            m_o.visualize_printable_components();
         }
         else if (method == "refined") {
             std::cerr << "Error: This phase hasn't been implemented yet" << std::endl;
