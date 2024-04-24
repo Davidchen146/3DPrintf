@@ -58,6 +58,7 @@ void MeshOperations::visualize(const vector<unordered_set<int>>& coloringGroups)
     viewer.launch();
 }
 
+// Visualizes supported faces as red and unsupported faces as green
 void MeshOperations::visualizePrintableComponents(const std::vector<std::unordered_set<int>> &printable_components, const std::vector<Eigen::Vector3f> &printing_directions) {
     // Only visualize individual printable components and orient the viewer so that these directions point upwards
     int num_components = printable_components.size();
