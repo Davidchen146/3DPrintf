@@ -58,7 +58,7 @@ void MeshOperations::visualize(const vector<unordered_set<int>>& coloringGroups)
     viewer.launch();
 }
 
-void MeshOperations::visualize_printable_components(const std::vector<std::unordered_set<int>> &printable_components, const std::vector<Eigen::Vector3f> &printing_directions) {
+void MeshOperations::visualizePrintableComponents(const std::vector<std::unordered_set<int>> &printable_components, const std::vector<Eigen::Vector3f> &printing_directions) {
     // Only visualize individual printable components and orient the viewer so that these directions point upwards
     int num_components = printable_components.size();
     assert(printing_directions.size() == printable_components.size());
@@ -69,7 +69,7 @@ void MeshOperations::visualize_printable_components(const std::vector<std::unord
         component_vertices.resize(_V.rows(), 3);
         Eigen::Vector3f printing_direction = printing_directions[component];
         // This matrix will rotate the printing direction to directly upwards, so it will rotate the mesh so the printing direction is upwards
-        Eigen::Matrix3f rotation = igl::rotation_matrix_from_directions(printing_direction, Eigen::Vector3f(0.0, 1.0, 0.0));
+        Eigen::Matrix3f rotation = igl::rotation_matrix_from_directions(printing_direction, Eigen::Vector3f(0.0, 1.0, 0.0)).transpose();
         component_vertices = _V * rotation;
 
         // Determine what faces we want to visualize
@@ -88,6 +88,94 @@ void MeshOperations::visualize_printable_components(const std::vector<std::unord
         viewer.data().set_mesh(component_vertices.cast<double>(), component_faces);
         viewer.launch();
     }
+}
+
+// Debug to visualize outputs of the angular distance metric
+void MeshOperations::visualizeAngularDistance() {
+    Eigen::MatrixXd color;
+    color.resize(_F.size(), 3);
+
+    // For each face, assign it the average angular distance of its neighbors
+    for (int face = 0; face < _F.rows(); face++) {
+        double avg_angular_dist = 0.0;
+        const Face *current_face = _mesh.getFace(face);
+        // for ();
+    }
+}
+
+// Debug to visualize support costs given a direction
+// Does not require an oversegmentation (all values are computed per-face)
+void MeshOperations::visualizeSupportCosts(const Eigen::Vector3f &printing_direction) {
+    Eigen::MatrixXd color;
+    color.resize(_F.rows(), 3);
+
+    // For each face, assign it the support cost for being printed in this direction
+    // Determine supporting faces
+    std::unordered_set<int> supported_faces;
+    for (int face = 0; face < _F.rows(); face++) {
+        // Is face supported?
+        bool is_face_supported = false;
+        is_face_supported |= isFaceOverhanging(face, printing_direction);
+        // get the edges to check each of them for overhang
+        int v1 = _F.row(face)(0);
+        int v2 = _F.row(face)(1);
+        int v3 = _F.row(face)(2);
+        std::pair<int, int> e1 = (v1 < v2) ? std::make_pair(v1, v2) : std::make_pair(v2, v1);
+        std::pair<int, int> e2 = (v2 < v3) ? std::make_pair(v2, v3) : std::make_pair(v3, v2);
+        std::pair<int, int> e3 = (v3 < v1) ? std::make_pair(v3, v1) : std::make_pair(v1, v3);
+        // case b, c: edge or vertex normals form  angle w/ base greater than a threshold (paper uses 55)
+        is_face_supported |= isVertexOverhanging(v1, printing_direction) || isVertexOverhanging(v2, printing_direction) || isVertexOverhanging(v3, printing_direction);
+        is_face_supported |= isEdgeOverhanging(e1, printing_direction) || isEdgeOverhanging(e2, printing_direction) || isEdgeOverhanging(e3, printing_direction);
+
+        // BUT IS THE FACE SUPPORTED?
+        if (is_face_supported) {
+            supported_faces.insert(face);
+            // Determine footing faces
+            std::vector<int> newFootedFaces;
+            findFootingFaces(face, printing_direction, newFootedFaces);
+            for (const int &newFace : newFootedFaces) {
+                supported_faces.insert(newFace);
+            }
+        }
+    }
+
+    // Determine max cost
+    double max_support_cost = 0;
+    for (const int &face : supported_faces) {
+        double support_cost = computeSupportCoefficient(face);
+        if (support_cost > max_support_cost) {
+            max_support_cost = support_cost;
+        }
+        if (support_cost < 0) {
+            std::cout << "Holy shit you messed something up" << std::endl;
+        }
+    }
+
+    // Produce appropriate outputs
+    for (int face = 0; face < _F.rows(); face++) {
+        if (supported_faces.contains(face)) {
+            color.row(face) = mapValueToColor(computeSupportCoefficient(face), max_support_cost);
+            Eigen::Vector3f normal = getFaceNormal(face);
+            // std::cout << "Normal of supported face: (" << normal(0) << ", " << normal(1) << ", " << normal(2) << ")" << std::endl;
+        } else {
+            color.row(face) = Eigen::Vector3d(0.0, 0.0, 0.0);
+        }
+    }
+
+    // Visualize!
+    // Rotate!
+    Eigen::MatrixXf rotated_vertices;
+    rotated_vertices.resize(_V.rows(), 3);
+    Eigen::Matrix3f rotation = igl::rotation_matrix_from_directions(printing_direction, Eigen::Vector3f(0.0, 1.0, 0.0)).transpose();
+    std::cout << "What is the matrix: " << rotation << std::endl;
+    rotated_vertices = _V * rotation;
+
+    // Visualize the faces
+    igl::opengl::glfw::Viewer viewer;
+    viewer.data().set_mesh(rotated_vertices.cast<double>(), _F);
+    // viewer.data().set_mesh(_V.cast<double>(), _F);
+    viewer.data().set_colors(color);
+    viewer.launch();
 }
 
 // Debug to visualize outputs of the AO subroutine

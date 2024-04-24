@@ -78,7 +78,8 @@ void MeshOperations::setInitialSegmentationParameters(int num_random_dir_samples
                                                       double ambient_occlusion_smoothing_alpha,
                                                       double smoothing_width_t,
                                                       int ambient_occlusion_samples,
-                                                      int footing_samples) {
+                                                      int footing_samples,
+                                                      bool axis_only) {
     // Check against default value (0) to prevent loading in unspecified parameters
     if (num_random_dir_samples != 0) {
         _num_random_dir_samples = num_random_dir_samples;
@@ -109,9 +110,17 @@ void MeshOperations::setInitialSegmentationParameters(int num_random_dir_samples
     if (footing_samples != 0) {
         _footing_samples = footing_samples;
     }
+
+    // Only generate a printing direction for each axis
+    if (axis_only) {
+        _axis_only = true;
+        _num_random_dir_samples = 6;
+    }
 }
 
-void MeshOperations::preprocess() {
+// Preprocessing subroutines
+void MeshOperations::preprocessData() {
+    std::cout << "Loading mesh data" << std::endl;
     _vertices = _mesh.getVertices();
     _faces = _mesh.getFaces();
     numVertices = _vertices.size();
@@ -125,6 +134,24 @@ void MeshOperations::preprocess() {
     for (int i = 0; i < numFaces; i++) {
         _F.row(i) = _faces[i];
     }
+}
+
+void MeshOperations::makeAdjacency() {
+    std::vector<std::vector<bool>> matrix(_n, std::vector<bool>(_n, false));
+    _adjacency = matrix;
+
+    unordered_map<int, Face *> faceMap = _mesh.getFaceMap();
+    for (const auto& pair : faceMap) {
+        Face *f = pair.second;
+        for (Face* n: f->neighbors) {
+            _adjacency[f->index][n->index] = true;
+        }
+    }
+}
+
+// Does preprocessing related to mesh distance computations
+// Must be called after data is preprocessed in preprocessData
+void MeshOperations::preprocessDistances() {
     _geodesicDistances.resize(numFaces, numFaces);
     _angularDistances.resize(numFaces, numFaces);
     _weightedDistances.resize(numFaces, numFaces);
@@ -142,23 +169,14 @@ void MeshOperations::preprocess() {
     calculateAvgDistances();
     weightedDistance();
     assert(_weightedDistances.isApprox(_weightedDistances.transpose()));
+}
 
+// Does preprocessing related to raytracing operations
+// Must be called after data is preprocessed in preprocessData
+void MeshOperations::preprocessRaytracer() {
     // Prepare raytracer
     std::cout << "Loading mesh into Embree raytracer" << std::endl;
     _intersector.init(_V, _F);
-}
-
-void MeshOperations::makeAdjacency() {
-    std::vector<std::vector<bool>> matrix(_n, std::vector<bool>(_n, false));
-    _adjacency = matrix;
-
-    unordered_map<int, Face *> faceMap = _mesh.getFaceMap();
-    for (const auto& pair : faceMap) {
-        Face *f = pair.second;
-        for (Face* n: f->neighbors) {
-            _adjacency[f->index][n->index] = true;
-        }
-    }
 }
 
 void MeshOperations::geodesicDistance() {

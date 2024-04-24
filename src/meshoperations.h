@@ -24,8 +24,12 @@ class MeshOperations
 public:
     MeshOperations(Mesh m);
 
+    // Data preprocessing
+    void preprocessData();
+    void preprocessDistances();
+    void preprocessRaytracer();
+
     // Computes global shortest path between faces using geodesic distance
-    void preprocess();
     void geodesicDistance();
 
     // Computes local angular distance between pairs of adjacent faces
@@ -37,6 +41,7 @@ public:
     void makeAdjacency();
     double getGeodesicDistance(int i, int j);
     double getWeightedDistance(int i, int j);
+    double getAngularDistance(int i, int j);
     Eigen::VectorXd dijkstra(int start);
 
     // Sets parameters for various operations
@@ -54,7 +59,8 @@ public:
                                           double ambient_occlusion_smoothing_alpha = 0.5,
                                           double smoothing_width_t = 0.3,
                                           int ambient_occlusion_samples = 500,
-                                          int footing_samples = 1);
+                                          int footing_samples = 1,
+                                          bool axis_only = false);
 
     // Oversegmentation: returns list of lists of faces
     // Each list of faces represents a connected patch (to be merged and assigned a printing direction)
@@ -70,11 +76,17 @@ public:
 
     // Visualization routines
     void visualize(const std::vector<std::unordered_set<int>>& coloringGroups);
-    void visualize_printable_components(const std::vector<std::unordered_set<int>> &printable_components, const std::vector<Eigen::Vector3f> &printing_directions);
+    void visualizePrintableComponents(const std::vector<std::unordered_set<int>> &printable_components, const std::vector<Eigen::Vector3f> &printing_directions);
+    void visualizeSupportCosts(const Eigen::Vector3f &printing_direction);
 
     // Debug options for visualization
     void visualizeFaceAO();
     void visualizeEdgeAO();
+    void visualizeAngularDistance();
+
+    // Random direction visualization
+    Eigen::Vector3f generateRandomVector();
+
 
 private:
     Mesh _mesh;
@@ -138,7 +150,6 @@ private:
     Eigen::Vector3f getVertexNormal(const int &vertex);
 
     // Random sampling
-    Eigen::Vector3f generateRandomVector();
     Eigen::Vector3f sampleRandomPoint(const int &face);
 
     // For determining intersections with other faces
@@ -198,6 +209,7 @@ private:
     Eigen::MatrixXd _supportCoefficients;
     int _ambient_occlusion_samples;
     int _footing_samples;
+    bool _axis_only;
 
     // Refined Segmentation parameters
     // TODO: Add them

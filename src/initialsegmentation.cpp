@@ -66,12 +66,24 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
 void MeshOperations::sampleRandomDirections(std::vector<Eigen::Vector3f> &directions) {
     directions.clear();
 
-    for (int i = 0; i < _num_random_dir_samples; i++) {
-        Vector3f direction = generateRandomVector();
+    // Generate axis-aligned directions only?
+    if (_axis_only) {
+        directions.emplace_back(1, 0, 0);
+        directions.emplace_back(-1, 0, 0);
+        directions.emplace_back(0, 1, 0);
+        directions.emplace_back(0, -1, 0);
+        directions.emplace_back(0, 0, 1);
+        directions.emplace_back(0, 0, -1);
+    } else {
+        for (int i = 0; i < _num_random_dir_samples; i++) {
+            Vector3f direction = generateRandomVector();
 
-        // NOTE: assumes that directions starts off as an empty vector
-        directions.push_back(direction);
+            // NOTE: assumes that directions starts off as an empty vector
+            directions.push_back(direction);
+        }
     }
+
+    _num_random_dir_samples = directions.size();
 }
 
 // Determine if a face is overhanging and requires support
@@ -84,11 +96,20 @@ bool MeshOperations::isFaceOverhanging(const int face, const Eigen::Vector3f &di
         return false;
     }
 
-    // The face needs support if its angle is more than 90 degrees + printing tolerance angle away from the direction
-    double angle = acos(dot) / (faceNormal.norm() * direction.norm());
+    // return true;
 
-    // compare with tolerance angle + right angle (90 degrees or 1/2 pi)
-    return angle > _printer_tolerance_angle + (std::numbers::pi / 2);
+    // The face needs support if its angle is more than 90 degrees + printing tolerance angle away from the direction
+    // Flip direction and check
+    // double angle1 = acos(faceNormal.dot(-direction)) / (faceNormal.norm() * direction.norm());
+    // double angle = acos(dot) / (faceNormal.norm() * direction.norm());
+
+    // bool cond1 = angle1 < (std::numbers::pi / 2) - _printer_tolerance_angle;
+
+
+    // // compare with tolerance angle + right angle (90 degrees or 1/2 pi)
+    // return angle > _printer_tolerance_angle + (std::numbers::pi / 2);
+    double angle = acos(-dot);
+    return angle < (std::numbers::pi / 2) - _printer_tolerance_angle;
 }
 
 // Determine if an edge is overhanging and requires support
@@ -101,11 +122,15 @@ bool MeshOperations::isEdgeOverhanging(const std::pair<int, int> &edge, const Ei
         return false;
     }
 
+    // return true;
+
     // The edge needs support if its angle is more than 90 degrees + printing tolerance angle away from the direction
-    double angle = acos(dot) / (edgeNormal.norm() * direction.norm());
+    // double angle = acos(dot) / (edgeNormal.norm() * direction.norm());
 
     // compare with tolerance angle + right angle (90 degrees or 1/2 pi)
-    return angle > _printer_tolerance_angle + (std::numbers::pi / 2);
+    // return angle > _printer_tolerance_angle + (std::numbers::pi / 2);
+    double angle = acos(-dot);
+    return angle < (std::numbers::pi / 2) - _printer_tolerance_angle;
 }
 
 // Determine if a vertex is overhanging and requires support
@@ -118,11 +143,15 @@ bool MeshOperations::isVertexOverhanging(const int vertex, const Eigen::Vector3f
         return false;
     }
 
+    // return true;
+
     // The vertex needs support if its angle is more than 90 degrees + printing tolerance angle away from the direction
-    double angle = acos(dot) / (vertexNormal.norm() * direction.norm());
+    // double angle = acos(dot) / (vertexNormal.norm() * direction.norm());
 
     // compare with tolerance angle + right angle (90 degrees or 1/2 pi)
-    return angle > _printer_tolerance_angle + (std::numbers::pi / 2);
+    // return angle > _printer_tolerance_angle + (std::numbers::pi / 2);
+    double angle = acos(-dot);
+    return angle < (std::numbers::pi / 2) - _printer_tolerance_angle;
 }
 
 // Determine if a face is footing a supported face and requires support
@@ -284,6 +313,7 @@ void MeshOperations::populateSupportMatrix(const std::vector<std::unordered_set<
             for (int f : patches[patchInd]) {
                 if (supporting_faces.contains(f)) {
                     patch_cost += computeSupportCoefficient(f);
+                    assert(patch_cost >= 0.0);
                 }
             }
 

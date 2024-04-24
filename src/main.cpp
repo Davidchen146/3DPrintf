@@ -11,7 +11,6 @@
 int main(int argc, char *argv[])
 {
     srand(static_cast<unsigned>(time(0)));
-
     QCoreApplication a(argc, argv);
     QCommandLineParser parser;
     parser.addHelpOption();
@@ -78,12 +77,15 @@ int main(int argc, char *argv[])
         // "Initial/smoothing_width_t": t coefficient for smoothing cost (measures size of cut)
         // "Initial/ambient_occlusion_samples": number of samples to cast for ambient occlusion; more samples is more accurate but takes longer
         // "Initial/footing_samples": number of samples to cast for footing faces
+        // "Initial/axis_only": only use the 6 cardinal printing directions
         // Extension: specify faces to hardcode cost values for support (or a region of faces)
     // Refined:
         // TODO: Implement!
     // Fabricate:
         // TODO: Implement!
         // Extension: solid/hollow shell objects and if they should have internal connectors
+    // Debug:
+        // "Debug/function": function to debug
 
     // Parse common inputs
     std::cout << "Loading config " << args[0].toStdString() << std::endl;
@@ -106,7 +108,7 @@ int main(int argc, char *argv[])
     // Determine operation
     // Control flow flag to determine if doing 3Dprintf or mesh operations
     bool is_mesh_operation = method == "subdivide" || method == "simplify" || method == "remesh";
-    bool is_3d_print_operation = method == "preprocess" || method == "oversegmentation" || method == "initial" || method == "refined" || method == "fabricate" || method == "sanity";
+    bool is_3d_print_operation = method == "preprocess" || method == "oversegmentation" || method == "initial" || method == "refined" || method == "fabricate" || method == "debug";
 
     // Mesh project operations
     if (is_mesh_operation) {
@@ -164,15 +166,26 @@ int main(int argc, char *argv[])
         double smoothing_width_t = settings.value("Initial/smoothing_width_t").toDouble();
         int ambient_occlusion_samples = settings.value("Initial/ambient_occlusion_samples").toInt();
         int footing_samples = settings.value("Initial/footing_samples").toInt();
+        bool axis_only = settings.value("Initial/axis_only").toBool();
+
+        // Debug
+        std::string debug_mode = settings.value("Debug/mode").toString().toStdString();
+        double debug_x = settings.value("Debug/debug_x").toDouble();
+        double debug_y = settings.value("Debug/debug_y").toDouble();
+        double debug_z = settings.value("Debug/debug_z").toDouble();
 
         // Case on the method
         if (method == "preprocess") {
             m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
-            m_o.preprocess();
+            m_o.preprocessData();
+            m_o.preprocessDistances();
+            m_o.preprocessRaytracer();
         }
         else if (method == "oversegmentation") {
             m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
-            m_o.preprocess();
+            m_o.preprocessData();
+            m_o.preprocessDistances();
+            m_o.preprocessRaytracer();
 
             // This vec will hold the labelings
             std::vector<std::unordered_set<int>> patches;
@@ -182,7 +195,9 @@ int main(int argc, char *argv[])
         }
         else if (method == "initial") {
             m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
-            m_o.preprocess();
+            m_o.preprocessData();
+            m_o.preprocessDistances();
+            m_o.preprocessRaytracer();
 
             // This vec will hold the labelings
             std::vector<std::unordered_set<int>> patches;
@@ -194,10 +209,10 @@ int main(int argc, char *argv[])
             std::vector<std::unordered_set<int>> printable_components;
             // Printing directions for each component
             std::vector<Eigen::Vector3f> printing_directions;
-            m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
+            m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples, axis_only);
             m_o.generateInitialSegmentation(patches, printable_components, printing_directions);
             m_o.visualize(printable_components);
-            m_o.visualize_printable_components(printable_components, printing_directions);
+            m_o.visualizePrintableComponents(printable_components, printing_directions);
         }
         else if (method == "refined") {
             std::cerr << "Error: This phase hasn't been implemented yet" << std::endl;
@@ -205,18 +220,50 @@ int main(int argc, char *argv[])
         else if (method == "fabricate") {
             std::cerr << "Error: This phase hasn't been implemented yet" << std::endl;
         }
-        else if (method == "sanity") {
-            m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
-            m_o.preprocess();
-            m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
+        else if (method == "debug") {
+            // Case on the debug option
+            if (debug_mode == "ao_face") {
+                // Setup
+                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
+                m_o.preprocessData();
+                m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
 
-            QString sanity_method  = settings.value("Global/sanity_method").toString();
-
-            if (sanity_method == "ao_face") {
+                // Visualize!
                 m_o.visualizeFaceAO();
-            } else if (sanity_method == "ao_edge") {
+            } else if (debug_mode == "ao_edge") {
+                // Setup
+                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
+                m_o.preprocessData();
+                m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
+
+                // Visualize!
                 m_o.visualizeEdgeAO();
+            } else if (debug_mode == "support_costs") {
+                // Setup
+                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
+                m_o.preprocessData();
+                m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
+                m_o.preprocessRaytracer();
+
+                // Determine visualization direction
+                Eigen::Vector3f direction(debug_x, debug_y, debug_z);
+                direction.normalize();
+                if (direction.norm() == 0) {
+                    direction = m_o.generateRandomVector();
+                    direction.normalize();
+                }
+
+                // Visualize!
+                std::cout << "Visualizing support costs in direction (" << direction(0) << ", " << direction(1) << ", " << direction(2) << ")" << std::endl;
+                m_o.visualizeSupportCosts(direction);
             }
+
+
+            // if (sanity_method == "ao_face") {
+            //     m_o.visualizeFaceAO();
+            // } else if (sanity_method == "ao_edge") {
+            //     m_o.visualizeEdgeAO();
+            // }
 
 
             // things to check
