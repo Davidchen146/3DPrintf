@@ -106,25 +106,16 @@ void MeshOperations::visualizePrintableComponents(const std::vector<std::unorder
             }
         }
 
-        // Determine maximum support coefficients
-        MatrixXd color;
+        Eigen::MatrixXd color;
         color.resize(faces_to_visualize, 3);
-        double max_support_cost = 0;
-        for (const int &face : supported_faces) {
-            double support_cost = computeSupportCoefficient(face);
-            if (support_cost > max_support_cost) {
-                max_support_cost = support_cost;
-            }
-        }
-
         int current_face = 0;
         for (const auto &face : printable_components[component]) {
             // This is a face we want to visualize
             component_faces.row(current_face) = _F.row(face);
             if (supported_faces.contains(face)) {
-                color.row(current_face) = mapValueToColor(computeSupportCoefficient(face), max_support_cost);
+                color.row(current_face) = Eigen::Vector3d(1, 0, 0);
             } else {
-                color.row(current_face) = mapValueToColor(0, max_support_cost);
+                color.row(current_face) = Eigen::Vector3d(0, 1, 0);
             }
             current_face++;
         }
