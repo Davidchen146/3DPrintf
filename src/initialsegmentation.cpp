@@ -38,23 +38,14 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
 
     // Support costs
     addSupportCosts(printing_direction_vars, patches);
-    int supportVariables = _solver->NumVariables();
     // Smoothing costs
     addSmoothingCosts(printing_direction_vars);
-    int totalVariables = _solver->NumVariables();
-    assert(supportVariables + (_smoothingCoefficients.size() * _num_random_dir_samples) == totalVariables);
 
     // SOLVE THIS
     std::cout << "Solving initial segmentation optimization. This may take a while..." << std::endl;
     MPObjective* const objective = _solver->MutableObjective();
     objective->SetMinimization();
     _solver->Solve();
-  
-    // for (int i = 0; i < 1; i++) {
-    //     for (int j = 0; j < _num_random_dir_samples; j++) {
-    //         LOG(INFO) << "ASSIGNMENT: " << printing_direction_vars[i][j]->solution_value();
-    //     }
-    // }
   
     // Use the solutions to generate the printable componenets
     std::cout << "Generating printable components" << std::endl;
@@ -96,18 +87,6 @@ bool MeshOperations::isFaceOverhanging(const int face, const Eigen::Vector3f &di
         return false;
     }
 
-    // return true;
-
-    // The face needs support if its angle is more than 90 degrees + printing tolerance angle away from the direction
-    // Flip direction and check
-    // double angle1 = acos(faceNormal.dot(-direction)) / (faceNormal.norm() * direction.norm());
-    // double angle = acos(dot) / (faceNormal.norm() * direction.norm());
-
-    // bool cond1 = angle1 < (std::numbers::pi / 2) - _printer_tolerance_angle;
-
-
-    // // compare with tolerance angle + right angle (90 degrees or 1/2 pi)
-    // return angle > _printer_tolerance_angle + (std::numbers::pi / 2);
     double angle = acos(-dot);
     return angle < (std::numbers::pi / 2) - _printer_tolerance_angle;
 }
@@ -122,13 +101,6 @@ bool MeshOperations::isEdgeOverhanging(const std::pair<int, int> &edge, const Ei
         return false;
     }
 
-    // return true;
-
-    // The edge needs support if its angle is more than 90 degrees + printing tolerance angle away from the direction
-    // double angle = acos(dot) / (edgeNormal.norm() * direction.norm());
-
-    // compare with tolerance angle + right angle (90 degrees or 1/2 pi)
-    // return angle > _printer_tolerance_angle + (std::numbers::pi / 2);
     double angle = acos(-dot);
     return angle < (std::numbers::pi / 2) - _printer_tolerance_angle;
 }
@@ -143,13 +115,6 @@ bool MeshOperations::isVertexOverhanging(const int vertex, const Eigen::Vector3f
         return false;
     }
 
-    // return true;
-
-    // The vertex needs support if its angle is more than 90 degrees + printing tolerance angle away from the direction
-    // double angle = acos(dot) / (vertexNormal.norm() * direction.norm());
-
-    // compare with tolerance angle + right angle (90 degrees or 1/2 pi)
-    // return angle > _printer_tolerance_angle + (std::numbers::pi / 2);
     double angle = acos(-dot);
     return angle < (std::numbers::pi / 2) - _printer_tolerance_angle;
 }
@@ -266,7 +231,6 @@ void MeshOperations::populateSupportMatrix(const std::vector<std::unordered_set<
     // this coefficient is area of faces needing support, weighted by ambient occlusion
 
     // following notations from paper
-    //for (Eigen::Vector3f i : directions) {
     for (int dirInd = 0; dirInd < directions.size(); dirInd++) {
         // Determine what faces need support in this direction
         std::unordered_set<int> supporting_faces;

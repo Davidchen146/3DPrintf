@@ -76,10 +76,56 @@ void MeshOperations::visualizePrintableComponents(const std::vector<std::unorder
         int faces_to_visualize = printable_components[component].size();
         Eigen::MatrixXi component_faces;
         component_faces.resize(faces_to_visualize, 3);
+
+        // Add color corresponding to the support value computed for the faces
+        std::unordered_set<int> supported_faces;
+        for (const int &face : printable_components[component]) {
+            // Determine if face is supported
+            bool is_face_supported = false;
+            is_face_supported |= isFaceOverhanging(face, printing_direction);
+            // get the edges to check each of them for overhang
+            int v1 = _F.row(face)(0);
+            int v2 = _F.row(face)(1);
+            int v3 = _F.row(face)(2);
+            std::pair<int, int> e1 = (v1 < v2) ? std::make_pair(v1, v2) : std::make_pair(v2, v1);
+            std::pair<int, int> e2 = (v2 < v3) ? std::make_pair(v2, v3) : std::make_pair(v3, v2);
+            std::pair<int, int> e3 = (v3 < v1) ? std::make_pair(v3, v1) : std::make_pair(v1, v3);
+            // case b, c: edge or vertex normals form  angle w/ base greater than a threshold (paper uses 55)
+            is_face_supported |= isVertexOverhanging(v1, printing_direction) || isVertexOverhanging(v2, printing_direction) || isVertexOverhanging(v3, printing_direction);
+            is_face_supported |= isEdgeOverhanging(e1, printing_direction) || isEdgeOverhanging(e2, printing_direction) || isEdgeOverhanging(e3, printing_direction);
+
+            // BUT IS THE FACE SUPPORTED?
+            if (is_face_supported) {
+                supported_faces.insert(face);
+                // Determine footing faces
+                std::vector<int> newFootedFaces;
+                findFootingFaces(face, printing_direction, newFootedFaces);
+                for (const int &newFace : newFootedFaces) {
+                    supported_faces.insert(newFace);
+                }
+            }
+        }
+
+        // Determine maximum support coefficients
+        MatrixXd color;
+        color.resize(faces_to_visualize, 3);
+        double max_support_cost;
+        for (const int &face : supported_faces) {
+            double support_cost = computeSupportCoefficient(face);
+            if (support_cost > max_support_cost) {
+                max_support_cost = support_cost;
+            }
+        }
+
         int current_face = 0;
         for (const auto &face : printable_components[component]) {
             // This is a face we want to visualize
             component_faces.row(current_face) = _F.row(face);
+            if (supported_faces.contains(face)) {
+                color.row(current_face) = mapValueToColor(computeSupportCoefficient(face), max_support_cost);
+            } else {
+                color.row(current_face) = mapValueToColor(0, max_support_cost);
+            }
             current_face++;
         }
 
@@ -146,9 +192,6 @@ void MeshOperations::visualizeSupportCosts(const Eigen::Vector3f &printing_direc
         if (support_cost > max_support_cost) {
             max_support_cost = support_cost;
         }
-        if (support_cost < 0) {
-            std::cout << "Holy shit you messed something up" << std::endl;
-        }
     }
 
     // Produce appropriate outputs
@@ -156,9 +199,8 @@ void MeshOperations::visualizeSupportCosts(const Eigen::Vector3f &printing_direc
         if (supported_faces.contains(face)) {
             color.row(face) = mapValueToColor(computeSupportCoefficient(face), max_support_cost);
             Eigen::Vector3f normal = getFaceNormal(face);
-            // std::cout << "Normal of supported face: (" << normal(0) << ", " << normal(1) << ", " << normal(2) << ")" << std::endl;
         } else {
-            color.row(face) = Eigen::Vector3d(0.0, 0.0, 0.0);
+            color.row(face) = mapValueToColor(0, max_support_cost);
         }
     }
 
@@ -173,7 +215,6 @@ void MeshOperations::visualizeSupportCosts(const Eigen::Vector3f &printing_direc
     // Visualize the faces
     igl::opengl::glfw::Viewer viewer;
     viewer.data().set_mesh(rotated_vertices.cast<double>(), _F);
-    // viewer.data().set_mesh(_V.cast<double>(), _F);
     viewer.data().set_colors(color);
     viewer.launch();
 }
