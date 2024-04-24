@@ -260,6 +260,8 @@ int main(int argc, char *argv[])
             } else if (debug_mode == "smoothing_costs"){
                 m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
                 m_o.preprocessData();
+                m_o.preprocessDistances();
+                m_o.preprocessRaytracer();
                 std::vector<std::unordered_set<int>> patches;
                 m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, visualize_seeds);
                 m_o.generateOversegmentation(patches);
