@@ -132,7 +132,7 @@ void MeshOperations::visualizePrintableComponents(const std::vector<std::unorder
 // Debug to visualize outputs of the angular distance metric
 void MeshOperations::visualizeAngularDistance() {
     Eigen::MatrixXd color;
-    color.resize(_F.size(), 3);
+    color.resize(_F.rows(), 3);
 
     // For each face, assign it the average angular distance of its neighbors
     std::unordered_map<int, double> face_to_dist;
@@ -163,7 +163,7 @@ void MeshOperations::visualizeAngularDistance() {
 // Debug to visualize outputs of the weighted distance
 void MeshOperations::visualizeWeightedDistance() {
     Eigen::MatrixXd color;
-    color.resize(_F.size(), 3);
+    color.resize(_F.rows(), 3);
 
     // For each face, assign it the average angular distance of its neighbors
     std::unordered_map<int, double> face_to_dist;
@@ -173,7 +173,7 @@ void MeshOperations::visualizeWeightedDistance() {
         double avg_angular_dist = 0.0;
         const Face *current_face = _mesh.getFace(face);
         for (const Face* face : current_face->neighbors) {
-            avg_angular_dist += getWeigtedDistance(current_face->index, face->index);
+            avg_angular_dist += getWeightedDistance(current_face->index, face->index);
         }
         avg_angular_dist /= current_face->neighbors.size();
         max_dist = max(max_dist, avg_angular_dist);

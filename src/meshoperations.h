@@ -186,6 +186,11 @@ private:
     void addSupportCosts(std::vector<std::vector<const MPVariable*>> &variables, const std::vector<std::unordered_set<int>> &patches);
     void addSmoothingCosts(std::vector<std::vector<const MPVariable*>> &variables);
 
+    // Generic ILP Subroutines
+    // TODO: Finish implementing these functions
+    const MPVariable* addVariable(const double &coefficient, const std::string &name = "");
+    const MPVariable* addXORVariable(const MPVariable* var_1, const MPVariable* var_2, const double &coefficient, const std::string &name = "");
+
     double bbd; // bounding box diagonal
     Eigen::MatrixXd _weightedDistances;
 
@@ -216,10 +221,8 @@ private:
     // Refined Segmentation parameters
     // TODO: Add them
 
-    // ILP solver used for phases 2 and 3 (should be cleared)
+    // ILP solver used for phases 2 and 3 (should be cleared before using in phase 2)
     operations_research::MPSolver* _solver;
-
-
 
     // Fields for raytracing
     igl::embree::EmbreeIntersector _intersector;

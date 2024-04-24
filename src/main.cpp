@@ -85,7 +85,16 @@ int main(int argc, char *argv[])
         // TODO: Implement!
         // Extension: solid/hollow shell objects and if they should have internal connectors
     // Debug:
-        // "Debug/function": function to debug
+        // "Debug/function": function to debug. Should be one of:
+            // "ao_face": ambient occlusion for each face; red values are visible, green are not as visible, and blue are occluded
+            // "ao_edge": ambient occlusion for each edge; red values are visible, green are not as visible, and blue are occluded
+            // "support_costs": costs for supports in a specified printing direction; red values are heavy support costs, green are not as heavy, blue are light
+            // "smoothing_costs": costs for smoothing a patch. Costs are averaged by patch edge length boundary, red are high costs, blue are lower costs
+            // "angular_distance": average angular distance from a face to its neighbors; red are high distances, blue are lower
+            // "weighted_distance": average weighted distance a face to its neighbors; red are high distances, blue are lower
+        // "Debug/debug_x": X coordinate for printing direction to determine support costs
+        // "Debug/debug_y": Y coordinate for printing direction to determine support costs
+        // "Debug/debug_z": Z coordinate for printing direction to determine support costs
 
     // Parse common inputs
     std::cout << "Loading config " << args[0].toStdString() << std::endl;
@@ -211,6 +220,7 @@ int main(int argc, char *argv[])
             std::vector<Eigen::Vector3f> printing_directions;
             m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples, axis_only);
             m_o.generateInitialSegmentation(patches, printable_components, printing_directions);
+            // Visualize printing components, then each printable components with supported faces highlighted in red
             m_o.visualize(printable_components);
             m_o.visualizePrintableComponents(printable_components, printing_directions);
         }
@@ -269,18 +279,29 @@ int main(int argc, char *argv[])
                 m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
                 m_o.visualizeSmoothingCosts(patches);
             }
+            else if (debug_mode == "angular_distance") {
+                // Setup
+                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
+                m_o.preprocessData();
+                m_o.preprocessDistances();
 
-            // things to check
+                // View distances
+                m_o.visualizeAngularDistance();
+            }
 
-            // pick one patch, get its neighboring patches, visualize coefficients for smoothing cost
+            else if (debug_mode == "weighted_distance") {
+                // Setup
+                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
+                m_o.preprocessData();
+                m_o.preprocessDistances();
 
-            // pick one printing direction, for this printing direction compute the cost of each patch, then visualize these costs (ex: higher costs are red)
+                // View distances
+                m_o.visualizeWeightedDistance();
+            }
 
-            // visualize ambient occlusion (get something similar to figure 5 from the paper)
-
-            // ambient occlusion of faces
-
-            // ambient occlusion of edges
+            else {
+                std::cout << "Error: Unknown debug mode \"" << debug_mode << "\"" << std::endl;
+            }
 
         }
     }

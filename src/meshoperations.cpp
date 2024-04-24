@@ -250,7 +250,7 @@ void MeshOperations::calculateAvgDistances() {
             if (_adjacency[i][j]) {
                 // If this is a connected pair
                 numPairs += 1;
-                sumAngular += _angularDistances(i, j);
+                sumAngular += getAngularDistance(i, j);
                 sumGeodesic += getGeodesicDistance(i, j);
             }
         }
@@ -266,6 +266,10 @@ double MeshOperations::getGeodesicDistance(int i, int j) {
 
 double MeshOperations::getWeightedDistance(int i, int j) {
     return _weightedDistances(i, j);
+}
+
+double MeshOperations::getAngularDistance(int i, int j) {
+    return _angularDistances(i, j);
 }
 
 int minDistanceVertex(vector<double> distances, vector<bool> visited) {
