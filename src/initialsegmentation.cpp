@@ -231,6 +231,7 @@ void MeshOperations::populateSupportMatrix(const std::vector<std::unordered_set<
     // this coefficient is area of faces needing support, weighted by ambient occlusion
 
     // following notations from paper
+    //for (Eigen::Vector3f i : directions) {
     for (int dirInd = 0; dirInd < directions.size(); dirInd++) {
         // Determine what faces need support in this direction
         std::unordered_set<int> supporting_faces;

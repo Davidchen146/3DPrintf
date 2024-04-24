@@ -77,13 +77,14 @@ public:
     // Visualization routines
     void visualize(const std::vector<std::unordered_set<int>>& coloringGroups);
     void visualizePrintableComponents(const std::vector<std::unordered_set<int>> &printable_components, const std::vector<Eigen::Vector3f> &printing_directions);
-    void visualizeSupportCosts(const Eigen::Vector3f &printing_direction);
-    void visualizeSmoothingCosts(const std::vector<std::unordered_set<int>>& patches);
 
     // Debug options for visualization
     void visualizeFaceAO();
     void visualizeEdgeAO();
     void visualizeAngularDistance();
+    void visualizeWeightedDistance();
+    void visualizeSupportCosts(const Eigen::Vector3f &printing_direction);
+    void visualizeSmoothingCosts(const std::vector<std::unordered_set<int>>& patches);
 
     // Random direction visualization
     Eigen::Vector3f generateRandomVector();

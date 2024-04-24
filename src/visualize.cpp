@@ -135,11 +135,60 @@ void MeshOperations::visualizeAngularDistance() {
     color.resize(_F.size(), 3);
 
     // For each face, assign it the average angular distance of its neighbors
+    std::unordered_map<int, double> face_to_dist;
+
+    double max_dist = 0;
     for (int face = 0; face < _F.rows(); face++) {
         double avg_angular_dist = 0.0;
         const Face *current_face = _mesh.getFace(face);
-        // for ();
+        for (const Face* face : current_face->neighbors) {
+            avg_angular_dist += getAngularDistance(current_face->index, face->index);
+        }
+        avg_angular_dist /= current_face->neighbors.size();
+        max_dist = max(max_dist, avg_angular_dist);
+        face_to_dist[face] = avg_angular_dist;
     }
+
+    // VISUALIZE THAT THING
+    for (int face = 0; face < _F.rows(); face++) {
+        color.row(face) = mapValueToColor(face_to_dist[face], max_dist);
+    }
+
+    igl::opengl::glfw::Viewer viewer;
+    viewer.data().set_mesh(_V.cast<double>(), _F);
+    viewer.data().set_colors(color);
+    viewer.launch();
+}
+
+// Debug to visualize outputs of the weighted distance
+void MeshOperations::visualizeWeightedDistance() {
+    Eigen::MatrixXd color;
+    color.resize(_F.size(), 3);
+
+    // For each face, assign it the average angular distance of its neighbors
+    std::unordered_map<int, double> face_to_dist;
+
+    double max_dist = 0;
+    for (int face = 0; face < _F.rows(); face++) {
+        double avg_angular_dist = 0.0;
+        const Face *current_face = _mesh.getFace(face);
+        for (const Face* face : current_face->neighbors) {
+            avg_angular_dist += getWeigtedDistance(current_face->index, face->index);
+        }
+        avg_angular_dist /= current_face->neighbors.size();
+        max_dist = max(max_dist, avg_angular_dist);
+        face_to_dist[face] = avg_angular_dist;
+    }
+
+    // VISUALIZE THAT THING
+    for (int face = 0; face < _F.rows(); face++) {
+        color.row(face) = mapValueToColor(face_to_dist[face], max_dist);
+    }
+
+    igl::opengl::glfw::Viewer viewer;
+    viewer.data().set_mesh(_V.cast<double>(), _F);
+    viewer.data().set_colors(color);
+    viewer.launch();
 }
 
 // Debug to visualize support costs given a direction
@@ -228,7 +277,6 @@ void MeshOperations::visualizeSmoothingCosts(const std::vector<std::unordered_se
             patchToCost[patchPair.first] += cost;
             adjacentPatchCount[patchPair.first] += 1;
         }
-        // max_cost = max(max_cost, patchToCost[patchPair.first]);
         if (!patchToCost.contains(patchPair.second)) {
             patchToCost[patchPair.second] = cost;
             adjacentPatchCount[patchPair.second] = 1;
@@ -237,14 +285,24 @@ void MeshOperations::visualizeSmoothingCosts(const std::vector<std::unordered_se
             adjacentPatchCount[patchPair.second] += 1;
         }
     }
+
     double max_cost = 0;
     for (const auto& pair : patchToCost) {
+        std::unordered_set<std::pair<int, int>, PairHash> edge_set;
+        getPatchBoundary(patches[pair.first], edge_set);
+
+        // Normalize by size of patch boundary
+        double edge_length = 0;
+        for (const auto &edge : edge_set) {
+            edge_length += (_V.row(edge.first) - _V.row(edge.second)).norm();
+        }
+
+        patchToCost[pair.first] /= edge_length;
         max_cost = max(max_cost, patchToCost[pair.first]);
     }
     std::unordered_map<int, Vector3d> patchToColor;
     for (const auto& pair: patchToCost) {
         // get the color of the patch
-        std::cout << "cost: " << pair.second << std::endl;
         patchToColor[pair.first] = mapValueToColor(pair.second, max_cost);
     }
     std::unordered_map<int, int> faceToPatch;
