@@ -13,7 +13,16 @@ void MeshOperations::generateOversegmentation(std::vector<std::unordered_set<int
     generateInitialSeeds(seeds);
 
     // Visualize the seeds
-    visualize({seeds});
+    if (_visualize_seeds) {
+        std::vector<std::unordered_set<int>> seed_vec;
+        seed_vec.resize(seeds.size());
+        int current_seed = 0;
+        for (const int &seed : seeds) {
+            seed_vec[current_seed].insert(seed);
+            current_seed++;
+        }
+        visualize(seed_vec);
+    }
 
     for (int num_iterations = 0; num_iterations < _num_oversegmentation_iterations; num_iterations++) {
         // Grow from the seeds to get the patches
@@ -24,7 +33,16 @@ void MeshOperations::generateOversegmentation(std::vector<std::unordered_set<int
         }
 
         // Visualize the seeds
-        visualize({seeds});
+        if (_visualize_seeds) {
+            std::vector<std::unordered_set<int>> seed_vec;
+            seed_vec.resize(seeds.size());
+            int current_seed = 0;
+            for (const int &seed : seeds) {
+                seed_vec[current_seed].insert(seed);
+                current_seed++;
+            }
+            visualize(seed_vec);
+        }
     }
 }
 
