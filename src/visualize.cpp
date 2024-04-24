@@ -109,7 +109,7 @@ void MeshOperations::visualizePrintableComponents(const std::vector<std::unorder
         // Determine maximum support coefficients
         MatrixXd color;
         color.resize(faces_to_visualize, 3);
-        double max_support_cost;
+        double max_support_cost = 0;
         for (const int &face : supported_faces) {
             double support_cost = computeSupportCoefficient(face);
             if (support_cost > max_support_cost) {
@@ -132,6 +132,7 @@ void MeshOperations::visualizePrintableComponents(const std::vector<std::unorder
         // Visualize the faces
         igl::opengl::glfw::Viewer viewer;
         viewer.data().set_mesh(component_vertices.cast<double>(), component_faces);
+        viewer.data().set_colors(color);
         viewer.launch();
     }
 }
