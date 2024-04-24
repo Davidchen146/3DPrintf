@@ -45,7 +45,7 @@ void MeshOperations::visualize(const vector<unordered_set<int>>& coloringGroups)
     }
 
     for (int i = 0; i < _faces.size(); i++) {
-        if (!_seeds_only) {
+        if (!_visualize_seeds) {
             assert(faceToGroup.contains(i));
             assert(groupToColor.contains(faceToGroup[i]));
         }

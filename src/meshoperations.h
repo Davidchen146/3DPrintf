@@ -198,7 +198,7 @@ private:
     double _proportion_seed_faces;
     double _oversegmentation_bounding_box_coeff;
     int _num_oversegmentation_iterations;
-    bool _seeds_only;
+    bool _visualize_seeds;
 
     // Initial Segmentation parameters
     int _num_random_dir_samples;

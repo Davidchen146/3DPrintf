@@ -168,7 +168,6 @@ Eigen::Vector3f MeshOperations::generateRandomVector() {
     float y = cos(theta);
     float z = sin(theta) * sin(phi);
     Vector3f direction(x, y, z);
-    std::cout << "Sampled random vector (" << x << ", " << y << ", " << z << ")" << std::endl;
     return direction.normalized();
 }
 

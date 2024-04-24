@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
         double proportion_seed_faces = settings.value("Oversegmentation/proportion_seed_faces").toDouble();
         double e_patch = settings.value("Oversegmentation/e_patch").toDouble();
         int num_iterations = settings.value("Oversegmentation/num_iterations").toInt();
-        bool seeds_only = settings.value("Oversegmentation/seeds_only").toBool();
+        bool visualize_seeds = settings.value("Oversegmentation/visualize_seeds").toBool();
         // Initial Segmentation
         int num_random_dir_samples = settings.value("Initial/num_random_dir_samples").toInt();
         double printer_tolerance_angle = settings.value("Initial/printer_tolerance_angle").toDouble(); // In degrees
@@ -189,7 +189,7 @@ int main(int argc, char *argv[])
 
             // This vec will hold the labelings
             std::vector<std::unordered_set<int>> patches;
-            m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, seeds_only);
+            m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, visualize_seeds);
             m_o.generateOversegmentation(patches);
             m_o.visualize(patches);
         }
@@ -201,7 +201,7 @@ int main(int argc, char *argv[])
 
             // This vec will hold the labelings
             std::vector<std::unordered_set<int>> patches;
-            m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, seeds_only);
+            m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, visualize_seeds);
             m_o.generateOversegmentation(patches);
             m_o.visualize(patches);
 
@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
                 // Setup
                 m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
                 m_o.preprocessData();
-                m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
+                m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples, axis_only);
 
                 // Visualize!
                 m_o.visualizeFaceAO();
@@ -234,7 +234,7 @@ int main(int argc, char *argv[])
                 // Setup
                 m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
                 m_o.preprocessData();
-                m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
+                m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples, axis_only);
 
                 // Visualize!
                 m_o.visualizeEdgeAO();
@@ -242,7 +242,7 @@ int main(int argc, char *argv[])
                 // Setup
                 m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
                 m_o.preprocessData();
-                m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
+                m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples, axis_only);
                 m_o.preprocessRaytracer();
 
                 // Determine visualization direction

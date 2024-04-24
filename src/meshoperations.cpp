@@ -15,7 +15,7 @@ MeshOperations::MeshOperations(Mesh m) {
     _proportion_seed_faces = 0.1;
     _oversegmentation_bounding_box_coeff = 0.01;
     _num_oversegmentation_iterations = 3;
-    _seeds_only = false;
+    _visualize_seeds = false;
 
     // Initial segmentation parameters
     _num_random_dir_samples = 512;
@@ -49,7 +49,7 @@ void MeshOperations::setOversegmentationParameters(int num_seed_faces,
                                                    double proportion_seed_faces,
                                                    double bounding_box_coeff,
                                                    int num_iterations,
-                                                   bool seeds_only) {
+                                                   bool visualize_seeds) {
     // Check against default value (0) to prevent loading in unspecified parameters
     if (num_seed_faces != 0.0) {
         _num_seed_faces = num_seed_faces;
@@ -67,8 +67,8 @@ void MeshOperations::setOversegmentationParameters(int num_seed_faces,
         _num_oversegmentation_iterations = num_iterations;
     }
 
-    if (seeds_only) {
-        _seeds_only = seeds_only;
+    if (visualize_seeds) {
+        _visualize_seeds = visualize_seeds;
     }
 }
 
