@@ -256,15 +256,28 @@ int main(int argc, char *argv[])
                 // Visualize!
                 std::cout << "Visualizing support costs in direction (" << direction(0) << ", " << direction(1) << ", " << direction(2) << ")" << std::endl;
                 m_o.visualizeSupportCosts(direction);
+            } else if (debug_mode == "smoothing_costs"){
+
+                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
+                m_o.preprocessData();
+
+                QString sanity_method  = settings.value("Global/sanity_method").toString();
+
+                if (sanity_method == "ao_face") {
+                    m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
+                    m_o.visualizeFaceAO();
+                } else if (sanity_method == "ao_edge") {
+                    m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
+                    m_o.visualizeEdgeAO();
+                } else if (sanity_method == "smoothing") {
+                    std::cout << "visualize smoothing costs" << std::endl;
+                    std::vector<std::unordered_set<int>> patches;
+                    m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, seeds_only);
+                    m_o.generateOversegmentation(patches);
+                    m_o.visualize(patches);
+                    m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
+                    m_o.visualize_smoothing_costs(patches);
             }
-
-
-            // if (sanity_method == "ao_face") {
-            //     m_o.visualizeFaceAO();
-            // } else if (sanity_method == "ao_edge") {
-            //     m_o.visualizeEdgeAO();
-            // }
-
 
             // things to check
 

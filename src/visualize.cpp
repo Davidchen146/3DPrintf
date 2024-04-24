@@ -212,6 +212,59 @@ void MeshOperations::visualizeSupportCosts(const Eigen::Vector3f &printing_direc
     viewer.launch();
 }
 
+// visualize smoothing costs
+// takes in the patches from the oversegmentation
+void MeshOperations::visualizeSmoothingCosts(const std::vector<std::unordered_set<int>>& patches) {
+    populateSmoothingMatrix(patches);
+    std::unordered_map<int, double> patchToCost;
+    std::unordered_map<int, int> adjacentPatchCount;
+    for (const auto& pair : _smoothingCoefficients) {
+        std::pair<int, int> patchPair = pair.first;
+        double cost = pair.second;
+        if (!patchToCost.contains(patchPair.first)) {
+            patchToCost[patchPair.first] = cost;
+            adjacentPatchCount[patchPair.first] = 1;
+        } else {
+            patchToCost[patchPair.first] += cost;
+            adjacentPatchCount[patchPair.first] += 1;
+        }
+        // max_cost = max(max_cost, patchToCost[patchPair.first]);
+        if (!patchToCost.contains(patchPair.second)) {
+            patchToCost[patchPair.second] = cost;
+            adjacentPatchCount[patchPair.second] = 1;
+        } else {
+            patchToCost[patchPair.second] += cost;
+            adjacentPatchCount[patchPair.second] += 1;
+        }
+    }
+    double max_cost = 0;
+    for (const auto& pair : patchToCost) {
+        max_cost = max(max_cost, patchToCost[pair.first]);
+    }
+    std::unordered_map<int, Vector3d> patchToColor;
+    for (const auto& pair: patchToCost) {
+        // get the color of the patch
+        std::cout << "cost: " << pair.second << std::endl;
+        patchToColor[pair.first] = mapValueToColor(pair.second, max_cost);
+    }
+    std::unordered_map<int, int> faceToPatch;
+    for (int i = 0; i < patches.size(); i++) {
+        std::unordered_set<int> patchI = patches[i];
+        for (int j : patchI) {
+            faceToPatch[j] = i;
+        }
+    }
+    Eigen::MatrixXd C;
+    C.resize(_faces.size(), 3);
+    for (int i = 0; i < _faces.size(); i++) {
+        C.row(i) = patchToColor[faceToPatch[i]];
+    }
+    igl::opengl::glfw::Viewer viewer;
+    viewer.data().set_mesh(_V.cast<double>(), _F);
+    viewer.data().set_colors(C);
+    viewer.launch();
+}
+
 // Debug to visualize outputs of the AO subroutine
 // Note that small values (blue) are occluded, and large values (red) are visible
 void MeshOperations::visualizeFaceAO() {
