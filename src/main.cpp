@@ -256,10 +256,10 @@ int main(int argc, char *argv[])
                 // Visualize!
                 std::cout << "Visualizing support costs in direction (" << direction(0) << ", " << direction(1) << ", " << direction(2) << ")" << std::endl;
                 m_o.visualizeSupportCosts(direction);
+
             } else if (debug_mode == "smoothing_costs"){
                 m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
                 m_o.preprocessData();
-                std::cout << "visualize smoothing costs" << std::endl;
                 std::vector<std::unordered_set<int>> patches;
                 m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, visualize_seeds);
                 m_o.generateOversegmentation(patches);
