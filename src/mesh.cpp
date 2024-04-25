@@ -143,16 +143,14 @@ void Mesh::preProcess() {
             vertexNormal += h->face->normal * h->face->area;
             numNeighbors++;
         } while (h != v->halfedge);
-        vertexNormal /= numNeighbors;
-        v->normal = vertexNormal;
+        v->normal = vertexNormal.normalized();
     }
 
     // edge normal is just average of two adjacent faces
     for (const auto& pair : _edgeMap) {
         Edge *e = pair.second;
         Vector3f edgeNormal = (e->halfedge->face->normal * e->halfedge->face->area) + (e->halfedge->twin->face->normal * e->halfedge->twin->face->area);
-        edgeNormal /= 2;
-        e->normal = edgeNormal;
+        e->normal = edgeNormal.normalized();
     }
 
     // get neighboring faces for each face (to store in face struct)

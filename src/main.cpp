@@ -63,6 +63,7 @@ int main(int argc, char *argv[])
         // "Preprocess/angular_distance_convex": coefficient for angular distance with convex angles
         // "Preprocess/angular_distance_concave": coefficient for angular distance with concave angles
         // "Preprocess/geodesic_distance_weight": proportion of weighted distance is geodesic (instead of angular) distance
+        // "Preprocess/use_zero_cost_faces": allows for specifying faces to have 0 support cost as a preprocessing step to initial segmentation
     // Oversegmentation:
         // "Oversegmentation/num_seed_faces": number of seed faces to randomly sample
         // "Oversegmentation/proportion_seed_faces": proportion of faces to sample as seed faces (num_seed_faces will take precedence)
@@ -161,6 +162,7 @@ int main(int argc, char *argv[])
         double angular_distance_convex = settings.value("Preprocess/angular_distance_convex").toDouble();
         double angular_distance_concave = settings.value("Preprocess/angular_distance_concave").toDouble();
         double geodesic_dist_coeff = settings.value("Preprocess/geodesic_distance_weight").toDouble();
+        bool use_zero_cost_faces = settings.value("Preprocess/use_zero_cost_faces").toBool();
         // Oversegmentation
         int num_seed_faces = settings.value("Oversegmentation/num_seed_faces").toInt();
         double proportion_seed_faces = settings.value("Oversegmentation/proportion_seed_faces").toDouble();
@@ -185,16 +187,18 @@ int main(int argc, char *argv[])
 
         // Case on the method
         if (method == "preprocess") {
-            m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
+            m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
             m_o.preprocessData();
             m_o.preprocessDistances();
             m_o.preprocessRaytracer();
+            m_o.preprocessZeroCostFaces();
         }
         else if (method == "oversegmentation") {
-            m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
+            m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
             m_o.preprocessData();
             m_o.preprocessDistances();
             m_o.preprocessRaytracer();
+            m_o.preprocessZeroCostFaces();
 
             // This vec will hold the labelings
             std::vector<std::unordered_set<int>> patches;
@@ -203,10 +207,11 @@ int main(int argc, char *argv[])
             m_o.visualize(patches);
         }
         else if (method == "initial") {
-            m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
+            m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
             m_o.preprocessData();
             m_o.preprocessDistances();
             m_o.preprocessRaytracer();
+            m_o.preprocessZeroCostFaces();
 
             // This vec will hold the labelings
             std::vector<std::unordered_set<int>> patches;
@@ -234,7 +239,7 @@ int main(int argc, char *argv[])
             // Case on the debug option
             if (debug_mode == "ao_face") {
                 // Setup
-                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
+                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
                 m_o.preprocessData();
                 m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples, axis_only);
 
@@ -242,7 +247,7 @@ int main(int argc, char *argv[])
                 m_o.visualizeFaceAO();
             } else if (debug_mode == "ao_edge") {
                 // Setup
-                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
+                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
                 m_o.preprocessData();
                 m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples, axis_only);
 
@@ -250,8 +255,9 @@ int main(int argc, char *argv[])
                 m_o.visualizeEdgeAO();
             } else if (debug_mode == "support_costs") {
                 // Setup
-                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
+                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
                 m_o.preprocessData();
+                m_o.preprocessZeroCostFaces();
                 m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples, axis_only);
                 m_o.preprocessRaytracer();
 
@@ -268,7 +274,7 @@ int main(int argc, char *argv[])
                 m_o.visualizeSupportCosts(direction);
 
             } else if (debug_mode == "smoothing_costs"){
-                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
+                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
                 m_o.preprocessData();
                 m_o.preprocessDistances();
                 m_o.preprocessRaytracer();
@@ -281,7 +287,7 @@ int main(int argc, char *argv[])
             }
             else if (debug_mode == "angular_distance") {
                 // Setup
-                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
+                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
                 m_o.preprocessData();
                 m_o.preprocessDistances();
 
@@ -291,7 +297,7 @@ int main(int argc, char *argv[])
 
             else if (debug_mode == "weighted_distance") {
                 // Setup
-                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
+                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
                 m_o.preprocessData();
                 m_o.preprocessDistances();
 

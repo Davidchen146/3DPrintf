@@ -142,6 +142,11 @@ void MeshOperations::findFootingFaces(const int face, const Eigen::Vector3f &dir
 
 // Compute support coefficient for a face in direction
 double MeshOperations::computeSupportCoefficient(const int &face) {
+    // Any face specified in the zero cost step does not incur a support cost
+    if (_use_zero_cost_faces && _zero_cost_faces.contains(face)) {
+        return 0;
+    }
+
     // Area * ambient occlusion (exponentiated)
     // get area
     double area = getArea(face);

@@ -55,6 +55,7 @@ add_executable(${PROJECT_NAME}
     src/meshop_util.cpp
     src/initialsegmentation.cpp
     src/visualize.cpp
+    src/preprocess.cpp
 )
 
 # Specifies libraries to be linked (Qt components, glew, etc)

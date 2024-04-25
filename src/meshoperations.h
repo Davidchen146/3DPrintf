@@ -28,6 +28,7 @@ public:
     void preprocessData();
     void preprocessDistances();
     void preprocessRaytracer();
+    void preprocessZeroCostFaces();
 
     // Computes global shortest path between faces using geodesic distance
     void geodesicDistance();
@@ -47,7 +48,8 @@ public:
     // Sets parameters for various operations
     void setPreprocessingParameters(double geodesic_weight = 0.1,
                                     double convex_coeff = 0.05,
-                                    double concave_coeff = 1);
+                                    double concave_coeff = 1,
+                                    bool use_zero_cost_faces = false);
     void setOversegmentationParameters(int num_seed_faces = 0,
                                        double proportion_seed_faces = 0.1,
                                        double bounding_box_coeff = 0.01,
@@ -174,6 +176,10 @@ private:
     double getEdgeAO(const std::pair<int, int> &edge);
     double getFaceAO(const int &face);
 
+    // Visualization
+    Eigen::Vector3d mapValueToColor(double value, double max_value);
+    Eigen::Vector3d lerp(const Eigen::Vector3d& color1, const Eigen::Vector3d& color2, double t);
+
     // Distances to sets of points
     std::pair<double, int> getMinGeodesicDistanceToSet(const int &face, const std::unordered_set<int> &faces, bool include_self = false);
     std::pair<double, int> getMinWeightedDistanceToSet(const int &face, const std::unordered_set<int> &faces, bool include_self = false);
@@ -199,6 +205,7 @@ private:
     double _geodesic_distance_weight;
     double _convex_coeff;
     double _concave_coeff;
+    bool _use_zero_cost_faces;
 
     // Oversegmentation parameters
     int _num_seed_faces;
@@ -217,6 +224,7 @@ private:
     int _ambient_occlusion_samples;
     int _footing_samples;
     bool _axis_only;
+    std::unordered_set<int> _zero_cost_faces;
 
     // Refined Segmentation parameters
     // TODO: Add them

@@ -3,12 +3,12 @@
 #include <igl/rotation_matrix_from_directions.h>
 
 // Linear interpolation function
-Eigen::Vector3d lerp(const Eigen::Vector3d& color1, const Eigen::Vector3d& color2, double t) {
+Eigen::Vector3d MeshOperations::lerp(const Eigen::Vector3d& color1, const Eigen::Vector3d& color2, double t) {
     return color1 + t * (color2 - color1);
 }
 
 // Blue is small, green/yellow is medium, and red is high
-Eigen::Vector3d mapValueToColor(double value, double max_value) {
+Eigen::Vector3d MeshOperations::mapValueToColor(double value, double max_value) {
     // Interpolate between blue (low AO), green/yellow (medium AO), and red (high AO)
     if (value <= (max_value / 2)) {
         // Blue to green/yellow interpolation
@@ -114,7 +114,13 @@ void MeshOperations::visualizePrintableComponents(const std::vector<std::unorder
             // This is a face we want to visualize
             component_faces.row(current_face) = _F.row(face);
             if (supported_faces.contains(face)) {
-                color.row(current_face) = Eigen::Vector3d(1, 0, 0);
+                if (_zero_cost_faces.contains(face)) {
+                    // Blue faces are supported but have cost ignored
+                    color.row(current_face) = Eigen::Vector3d(0, 0, 1);
+                } else {
+                    // Red faces incur cost for supports
+                    color.row(current_face) = Eigen::Vector3d(1, 0, 0);
+                }
             } else {
                 color.row(current_face) = Eigen::Vector3d(0, 1, 0);
             }
