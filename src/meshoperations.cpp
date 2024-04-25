@@ -25,6 +25,7 @@ MeshOperations::MeshOperations(Mesh m) {
     _smoothing_width_t = 0.3;
     _ambient_occlusion_samples = 500;
     _footing_samples = 1;
+    _axis_only = false;
 }
 
 // Configure parameters for 3D printing operations
