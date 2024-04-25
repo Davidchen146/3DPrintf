@@ -97,7 +97,18 @@ void Mesh::preProcess() {
         Vector3f v3 = _vertices[face[2]];
 
         // Fill in later
-        Face* faceStruct = new Face{i, nullptr, calculateSurfaceNormal(v1, v2, v3), {}};
+        Face* faceStruct = new Face;
+        faceStruct->index = i;
+        faceStruct->halfedge = nullptr;
+        faceStruct->normal = calculateSurfaceNormal(v1, v2, v3);
+
+        // Create the edges that define the cross product (these lie on the plane of the face)
+        Eigen::Vector3f AB = v2 - v1;
+        Eigen::Vector3f AC = v3 - v1;
+
+        // Do the cross product (this is a normal vector to the face)
+        Eigen::Vector3f cross = AC.cross(AB);
+        faceStruct->area = cross.norm() / 2;
 
         // Get our vertex structs
         Vertex* vertex1 = _vertexMap[face[0]];
@@ -120,7 +131,7 @@ void Mesh::preProcess() {
     }
 
     // NOTE: consider whether these normals should be area weighted
-    // Imma go with "No"
+    // Imma go with "Yes"
 
     // compute vertex normals (by averaging the normals of all neighboring faces)
     for (const auto& pair : _vertexMap) {
@@ -129,19 +140,17 @@ void Mesh::preProcess() {
         Vector3f vertexNormal{0, 0, 0};
         int numNeighbors = 0;
         do {
-            vertexNormal += h->face->normal;
+            vertexNormal += h->face->normal * h->face->area;
             numNeighbors++;
         } while (h != v->halfedge);
-        vertexNormal /= numNeighbors;
-        v->normal = vertexNormal;
+        v->normal = vertexNormal.normalized();
     }
 
     // edge normal is just average of two adjacent faces
     for (const auto& pair : _edgeMap) {
         Edge *e = pair.second;
-        Vector3f edgeNormal = e->halfedge->face->normal + e->halfedge->twin->face->normal;
-        edgeNormal /= 2;
-        e->normal = edgeNormal;
+        Vector3f edgeNormal = (e->halfedge->face->normal * e->halfedge->face->area) + (e->halfedge->twin->face->normal * e->halfedge->twin->face->area);
+        e->normal = edgeNormal.normalized();
     }
 
     // get neighboring faces for each face (to store in face struct)

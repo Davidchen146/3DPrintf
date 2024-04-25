@@ -38,23 +38,14 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
 
     // Support costs
     addSupportCosts(printing_direction_vars, patches);
-    int supportVariables = _solver->NumVariables();
     // Smoothing costs
     addSmoothingCosts(printing_direction_vars);
-    int totalVariables = _solver->NumVariables();
-    assert(supportVariables + (_smoothingCoefficients.size() * _num_random_dir_samples) == totalVariables);
 
     // SOLVE THIS
     std::cout << "Solving initial segmentation optimization. This may take a while..." << std::endl;
     MPObjective* const objective = _solver->MutableObjective();
     objective->SetMinimization();
     _solver->Solve();
-  
-    // for (int i = 0; i < 1; i++) {
-    //     for (int j = 0; j < _num_random_dir_samples; j++) {
-    //         LOG(INFO) << "ASSIGNMENT: " << printing_direction_vars[i][j]->solution_value();
-    //     }
-    // }
   
     // Use the solutions to generate the printable componenets
     std::cout << "Generating printable components" << std::endl;
@@ -66,12 +57,24 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
 void MeshOperations::sampleRandomDirections(std::vector<Eigen::Vector3f> &directions) {
     directions.clear();
 
-    for (int i = 0; i < _num_random_dir_samples; i++) {
-        Vector3f direction = generateRandomVector();
+    // Generate axis-aligned directions only?
+    if (_axis_only) {
+        directions.emplace_back(1, 0, 0);
+        directions.emplace_back(-1, 0, 0);
+        directions.emplace_back(0, 1, 0);
+        directions.emplace_back(0, -1, 0);
+        directions.emplace_back(0, 0, 1);
+        directions.emplace_back(0, 0, -1);
+    } else {
+        for (int i = 0; i < _num_random_dir_samples; i++) {
+            Vector3f direction = generateRandomVector();
 
-        // NOTE: assumes that directions starts off as an empty vector
-        directions.push_back(direction);
+            // NOTE: assumes that directions starts off as an empty vector
+            directions.push_back(direction);
+        }
     }
+
+    _num_random_dir_samples = directions.size();
 }
 
 // Determine if a face is overhanging and requires support
@@ -84,11 +87,8 @@ bool MeshOperations::isFaceOverhanging(const int face, const Eigen::Vector3f &di
         return false;
     }
 
-    // The face needs support if its angle is more than 90 degrees + printing tolerance angle away from the direction
-    double angle = acos(dot) / (faceNormal.norm() * direction.norm());
-
-    // compare with tolerance angle + right angle (90 degrees or 1/2 pi)
-    return angle > _printer_tolerance_angle + (std::numbers::pi / 2);
+    double angle = acos(-dot);
+    return angle < (std::numbers::pi / 2) - _printer_tolerance_angle;
 }
 
 // Determine if an edge is overhanging and requires support
@@ -101,11 +101,8 @@ bool MeshOperations::isEdgeOverhanging(const std::pair<int, int> &edge, const Ei
         return false;
     }
 
-    // The edge needs support if its angle is more than 90 degrees + printing tolerance angle away from the direction
-    double angle = acos(dot) / (edgeNormal.norm() * direction.norm());
-
-    // compare with tolerance angle + right angle (90 degrees or 1/2 pi)
-    return angle > _printer_tolerance_angle + (std::numbers::pi / 2);
+    double angle = acos(-dot);
+    return angle < (std::numbers::pi / 2) - _printer_tolerance_angle;
 }
 
 // Determine if a vertex is overhanging and requires support
@@ -118,11 +115,8 @@ bool MeshOperations::isVertexOverhanging(const int vertex, const Eigen::Vector3f
         return false;
     }
 
-    // The vertex needs support if its angle is more than 90 degrees + printing tolerance angle away from the direction
-    double angle = acos(dot) / (vertexNormal.norm() * direction.norm());
-
-    // compare with tolerance angle + right angle (90 degrees or 1/2 pi)
-    return angle > _printer_tolerance_angle + (std::numbers::pi / 2);
+    double angle = acos(-dot);
+    return angle < (std::numbers::pi / 2) - _printer_tolerance_angle;
 }
 
 // Determine if a face is footing a supported face and requires support
@@ -148,6 +142,11 @@ void MeshOperations::findFootingFaces(const int face, const Eigen::Vector3f &dir
 
 // Compute support coefficient for a face in direction
 double MeshOperations::computeSupportCoefficient(const int &face) {
+    // Any face specified in the zero cost step does not incur a support cost
+    if (_use_zero_cost_faces && _zero_cost_faces.contains(face)) {
+        return 0;
+    }
+
     // Area * ambient occlusion (exponentiated)
     // get area
     double area = getArea(face);
@@ -284,6 +283,7 @@ void MeshOperations::populateSupportMatrix(const std::vector<std::unordered_set<
             for (int f : patches[patchInd]) {
                 if (supporting_faces.contains(f)) {
                     patch_cost += computeSupportCoefficient(f);
+                    assert(patch_cost >= 0.0);
                 }
             }
 
