@@ -303,6 +303,12 @@ int main(int argc, char *argv[])
 
                 // View distances
                 m_o.visualizeWeightedDistance();
+            } else if (debug_mode == "tetrahedralize") {
+                std::cout << "start tetrahedralize" << std::endl;
+                // Setup
+                m_o.preprocessData(); // just need this for setting _V and _F
+                m_o.tetrahedralizeMesh();
+                std::cout << "done with tetrahedralize" << std::endl;
             }
 
             else {

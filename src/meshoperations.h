@@ -92,6 +92,12 @@ public:
     Eigen::Vector3f generateRandomVector();
 
 
+    // Fabrication step
+    void tetrahedralizeMesh();
+    // take in the initial segmentation
+    // (std::vector<std::unordered_set<int>> &printable_components, std::vector<Eigen::Vector3f> &printing_directions)
+    //
+
 private:
     Mesh _mesh;
     std::vector<Eigen::Vector3f> _vertices;
