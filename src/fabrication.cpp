@@ -82,27 +82,27 @@ void MeshOperations::updateFaceMap(std::unordered_map<Vector3i, Vector4i, Vector
 
 Vector3i MeshOperations::orderVertices(Vector3i& face, Vector4i& tet) {
     // checking of v0, v1, v2 is in CCW order
-    Vector3f v0Coords = _vertices[face[0]];
-    Vector3f v1Coords = _vertices[face[1]];
-    Vector3f v2Coords = _vertices[face[2]];
-    Vector3f normal = ((v1Coords - v0Coords).cross(v2Coords - v0Coords)).normalized();
-    float d = -1 * (v0Coords).dot(normal);
+    Vector3d v0Coords = _TV.row(face[0]);
+    Vector3d v1Coords = _TV.row(face[1]);
+    Vector3d v2Coords = _TV.row(face[2]);
+    Vector3d normal = ((v1Coords - v0Coords).cross(v2Coords - v0Coords)).normalized();
+    double d = -1 * (v0Coords).dot(normal);
 
-    Vector3f tetVertex1 = _vertices[tet[0]];
-    Vector3f tetVertex2 = _vertices[tet[1]];
-    Vector3f tetVertex3 = _vertices[tet[2]];
-    Vector3f tetVertex4 = _vertices[tet[3]];
-    Vector3f tetCenter = (tetVertex1 + tetVertex2 + tetVertex3 + tetVertex4) / 4.f;
-    Vector4f u = {tetCenter[0], tetCenter[1], tetCenter[2], 1}; // u should be centroid of tetrahedron
+    Vector3d tetVertex1 = _TV.row(tet[0]);
+    Vector3d tetVertex2 = _TV.row(tet[1]);
+    Vector3d tetVertex3 = _TV.row(tet[2]);
+    Vector3d tetVertex4 = _TV.row(tet[3]);
+    Vector3d tetCenter = (tetVertex1 + tetVertex2 + tetVertex3 + tetVertex4) / 4.f;
+    Vector4d u = {tetCenter[0], tetCenter[1], tetCenter[2], 1}; // u should be centroid of tetrahedron
 
-    Vector4f v{normal[0], normal[1], normal[2], d};
+    Vector4d v{normal[0], normal[1], normal[2], d};
     if (u.dot(v) < 0) {
         return {face[0], face[1], face[2]};
     } else {
         // otherwise this should be CCW order
-        v0Coords = _vertices[face[1]];
-        v1Coords = _vertices[face[0]];
-        v2Coords = _vertices[face[2]];
+        v0Coords = _TV.row(face[1]);
+        v1Coords = _TV.row(face[0]);
+        v2Coords = _TV.row(face[2]);
         normal = ((v1Coords - v0Coords).cross(v2Coords - v0Coords)).normalized();
         d = -1 * (v0Coords).dot(normal);
         v = {normal[0], normal[1], normal[2], d};
