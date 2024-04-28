@@ -198,7 +198,6 @@ int main(int argc, char *argv[])
             m_o.preprocessData();
             m_o.preprocessDistances();
             m_o.preprocessRaytracer();
-            m_o.preprocessZeroCostFaces();
 
             // This vec will hold the labelings
             std::vector<std::unordered_set<int>> patches;
@@ -212,6 +211,7 @@ int main(int argc, char *argv[])
             m_o.preprocessDistances();
             m_o.preprocessRaytracer();
             m_o.preprocessZeroCostFaces();
+            m_o.preprocessSolver();
 
             // This vec will hold the labelings
             std::vector<std::unordered_set<int>> patches;
