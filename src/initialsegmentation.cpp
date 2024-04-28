@@ -181,7 +181,10 @@ void MeshOperations::generatePrintableComponents(const std::vector<std::unordere
     for (int patch = 0; patch < patches.size(); patch++) {
         // Find the value
         for (int direction = 0; direction < _num_random_dir_samples; direction++) {
+            std::cout << "Accessing patch: " << patch << " direction: " << direction << std::endl;
+            std::cout << "Size of solutions " << solutions.size() << " element: " << solutions[patch].size() << std::endl;
             int solver_value = solutions[patch][direction]->solution_value();
+            std::cout << "Accessed solver value: " << solver_value << std::endl;
             if (solver_value == 1) {
                 // This is the optimal direction for this patch
                 patch_directions[patch] = direction;
@@ -191,6 +194,8 @@ void MeshOperations::generatePrintableComponents(const std::vector<std::unordere
         }
         assert(patch_directions[patch] != -1);
     }
+
+    std::cout << "Assigning elements" << std::endl;
 
     // Group the patches based on their direction
     printable_components.resize(used_printing_directions.size());
@@ -313,6 +318,7 @@ void MeshOperations::addSupportCosts(std::vector<std::vector<const MPVariable*>>
 
         for (int printing_direction = 0; printing_direction < _num_random_dir_samples; printing_direction++) {
             const MPVariable* new_dir_var = addVariable(_supportCoefficients(patch, printing_direction), 0.0, 1.0);
+            variables[patch][printing_direction] = new_dir_var;
             patch_direction_vars.push_back(new_dir_var);
         }
 
@@ -324,8 +330,6 @@ void MeshOperations::addSupportCosts(std::vector<std::vector<const MPVariable*>>
 }
 
 void MeshOperations::addSmoothingCosts(std::vector<std::vector<const MPVariable*>> &variables) {
-    const double infinity = _solver->infinity();
-
     LOG(INFO) << "Num Neighboring Patch Pairs: " << _smoothingCoefficients.size();
     LOG(INFO) << "Num Variables Pre-XOR: " << _solver->NumVariables();
     LOG(INFO) << "Num Constraints Pre-XOR: " << _solver->NumConstraints();
