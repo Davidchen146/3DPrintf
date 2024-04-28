@@ -56,6 +56,7 @@ add_executable(${PROJECT_NAME}
     src/initialsegmentation.cpp
     src/visualize.cpp
     src/preprocess.cpp
+    src/xor_tools_subroutines.cpp
 )
 
 # Specifies libraries to be linked (Qt components, glew, etc)

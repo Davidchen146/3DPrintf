@@ -23,11 +23,7 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
     populateSmoothingMatrix(patches);
 
     // OK WE ARE GOING TO DO THE THING
-    _solver = MPSolver::CreateSolver("SCIP");
-    if (!_solver) {
-        LOG(WARNING) << "SCIP solver unavailable.";
-        return;
-    }
+    _solver->Clear();
 
     // Allocate space for all the items poggers
     std::vector<std::vector<const MPVariable*>> printing_direction_vars;
@@ -171,6 +167,7 @@ double MeshOperations::computeSmoothingCoefficient(const std::unordered_set<int>
 }
 
 // Assign results of the ILP to something we can return out
+// Assumes the solver already has results assigned to variables
 void MeshOperations::generatePrintableComponents(const std::vector<std::unordered_set<int>> &patches,
                                                  std::vector<unordered_set<int>> &printable_components,
                                                  const std::vector<std::vector<const MPVariable*>> &solutions,
@@ -337,8 +334,11 @@ void MeshOperations::addSupportCosts(std::vector<std::vector<const MPVariable*>>
 
 void MeshOperations::addSmoothingCosts(std::vector<std::vector<const MPVariable*>> &variables) {
     const double infinity = _solver->infinity();
-    LOG(INFO) << "Num Constraints Pre-XOR: " << _solver->NumConstraints();
+
     LOG(INFO) << "Num Neighboring Patch Pairs: " << _smoothingCoefficients.size();
+    LOG(INFO) << "Num Variables Pre-XOR: " << _solver->NumVariables();
+    LOG(INFO) << "Num Constraints Pre-XOR: " << _solver->NumConstraints();
+
     // For each pair of adjacent faces...
     for (const auto& [patch_pair, smoothing_cost] : _smoothingCoefficients) {
         // For each Direction:
@@ -373,5 +373,7 @@ void MeshOperations::addSmoothingCosts(std::vector<std::vector<const MPVariable*
             c4->SetCoefficient(variables[patch_pair.second][direction], -1.0);
         }
     }
+
+    LOG(INFO) << "Num Variables Post-XOR: " << _solver->NumVariables();
     LOG(INFO) << "Num Constraints Post-XOR: " << _solver->NumConstraints();
 }

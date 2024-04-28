@@ -29,6 +29,7 @@ public:
     void preprocessDistances();
     void preprocessRaytracer();
     void preprocessZeroCostFaces();
+    void preprocessSolver();
 
     // Computes global shortest path between faces using geodesic distance
     void geodesicDistance();
@@ -193,9 +194,10 @@ private:
     void addSmoothingCosts(std::vector<std::vector<const MPVariable*>> &variables);
 
     // Generic ILP Subroutines
-    // TODO: Finish implementing these functions
-    const MPVariable* addVariable(const double &coefficient, const std::string &name = "");
+    const MPVariable* addVariable(const double &coefficient, const double &min_val = 0.0, const double &max_val = 1.0, const std::string &name = "");
     const MPVariable* addXORVariable(const MPVariable* var_1, const MPVariable* var_2, const double &coefficient, const std::string &name = "");
+    void addConstraint(const std::vector<const MPVariable*> &variables, const std::vector<double> &coefficients, const double &min_val = 0.0, const double &max_val = 1.0, const std::string &name = "");
+    void clearSolver();
 
     double bbd; // bounding box diagonal
     Eigen::MatrixXd _weightedDistances;
