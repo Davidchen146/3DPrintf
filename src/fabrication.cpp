@@ -12,7 +12,7 @@
 // (contents of TF are the same as _F --> IF "p" option is specified)
 void MeshOperations::tetrahedralizeMesh() {
     // i just took the options from the example, not 100% what to use here
-    igl::copyleft::tetgen::tetrahedralize(_V.cast<double>(), _F, "pq1.414Y", _TV, _TT, _TF);
+    igl::copyleft::tetgen::tetrahedralize(_V.cast<double>(), _F, "pq1.414a0.005Y", _TV, _TT, _TF);
 }
 
 Eigen::Vector3d MeshOperations::computeTetCentroid(Eigen::Vector4i &tetrahedron) {
@@ -23,7 +23,6 @@ Eigen::Vector3d MeshOperations::computeTetCentroid(Eigen::Vector4i &tetrahedron)
     return (tetVertex1 + tetVertex2 + tetVertex3 + tetVertex4) / 4.f;
 }
 
-//
 void MeshOperations::partitionVolume(const std::vector<std::unordered_set<int>> &printable_components,
                                      const std::vector<Eigen::Vector3f> &printing_directions,
                                      std::vector<std::vector<Eigen::Vector4i>> &printable_volumes) {
@@ -32,8 +31,17 @@ void MeshOperations::partitionVolume(const std::vector<std::unordered_set<int>> 
         printable_volumes.push_back({});
     }
 
-    std::vector<Eigen::Vector3f> directions(_num_random_dir_samples);
-    sampleRandomDirections(directions);
+    int n = 512;
+    std::vector<Eigen::Vector3f> directions(n);
+    float phi = M_PI * (sqrt(5) - 1);
+    for (int i = 0; i < n; i++) {
+        float y = 1 - ((float) i / (n - 1)) * 2;
+        float radius = sqrt(1 - y * y);
+        float theta = phi * i;
+        float x = cos(theta) * radius;
+        float z = sin(theta) * radius;
+        directions[i] = Vector3f(x, y, z);
+    }
 
     // NOTE: make a global variable since this is also used for the visualizer?
     std::unordered_map<int, int> faceToGroup;
@@ -56,19 +64,23 @@ void MeshOperations::partitionVolume(const std::vector<std::unordered_set<int>> 
             float distance;
             int intersectedFace = getIntersectionWithDistance(centroid, direction, distance);
             if (intersectedFace >= 0 && distance < minDistance) {
+                if (distance == 0) {
+                    std::cerr << "????????" << std::endl;
+                }
                 assert(distance > 0);
                 boundaryFace = intersectedFace;
             } else {
                 std::cerr << "DID NOT HIT A FACE ON THE BOUNDARY?" << std::endl;
             }
         }
-
-        if (boundaryFace == -1) {
-            std::cerr << "something went very wrong here" << std::endl;
-        }
-
         int groupNum = faceToGroup[boundaryFace];
         printable_volumes[groupNum].push_back(tetrahedron);
+    }
+
+    if (printable_components.size() != printable_volumes.size()) {
+        std::cerr << "??????????????" << std::endl;
+    } else {
+        std::cout << "NUMBER OF COMPONENTS: " << printable_components.size() << std::endl;
     }
 }
 

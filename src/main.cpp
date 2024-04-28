@@ -333,7 +333,6 @@ int main(int argc, char *argv[])
                 std::vector<std::vector<Eigen::Vector4i>> printable_volumes;
                 m_o.partitionVolume(printable_components, printing_directions, printable_volumes);
 
-
                 for (std::vector<Eigen::Vector4i> volume : printable_volumes) {
                     std::vector<Eigen::Vector3i> surfaceFaces;
                     m_o.extractSurface(volume, surfaceFaces);
