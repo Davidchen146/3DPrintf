@@ -181,10 +181,7 @@ void MeshOperations::generatePrintableComponents(const std::vector<std::unordere
     for (int patch = 0; patch < patches.size(); patch++) {
         // Find the value
         for (int direction = 0; direction < _num_random_dir_samples; direction++) {
-            std::cout << "Accessing patch: " << patch << " direction: " << direction << std::endl;
-            std::cout << "Size of solutions " << solutions.size() << " element: " << solutions[patch].size() << std::endl;
             int solver_value = solutions[patch][direction]->solution_value();
-            std::cout << "Accessed solver value: " << solver_value << std::endl;
             if (solver_value == 1) {
                 // This is the optimal direction for this patch
                 patch_directions[patch] = direction;
