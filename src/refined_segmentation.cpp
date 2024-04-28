@@ -55,7 +55,7 @@ void MeshOperations::generateFuzzyRegions(std::vector<std::unordered_set<int>> &
             unordered_set<int>* fuzzyRegion = new unordered_set<int>();
             unordered_set<FuzzyNode*> neighbors;
             getFuzzyRegion(printable_components[i], printable_components[j], *fuzzyRegion);
-            FuzzyNode* fuzzyNode = new FuzzyNode(fuzzyRegion, neighbors);
+            FuzzyNode* fuzzyNode = new FuzzyNode{fuzzyRegion, neighbors};
             nodes.push_back(fuzzyNode);
         }
     }
@@ -103,12 +103,24 @@ void fuzzyDFS(unordered_set<FuzzyNode*> &visited, unordered_set<int> &regionFace
 }
 
 void MeshOperations::combineFuzzyRegions(std::vector<FuzzyNode*> &nodes, std::vector<std::unordered_set<int>> &fuzzyRegions) {
+    unordered_set<FuzzyNode*> visited;
     for (FuzzyNode* node: nodes) {
-        unordered_set<FuzzyNode*> visited;
+        if (visited.contains(node)) {
+            continue;
+        }
         unordered_set<int> fuzzyRegion;
         fuzzyDFS(visited, fuzzyRegion, node);
         fuzzyRegions.push_back(fuzzyRegion);
     }
+}
+
+void MeshOperations::generateRefinedSegmentation(std::vector<std::unordered_set<int>> &printable_components, std::vector<std::unordered_set<int>> &fuzzyRegions) {
+    vector<FuzzyNode*> nodes;
+    generateFuzzyRegions(printable_components, nodes);
+    std::cout << "Number of initial fuzzy regions: " << nodes.size() << std::endl;
+    makeFuzzyGraph(nodes);
+    combineFuzzyRegions(nodes, fuzzyRegions);
+    std::cout << "Number of total fuzzy regions: " << fuzzyRegions.size() << std::endl;
 }
 
 

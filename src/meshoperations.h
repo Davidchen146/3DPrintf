@@ -70,6 +70,9 @@ public:
                                      std::vector<std::unordered_set<int>> &printable_components,
                                      std::vector<Eigen::Vector3f> &printing_directions);
 
+    void generateRefinedSegmentation(std::vector<std::unordered_set<int>> &printable_components,
+                                     std::vector<std::unordered_set<int>> &fuzzyRegions);
+
     // just for sanity checking
     void visualizeFaceAO();
     void visualizeEdgeAO();
