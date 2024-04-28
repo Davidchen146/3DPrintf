@@ -382,4 +382,34 @@ void MeshOperations::visualizeEdgeAO() {
     viewer.launch();
 }
 
+void MeshOperations::visualizePrintableVolume(std::vector<Eigen::Vector3i> &surface_faces) {
+    std::cout << "number of surface faces: " << surface_faces.size() << std::endl;
+
+    Eigen::MatrixXd C;
+    C.resize(surface_faces.size(), 3);
+
+    // convert surface_faces to matrixXi
+    MatrixXi faces;
+    faces.resize(surface_faces.size(), 3);
+
+    double m_red = static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
+    double m_green = static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
+    double m_blue = static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
+    Vector3d RGB = {m_red, m_green, m_blue};
+
+    std::cout << "before for loop" << std::endl;
+    for (int i = 0; i < surface_faces.size(); i++) {
+        faces.row(i) = surface_faces[i];
+        C.row(i) = RGB;
+    }
+    std::cout << "after for loop" << std::endl;
+
+    std::cout << "trying to launch viewer" << std::endl;
+    igl::opengl::glfw::Viewer viewer;
+    viewer.data().set_mesh(_TV.cast<double>(), faces);
+    viewer.data().set_colors(C);
+    viewer.launch();
+    std::cout << std::endl;
+}
+
 

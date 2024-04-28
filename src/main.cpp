@@ -306,12 +306,42 @@ int main(int argc, char *argv[])
             } else if (debug_mode == "tetrahedralize") {
                 std::cout << "start tetrahedralize" << std::endl;
                 // Setup
-                m_o.preprocessData(); // just need this for setting _V and _F
-                m_o.tetrahedralizeMesh();
-                std::cout << "done with tetrahedralize" << std::endl;
-            }
+                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
+                m_o.preprocessData();
+                m_o.preprocessDistances();
+                m_o.preprocessRaytracer();
 
-            else {
+                std::cout << "preprocessing" << std::endl;
+
+                std::vector<std::unordered_set<int>> patches;
+                m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, visualize_seeds);
+                m_o.generateOversegmentation(patches);
+                m_o.visualize(patches);
+
+                std::cout << "oversegmentation" << std::endl;
+
+                std::vector<std::unordered_set<int>> printable_components;
+                // Printing directions for each component
+                std::vector<Eigen::Vector3f> printing_directions;
+                m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples, axis_only);
+                m_o.generateInitialSegmentation(patches, printable_components, printing_directions);
+                m_o.visualize(printable_components);
+
+                std::cout << "initial segmentation" << std::endl;
+
+                m_o.tetrahedralizeMesh(); // this is effectively a preprocessing step for fabrication
+                std::vector<std::vector<Eigen::Vector4i>> printable_volumes;
+                m_o.partitionVolume(printable_components, printing_directions, printable_volumes);
+
+
+                for (std::vector<Eigen::Vector4i> volume : printable_volumes) {
+                    std::vector<Eigen::Vector3i> surfaceFaces;
+                    m_o.extractSurface(volume, surfaceFaces);
+                    if (surfaceFaces.size() > 0) {
+                        m_o.visualizePrintableVolume(surfaceFaces);
+                    }
+                }
+            } else {
                 std::cout << "Error: Unknown debug mode \"" << debug_mode << "\"" << std::endl;
             }
 
