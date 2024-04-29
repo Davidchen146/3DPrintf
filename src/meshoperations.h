@@ -82,6 +82,9 @@ public:
     void visualizePrintableComponents(const std::vector<std::unordered_set<int>> &printable_components, const std::vector<Eigen::Vector3f> &printing_directions);
 
     // Debug options for visualization
+    void generateRefinedSegmentation(std::vector<std::unordered_set<int>> &printable_components,
+                                     std::vector<Eigen::Vector3f> &printing_directions,
+                                     std::vector<std::unordered_set<int>> &fuzzyRegions);
     void visualizeFaceAO();
     void visualizeEdgeAO();
     void visualizeAngularDistance();
@@ -147,6 +150,17 @@ private:
                                      const std::vector<Eigen::Vector3f> &patch_printing_directions,
                                      std::vector<Eigen::Vector3f> &component_printing_directions);
 
+    // Phase 3 (Refined Segmentation)
+    void generateFuzzyRegions(std::vector<std::unordered_set<int>> &printable_components,
+                              std::vector<Eigen::Vector3f> &printing_directions,
+                              std::vector<FuzzyNode*> &nodes);
+    // Using results generateFuzzyRegions, make graphs connecting regions
+    void makeFuzzyGraph(std::vector<FuzzyNode*> &nodes);
+    // combine nodes into connected fuzzy regions
+    void combineFuzzyRegions(std::vector<FuzzyNode*> &nodes,
+                             std::vector<std::unordered_set<int>> &fuzzyRegions,
+                             std::vector<std::unordered_set<int>> &fuzzyRegionDirections);
+
     // Other general subroutines
 /*-------------------------------------------------------------------------------------------------*/
     // Normals
@@ -164,10 +178,20 @@ private:
 
     // helper for getPatchBoundary
     void updateBoundarySet(const std::pair<int, int> edge, std::unordered_set<std::pair<int, int>, PairHash>& boundary_set);
+    // helper for getPairwiseFuzzyRegion
+    void updateFuzzyRegion(std::unordered_set<int> &fuzzyRegion, std::unordered_set<int> &boundaryFaces, int f);
     // given a patch, populate the set which contains the edges of the boundary
     void getPatchBoundary(const std::unordered_set<int>& patch, std::unordered_set<std::pair<int, int>, PairHash>& patch_boundary);
     // Gets intersection of edges between two patches
-    void getBoundaryEdges(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two, std::unordered_set<std::pair<int, int>, PairHash> &boundaryEdges);
+    void getBoundaryEdges(const std::unordered_set<int> &patch_one,
+                          const std::unordered_set<int> &patch_two,
+                          std::unordered_set<std::pair<int, int>, PairHash> &boundaryEdges);
+    // Gets the set of faces adjacent to the boundary edge between two patches
+    void getBoundaryFaces(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two, std::unordered_set<int> &boundaryFaces);
+    // Gets the fuzzy region between two patches
+    void getPairwiseFuzzyRegion(const std::unordered_set<int> &patch_one,
+                                const std::unordered_set<int> &patch_two,
+                                std::unordered_set<int> &fuzzyRegion);
 
     // Basic utility functions for faces
     Eigen::Vector3f getCentroid(const int &face);
@@ -230,6 +254,7 @@ private:
 
     // Refined Segmentation parameters
     // TODO: Add them
+    double _fuzzy_region_width = bbd*0.02;
 
     // ILP solver used for phases 2 and 3 (should be cleared before using in phase 2)
     operations_research::MPSolver* _solver;

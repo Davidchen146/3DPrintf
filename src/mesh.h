@@ -81,6 +81,13 @@ struct PairHash
     }
 };
 
+// struct for fuzzy region combining and traversal
+struct FuzzyNode {
+    std::unordered_set<int>* fuzzyRegion;
+    std::unordered_set<FuzzyNode*> neighbors;
+    std::vector<int> patchDirections;
+};
+
 class Mesh
 {
 public:

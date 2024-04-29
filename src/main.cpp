@@ -230,7 +230,26 @@ int main(int argc, char *argv[])
             m_o.visualizePrintableComponents(printable_components, printing_directions);
         }
         else if (method == "refined") {
-            std::cerr << "Error: This phase hasn't been implemented yet" << std::endl;
+            m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
+            m_o.preprocess();
+
+            // This vec will hold the labelings
+            std::vector<std::unordered_set<int>> patches;
+            m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, seeds_only);
+            m_o.generateOversegmentation(patches);
+            m_o.visualize(patches);
+
+            // The printable components
+            std::vector<std::unordered_set<int>> printable_components;
+            // Printing directions for each component
+            std::vector<Eigen::Vector3f> printing_directions;
+            m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
+            m_o.generateInitialSegmentation(patches, printable_components, printing_directions);
+            m_o.visualize(printable_components);
+
+            std::vector<std::unordered_set<int>> fuzzyRegions;
+            m_o.generateRefinedSegmentation(printable_components, printing_directions, fuzzyRegions);
+            m_o.visualize(fuzzyRegions);
         }
         else if (method == "fabricate") {
             std::cerr << "Error: This phase hasn't been implemented yet" << std::endl;
