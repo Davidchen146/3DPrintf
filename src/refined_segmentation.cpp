@@ -255,7 +255,6 @@ void MeshOperations::solveFuzzyRegion(std::vector<std::unordered_set<int>> &prin
     std::vector<std::vector<const MPVariable*>> variables;
     // Maps face index to variables
     std::unordered_map<int, int> face_to_variable;
-    int num_face_variables = 0;
     // Maps printing direction to variables
     std::unordered_map<int, int> variable_to_direction;
     int num_region_directions = 0;
@@ -269,45 +268,11 @@ void MeshOperations::solveFuzzyRegion(std::vector<std::unordered_set<int>> &prin
     // Make variables
     for (const auto &[adjacent_faces, smoothing_cost] : adjacent_face_coefficients) {
         // Create direction variables for each face if they don't exist
-        for (int i = 0; i < 2; i++) {
-            int face = adjacent_faces.first;
-            if (i == 1) {
-                face = adjacent_faces.second;
-            }
-
-            if (!face_to_variable.contains(face)) {
-                // Create a vector of variables (for each direction) at index num_face_variables
-                variables.emplace_back();
-                variables[num_face_variables].resize(num_region_directions);
-
-                bool in_fuzzy_region = fuzzy_region.contains(face);
-                int original_component = -1;
-                for (int component = 0; component < printable_components.size(); component++) {
-                    if (printable_components[component].contains(face)) {
-                        original_component = component;
-                        break;
-                    }
-                }
-
-                // Populate with appropriate values
-                for (int direction = 0; direction < num_region_directions; direction++) {
-                    if (in_fuzzy_region) {
-                        // Coefficient is 0 because this doesn't matter for the objective
-                        variables[num_face_variables][direction] = addVariable(0.0, 0.0, 1.0);
-                    } else {
-                        // Faces on boundary of fuzzy region must have constrained values
-                        if (variable_to_direction[direction] == original_component) {
-                            // In original region, must be printed in this direction
-                            variables[num_face_variables][direction] = addVariable(0.0, 1.0, 1.0);
-                        } else {
-                            // Not in original region, cannot be printed in this direction
-                            variables[num_face_variables][direction] = addVariable(0.0, 0.0, 0.0);
-                        }
-                    }
-                }
-
-                num_face_variables++;
-            }
+        if (!face_to_variable.contains(adjacent_faces.first)) {
+            addRefinedFaceVariable(adjacent_faces.first, fuzzy_region, printable_components, variable_to_direction, face_to_variable, variables);
+        }
+        if (!face_to_variable.contains(adjacent_faces.second)) {
+            addRefinedFaceVariable(adjacent_faces.second, fuzzy_region, printable_components, variable_to_direction, face_to_variable, variables);
         }
 
         // Encode XOR variable for this pair
@@ -323,26 +288,81 @@ void MeshOperations::solveFuzzyRegion(std::vector<std::unordered_set<int>> &prin
 
     // Unpack the variables and update how the printable components changed
     for (const auto &[face, face_variable] : face_to_variable) {
-        for (int direction_variable = 0; direction_variable < num_region_directions; direction_variable++) {
-            // Recover corresponding printing direction
-            int direction = variable_to_direction[direction_variable];
+        updatePrintableComponents(face, face_variable, fuzzy_region, printable_components, variable_to_direction, variables);
+    }
+}
 
-            // If the solution is 0, the face is not printed in this direction
-            if (variables[face_variable][direction_variable]->solution_value() == 0.0) {
-                // Therefore, it should be removed from the corresponding set
-                // If no debug statements used, this if condition can be removed
-                if (printable_components[direction].contains(face)) {
-                    std::cout << "Face " << face << " removed from printable component " << direction << std::endl;
-                    printable_components[direction].erase(face);
-                }
-            }
+// Add a new variable for a face
+void MeshOperations::addRefinedFaceVariable(const int &face,
+                                            const std::unordered_set<int> &fuzzy_region,
+                                            const std::vector<std::unordered_set<int>> &printable_components,
+                                            std::unordered_map<int, int> &variable_to_direction,
+                                            std::unordered_map<int, int> &face_to_variable,
+                                            std::vector<std::vector<const MPVariable*>> &variables) {
+    // Create a vector of variables (for each direction) at the end
+    int num_face_variables = variables.size();
+    int num_region_directions = variable_to_direction.size();
+    variables.emplace_back();
+    variables[num_face_variables].resize(num_region_directions);
 
-            // If the solution is 1, the face is printed in this direction
-            if (variables[face_variable][direction_variable]->solution_value() == 1.0) {
-                // Therefore it should be added to this printable component
-                std::cout << "Face " << face << " added to printable component " << direction << std::endl;
-                printable_components[direction].insert(face);
+    // Determine if this face should stay fixed
+    bool in_fuzzy_region = fuzzy_region.contains(face);
+    int original_component = -1;
+    if (!in_fuzzy_region) {
+        for (int component = 0; component < printable_components.size(); component++) {
+            if (printable_components[component].contains(face)) {
+                original_component = component;
+                break;
             }
+        }
+    }
+
+    // Populate the new entry with appropriate values
+    for (int direction = 0; direction < num_region_directions; direction++) {
+        if (in_fuzzy_region) {
+            // Coefficient is 0 because this doesn't matter for the objective
+            variables[num_face_variables][direction] = addVariable(0.0, 0.0, 1.0);
+        } else {
+            // Faces on boundary of fuzzy region must have constrained values
+            if (variable_to_direction[direction] == original_component) {
+                // In original region, must be printed in this direction
+                variables[num_face_variables][direction] = addVariable(0.0, 1.0, 1.0);
+            } else {
+                // Not in original region, cannot be printed in this direction
+                variables[num_face_variables][direction] = addVariable(0.0, 0.0, 0.0);
+            }
+        }
+    }
+}
+
+// Adjust printable components based on the value from a face
+void MeshOperations::updatePrintableComponents(const int &face,
+                                               const int &face_variable,
+                                               const std::unordered_set<int> &fuzzy_region,
+                                               std::vector<std::unordered_set<int>> &printable_components,
+                                               std::unordered_map<int, int> &variable_to_direction,
+                                               std::vector<std::vector<const MPVariable*>> &variables) {
+    int num_printable_directions = variable_to_direction.size();
+
+    for (int direction_variable = 0; direction_variable < num_printable_directions; direction_variable++) {
+        // Recover corresponding printing direction
+        int direction = variable_to_direction[direction_variable];
+
+        // If the solution is 0, the face is not printed in this direction
+        if (variables[face_variable][direction_variable]->solution_value() == 0.0) {
+            // Therefore, it should be removed from the corresponding set
+            // If no debug statements used, this if condition can be removed
+            if (printable_components[direction].contains(face)) {
+                std::cout << "Face " << face << " removed from printable component " << direction << std::endl;
+                printable_components[direction].erase(face);
+            }
+        }
+
+        // If the solution is 1, the face is printed in this direction
+        if (variables[face_variable][direction_variable]->solution_value() == 1.0) {
+            // Therefore it should be added to this printable component
+            std::cout << "Face " << face << " added to printable component " << direction << std::endl;
+            printable_components[direction].insert(face);
         }
     }
 }

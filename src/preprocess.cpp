@@ -92,6 +92,8 @@ void MeshOperations::preprocessDistances() {
     _geodesicDistances.setZero();
     _angularDistances.setZero();
     bbd = (_V.colwise().maxCoeff()- _V.colwise().minCoeff()).norm();
+    // Fuzzy region width gets set after bbd is loaded
+    _fuzzy_region_width = bbd * 0.02;
 
     _weightedDistances.setZero();
     makeAdjacency();

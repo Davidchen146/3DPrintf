@@ -169,6 +169,18 @@ private:
                           const std::unordered_set<int> &fuzzy_region,
                           const unordered_set<int> &fuzzy_region_directions,
                           const std::unordered_map<std::pair<int, int>, double, PairHash> &adjacent_face_coefficients);
+    void addRefinedFaceVariable(const int &face,
+                                const std::unordered_set<int> &fuzzy_region,
+                                const std::vector<std::unordered_set<int>> &printable_components,
+                                std::unordered_map<int, int> &variable_to_direction,
+                                std::unordered_map<int, int> &face_to_variable,
+                                std::vector<std::vector<const MPVariable*>> &variables);
+    void updatePrintableComponents(const int &face,
+                                   const int &face_variable,
+                                   const std::unordered_set<int> &fuzzy_region,
+                                   std::vector<std::unordered_set<int>> &printable_components,
+                                   std::unordered_map<int, int> &variable_to_direction,
+                                   std::vector<std::vector<const MPVariable*>> &variables);
 
 
     // Other general subroutines
@@ -264,7 +276,7 @@ private:
 
     // Refined Segmentation parameters
     // TODO: Add them
-    double _fuzzy_region_width = bbd*0.02;
+    double _fuzzy_region_width;
 
     // ILP solver used for phases 2 and 3 (should be cleared before using in phase 2)
     operations_research::MPSolver* _solver;

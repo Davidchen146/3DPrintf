@@ -30,6 +30,7 @@ MeshOperations::MeshOperations(Mesh m) {
     _axis_only = false;
 
     // Refined segmentation parameters
+    _fuzzy_region_width = 0;
 }
 
 // Configure parameters for 3D printing operations
