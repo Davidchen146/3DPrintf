@@ -1,6 +1,11 @@
+#include "qmath.h"
 #include "src/meshoperations.h"
 #include <igl/copyleft/tetgen/tetrahedralize.h>
 #include <QString>
+#include <igl/invert_diag.h>
+#include <igl/adjacency_matrix.h>
+
+#include <igl/per_vertex_attribute_smoothing.h>
 
 // Mesh the interior of a surface mesh (V,F) using tetgen
 // @param[in] V #V x 3 vertex position list
@@ -27,6 +32,59 @@ void MeshOperations::tetrahedralizeMesh() {
     options.append("Y");
     std::cout << "options: " << options << std::endl;
     igl::copyleft::tetgen::tetrahedralize(_V.cast<double>(), _F, options, _TV, _TT, _TF);
+
+
+    // Next: let's apply Laplacian Smoothing to only the inside vertices
+
+    std::set<int> newVertexIndices; // to newly created inside-vertices
+
+    // Step 1: ID all new vertices added from tetrahedralization, subtract
+    Eigen::MatrixXd _VCast = _V.cast<double>();
+    for (int i = 0; i < _TV.rows(); ++i) {
+        bool isNew = true;
+        for (int j = 0; j < _VCast.rows(); ++j) {
+            if ((_TV.row(i) - _VCast.row(j)).norm() < 1e-7) { // in case there's some margin of error
+                isNew = false;
+                break;
+            }
+        }
+        if (isNew) {
+            newVertexIndices.insert(i);
+        }
+    }
+
+    // now we have a set of indices that key into the rows of _TV that ID new vertices.
+    // for (int iteration = 0; iteration < 100; iteration++)
+    // {
+    //     //std::cout << "working" << std::endl;
+    //     //Laplacian smoothing -- from
+    //     Eigen::SparseMatrix<double> L;
+    //     igl::cotmatrix(_TV, _TT, L);
+
+    //     // get mass matrix
+    //     Eigen::SparseMatrix<double> M;
+    //     igl::massmatrix(_TV, _TT, igl::MASSMATRIX_TYPE_DEFAULT, M);
+
+    //     // invert the mass matrix
+    //     Eigen::SparseMatrix<double> M_inv;
+    //     igl::invert_diag(M, M_inv);
+    //     Eigen::MatrixXd S = M_inv * (L * _TV);
+
+    //     // apply smoothing only to new vertices
+
+    //     for (int idx : newVertexIndices) {
+    //         //std::cout << S.row(idx) << std::endl;
+    //         _TV.row(idx) = _TV.row(idx) + 100000000000000.0 * S.row(idx); // adjust multiplier -- control the amount of smoothing
+    //     }
+    //     // Eigen::MatrixXd smoothedTV;
+
+    //     // igl::per_vertex_attribute_smoothing(_TV, _TF, smoothedTV);
+
+    //     // for (int idx : newVertexIndices) {
+    //     //     _TV.row(idx) = smoothedTV.row(idx);
+    //     // }
+    // }
+
 }
 
 Eigen::Vector3d MeshOperations::computeTetCentroid(Eigen::Vector4i &tetrahedron) {
@@ -118,7 +176,7 @@ void MeshOperations::partitionVolume(const std::vector<std::unordered_set<int>> 
                 }
             }
             if (intersectedFace == -1) {
-                std::cerr << "DID NOT HIT A FACE ON THE BOUNDARY?" << std::endl;
+                //std::cerr << "DID NOT HIT A FACE ON THE BOUNDARY?" << std::endl;
             }
         }
         int groupNum = faceToGroup[boundaryFace];
