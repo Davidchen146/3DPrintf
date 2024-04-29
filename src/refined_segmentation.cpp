@@ -179,6 +179,7 @@ void MeshOperations::generateRefinedSegmentation(std::vector<std::unordered_set<
         // Generate coefficients for this region
         std::unordered_map<std::pair<int, int>, double, PairHash> adjacent_face_coefficients;
         initializeFuzzyRegionCoefficients(fuzzyRegions[region], adjacent_face_coefficients);
+        std::cout << "Created fuzzy region coefficients for " << adjacent_face_coefficients.size() << " adjacent faces" << std::endl;
 
         // Solve and update the printable components
         solveFuzzyRegion(printable_components, fuzzyRegions[region], fuzzyRegionDirections[region], adjacent_face_coefficients);
@@ -266,6 +267,7 @@ void MeshOperations::solveFuzzyRegion(std::vector<std::unordered_set<int>> &prin
     }
 
     // Make variables
+    std::cout << "Adding variables for " << fuzzy_region.size() << " faces in fuzzy region" << std::endl;
     for (const auto &[adjacent_faces, smoothing_cost] : adjacent_face_coefficients) {
         // Create direction variables for each face if they don't exist
         if (!face_to_variable.contains(adjacent_faces.first)) {
@@ -281,7 +283,11 @@ void MeshOperations::solveFuzzyRegion(std::vector<std::unordered_set<int>> &prin
         }
     }
 
+    std::cout << "Added " << _solver->NumVariables() << " variables for " << face_to_variable.size() << " faces and " << num_region_directions << " directions" << std::endl;
+    std::cout << "Solver has " << _solver->NumConstraints() << " constraints for " << adjacent_face_coefficients.size() << " pairs of adjacent faces" << std::endl;
+
     // Solve!
+    std::cout << "Solving system. This may take a while..." << std::endl;
     MPObjective* const objective = _solver->MutableObjective();
     objective->SetMinimization();
     _solver->Solve();
@@ -347,13 +353,13 @@ void MeshOperations::updatePrintableComponents(const int &face,
     for (int direction_variable = 0; direction_variable < num_printable_directions; direction_variable++) {
         // Recover corresponding printing direction
         int direction = variable_to_direction[direction_variable];
-
+        int original_dir = -1;
         // If the solution is 0, the face is not printed in this direction
         if (variables[face_variable][direction_variable]->solution_value() == 0.0) {
             // Therefore, it should be removed from the corresponding set
             // If no debug statements used, this if condition can be removed
             if (printable_components[direction].contains(face)) {
-                std::cout << "Face " << face << " removed from printable component " << direction << std::endl;
+                original_dir = direction;
                 printable_components[direction].erase(face);
             }
         }
@@ -361,8 +367,10 @@ void MeshOperations::updatePrintableComponents(const int &face,
         // If the solution is 1, the face is printed in this direction
         if (variables[face_variable][direction_variable]->solution_value() == 1.0) {
             // Therefore it should be added to this printable component
-            std::cout << "Face " << face << " added to printable component " << direction << std::endl;
             printable_components[direction].insert(face);
+            if (direction != original_dir) {
+                std::cout << "Moved face " << face << " from printable component " << original_dir << " to printable component " << direction << std::endl;
+            }
         }
     }
 }
