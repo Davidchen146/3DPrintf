@@ -24,6 +24,10 @@ void MeshOperations::visualize(const vector<unordered_set<int>>& coloringGroups)
     // generate a certain number of colors based on coloringGroups
     Eigen::MatrixXd C;
     C.resize(_faces.size(), 3);
+    // Set default color to a gray
+    for (int i = 0; i <_faces.size(); i++) {
+        C.row(i) = Eigen::Vector3d(0.26, 0.26, 0.26);
+    }
 
     std::unordered_map<int, int> faceToGroup;
     for (int i = 0; i < coloringGroups.size(); i++) {

@@ -349,28 +349,34 @@ void MeshOperations::updatePrintableComponents(const int &face,
                                                std::unordered_map<int, int> &variable_to_direction,
                                                std::vector<std::vector<const MPVariable*>> &variables) {
     int num_printable_directions = variable_to_direction.size();
+    int original_dir = -1;
+    for (int component = 0; component < printable_components.size(); component++) {
+        if (printable_components[component].contains(face)) {
+            original_dir = component;
+            printable_components[component].erase(face);
+        }
+    }
+
+    int new_dir = -1;
 
     for (int direction_variable = 0; direction_variable < num_printable_directions; direction_variable++) {
         // Recover corresponding printing direction
         int direction = variable_to_direction[direction_variable];
-        int original_dir = -1;
         // If the solution is 0, the face is not printed in this direction
         if (variables[face_variable][direction_variable]->solution_value() == 0.0) {
             // Therefore, it should be removed from the corresponding set
-            // If no debug statements used, this if condition can be removed
-            if (printable_components[direction].contains(face)) {
-                original_dir = direction;
-                printable_components[direction].erase(face);
-            }
+            // This is done previously because of debug statements
         }
 
         // If the solution is 1, the face is printed in this direction
         if (variables[face_variable][direction_variable]->solution_value() == 1.0) {
             // Therefore it should be added to this printable component
             printable_components[direction].insert(face);
-            if (direction != original_dir) {
-                std::cout << "Moved face " << face << " from printable component " << original_dir << " to printable component " << direction << std::endl;
-            }
+            new_dir = direction;
         }
+    }
+
+    if (new_dir != original_dir) {
+        std::cout << "Moved face " << face << " from printable component " << original_dir << " to printable component " << new_dir << std::endl;
     }
 }
