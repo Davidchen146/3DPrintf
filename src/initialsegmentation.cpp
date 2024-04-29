@@ -23,11 +23,7 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
     populateSmoothingMatrix(patches);
 
     // OK WE ARE GOING TO DO THE THING
-    _solver = MPSolver::CreateSolver("SCIP");
-    if (!_solver) {
-        LOG(WARNING) << "SCIP solver unavailable.";
-        return;
-    }
+    _solver->Clear();
 
     // Allocate space for all the items poggers
     std::vector<std::vector<const MPVariable*>> printing_direction_vars;
@@ -38,23 +34,14 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
 
     // Support costs
     addSupportCosts(printing_direction_vars, patches);
-    int supportVariables = _solver->NumVariables();
     // Smoothing costs
     addSmoothingCosts(printing_direction_vars);
-    int totalVariables = _solver->NumVariables();
-    assert(supportVariables + (_smoothingCoefficients.size() * _num_random_dir_samples) == totalVariables);
 
     // SOLVE THIS
     std::cout << "Solving initial segmentation optimization. This may take a while..." << std::endl;
     MPObjective* const objective = _solver->MutableObjective();
     objective->SetMinimization();
     _solver->Solve();
-  
-    // for (int i = 0; i < 1; i++) {
-    //     for (int j = 0; j < _num_random_dir_samples; j++) {
-    //         LOG(INFO) << "ASSIGNMENT: " << printing_direction_vars[i][j]->solution_value();
-    //     }
-    // }
   
     // Use the solutions to generate the printable componenets
     std::cout << "Generating printable components" << std::endl;
@@ -66,12 +53,24 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
 void MeshOperations::sampleRandomDirections(std::vector<Eigen::Vector3f> &directions) {
     directions.clear();
 
-    for (int i = 0; i < _num_random_dir_samples; i++) {
-        Vector3f direction = generateRandomVector();
+    // Generate axis-aligned directions only?
+    if (_axis_only) {
+        directions.emplace_back(1, 0, 0);
+        directions.emplace_back(-1, 0, 0);
+        directions.emplace_back(0, 1, 0);
+        directions.emplace_back(0, -1, 0);
+        directions.emplace_back(0, 0, 1);
+        directions.emplace_back(0, 0, -1);
+    } else {
+        for (int i = 0; i < _num_random_dir_samples; i++) {
+            Vector3f direction = generateRandomVector();
 
-        // NOTE: assumes that directions starts off as an empty vector
-        directions.push_back(direction);
+            // NOTE: assumes that directions starts off as an empty vector
+            directions.push_back(direction);
+        }
     }
+
+    _num_random_dir_samples = directions.size();
 }
 
 // Determine if a face is overhanging and requires support
@@ -84,11 +83,8 @@ bool MeshOperations::isFaceOverhanging(const int face, const Eigen::Vector3f &di
         return false;
     }
 
-    // The face needs support if its angle is more than 90 degrees + printing tolerance angle away from the direction
-    double angle = acos(dot) / (faceNormal.norm() * direction.norm());
-
-    // compare with tolerance angle + right angle (90 degrees or 1/2 pi)
-    return angle > _printer_tolerance_angle + (std::numbers::pi / 2);
+    double angle = acos(-dot);
+    return angle < (std::numbers::pi / 2) - _printer_tolerance_angle;
 }
 
 // Determine if an edge is overhanging and requires support
@@ -101,11 +97,8 @@ bool MeshOperations::isEdgeOverhanging(const std::pair<int, int> &edge, const Ei
         return false;
     }
 
-    // The edge needs support if its angle is more than 90 degrees + printing tolerance angle away from the direction
-    double angle = acos(dot) / (edgeNormal.norm() * direction.norm());
-
-    // compare with tolerance angle + right angle (90 degrees or 1/2 pi)
-    return angle > _printer_tolerance_angle + (std::numbers::pi / 2);
+    double angle = acos(-dot);
+    return angle < (std::numbers::pi / 2) - _printer_tolerance_angle;
 }
 
 // Determine if a vertex is overhanging and requires support
@@ -118,11 +111,8 @@ bool MeshOperations::isVertexOverhanging(const int vertex, const Eigen::Vector3f
         return false;
     }
 
-    // The vertex needs support if its angle is more than 90 degrees + printing tolerance angle away from the direction
-    double angle = acos(dot) / (vertexNormal.norm() * direction.norm());
-
-    // compare with tolerance angle + right angle (90 degrees or 1/2 pi)
-    return angle > _printer_tolerance_angle + (std::numbers::pi / 2);
+    double angle = acos(-dot);
+    return angle < (std::numbers::pi / 2) - _printer_tolerance_angle;
 }
 
 // Determine if a face is footing a supported face and requires support
@@ -148,6 +138,11 @@ void MeshOperations::findFootingFaces(const int face, const Eigen::Vector3f &dir
 
 // Compute support coefficient for a face in direction
 double MeshOperations::computeSupportCoefficient(const int &face) {
+    // Any face specified in the zero cost step does not incur a support cost
+    if (_use_zero_cost_faces && _zero_cost_faces.contains(face)) {
+        return 0;
+    }
+
     // Area * ambient occlusion (exponentiated)
     // get area
     double area = getArea(face);
@@ -172,6 +167,7 @@ double MeshOperations::computeSmoothingCoefficient(const std::unordered_set<int>
 }
 
 // Assign results of the ILP to something we can return out
+// Assumes the solver already has results assigned to variables
 void MeshOperations::generatePrintableComponents(const std::vector<std::unordered_set<int>> &patches,
                                                  std::vector<unordered_set<int>> &printable_components,
                                                  const std::vector<std::vector<const MPVariable*>> &solutions,
@@ -195,6 +191,8 @@ void MeshOperations::generatePrintableComponents(const std::vector<std::unordere
         }
         assert(patch_directions[patch] != -1);
     }
+
+    std::cout << "Assigning elements" << std::endl;
 
     // Group the patches based on their direction
     printable_components.resize(used_printing_directions.size());
@@ -284,6 +282,7 @@ void MeshOperations::populateSupportMatrix(const std::vector<std::unordered_set<
             for (int f : patches[patchInd]) {
                 if (supporting_faces.contains(f)) {
                     patch_cost += computeSupportCoefficient(f);
+                    assert(patch_cost >= 0.0);
                 }
             }
 
@@ -310,68 +309,40 @@ void MeshOperations::populateSmoothingMatrix(const std::vector<std::unordered_se
 void MeshOperations::addSupportCosts(std::vector<std::vector<const MPVariable*>> &variables, const std::vector<std::unordered_set<int>> &patches) {
     // Initialize variables
     int numPatches = patches.size();
-    for (int i = 0; i < numPatches; i++) {
-        for (int j = 0; j < _num_random_dir_samples; j++) {
-            // Remember to initialize the variables array correctly
-            variables[i][j] = _solver->MakeIntVar(0.0, 1.0, "");
+    for (int patch = 0; patch < numPatches; patch++) {
+        // Create a variable for this patch indicating if it's printed in this direction
+        std::vector<const MPVariable*> patch_direction_vars;
+
+        for (int printing_direction = 0; printing_direction < _num_random_dir_samples; printing_direction++) {
+            const MPVariable* new_dir_var = addVariable(_supportCoefficients(patch, printing_direction), 0.0, 1.0);
+            variables[patch][printing_direction] = new_dir_var;
+            patch_direction_vars.push_back(new_dir_var);
         }
-    }
-    LOG(INFO) << "Number of variables = " << _solver->NumVariables();
-    // Create Constraint such that all the rows add up to exactly one
-    for (int i = 0; i < numPatches; i++) {
-        MPConstraint* constraint = _solver->MakeRowConstraint(1.0, 1.0, "");
-        for (int j = 0; j < _num_random_dir_samples; j++) {
-            constraint->SetCoefficient(variables[i][j], 1.0);
-        }
-    }
-    LOG(INFO) << "Number of constraints = " << _solver->NumConstraints();
-    assert(_solver->NumConstraints == _supportCoefficients.rows());
-    // Add supp coefficients to the objective function
-    MPObjective* const objective = _solver->MutableObjective();
-    for (int i = 0; i < numPatches; i++) {
-        for (int j = 0; j < _num_random_dir_samples; j++) {
-            objective->SetCoefficient(variables[i][j], _supportCoefficients(i, j));
-        }
+
+        // Encode constraint that this patch can only have one printed direction
+        std::vector<double> patch_constraint_coefficients;
+        patch_constraint_coefficients.resize(patch_direction_vars.size(), 1.0);
+        addConstraint(patch_direction_vars, patch_constraint_coefficients, 1.0, 1.0);
     }
 }
 
 void MeshOperations::addSmoothingCosts(std::vector<std::vector<const MPVariable*>> &variables) {
-    const double infinity = _solver->infinity();
-    LOG(INFO) << "Num Constraints Pre-XOR: " << _solver->NumConstraints();
     LOG(INFO) << "Num Neighboring Patch Pairs: " << _smoothingCoefficients.size();
+    LOG(INFO) << "Num Variables Pre-XOR: " << _solver->NumVariables();
+    LOG(INFO) << "Num Constraints Pre-XOR: " << _solver->NumConstraints();
+
     // For each pair of adjacent faces...
     for (const auto& [patch_pair, smoothing_cost] : _smoothingCoefficients) {
         // For each Direction:
         for (int direction = 0; direction < _num_random_dir_samples; direction++) {
             // Create a new variable corresponding to the relevant XOR in the solver
-            std::string var_name = "p" + std::to_string(patch_pair.first) + "d" + std::to_string(direction) + " " + "p" + std::to_string(patch_pair.second) + "d" + std::to_string(direction);
-            operations_research::MPVariable* const new_xor_var = _solver->MakeIntVar(0.0, 1.0, var_name);
+            const MPVariable* patch_1_dir_indicator = variables[patch_pair.first][direction];
+            const MPVariable* patch_2_dir_indicator = variables[patch_pair.second][direction];
 
-            // Set coeffs to the lookup in the map
-            operations_research::MPObjective* const objective = _solver->MutableObjective();
-            objective->SetCoefficient(new_xor_var, smoothing_cost);
-
-            // Set constraints on the variable so that it will take the xor value (we need 4)
-            operations_research::MPConstraint* const c1 = _solver->MakeRowConstraint(0.0, infinity, var_name + " v: -1, p1d: 1, p2d: 1 geq 0");
-            c1->SetCoefficient(new_xor_var, -1.0);
-            c1->SetCoefficient(variables[patch_pair.first][direction], 1.0);
-            c1->SetCoefficient(variables[patch_pair.second][direction], 1.0);
-
-            operations_research::MPConstraint* const c2 = _solver->MakeRowConstraint(0.0, infinity, var_name + " v: 1, p1d: -1, p2d: 1 geq 0");
-            c2->SetCoefficient(new_xor_var, 1.0);
-            c2->SetCoefficient(variables[patch_pair.first][direction], -1.0);
-            c2->SetCoefficient(variables[patch_pair.second][direction], 1.0);
-
-            operations_research::MPConstraint* const c3 = _solver->MakeRowConstraint(0.0, infinity, var_name + " v: 1, p1d: 1, p2d: -1 geq 0");
-            c3->SetCoefficient(new_xor_var, 1.0);
-            c3->SetCoefficient(variables[patch_pair.first][direction], 1.0);
-            c3->SetCoefficient(variables[patch_pair.second][direction], -1.0);
-
-            operations_research::MPConstraint* const c4 = _solver->MakeRowConstraint(-2.0, infinity, var_name + " v: -1, p1d: -1, p2d: -1 geq 2");
-            c4->SetCoefficient(new_xor_var, -1.0);
-            c4->SetCoefficient(variables[patch_pair.first][direction], -1.0);
-            c4->SetCoefficient(variables[patch_pair.second][direction], -1.0);
+            addXORVariable(patch_1_dir_indicator, patch_2_dir_indicator, smoothing_cost);
         }
     }
+
+    LOG(INFO) << "Num Variables Post-XOR: " << _solver->NumVariables();
     LOG(INFO) << "Num Constraints Post-XOR: " << _solver->NumConstraints();
 }

@@ -24,27 +24,33 @@ class MeshOperations
 public:
     MeshOperations(Mesh m);
 
+    // Data preprocessing
+    void preprocessData();
+    void preprocessDistances();
+    void preprocessRaytracer();
+    void preprocessZeroCostFaces();
+    void preprocessSolver();
+
     // Computes global shortest path between faces using geodesic distance
-    void preprocess();
     void geodesicDistance();
 
     // Computes local angular distance between pairs of adjacent faces
     void angularDistance();
 
     // Distances between arbitrary faces
-    void visualize(std::vector<std::unordered_set<int>>& coloringGroups);
-
     void weightedDistance();
     void calculateAvgDistances();
     void makeAdjacency();
     double getGeodesicDistance(int i, int j);
     double getWeightedDistance(int i, int j);
+    double getAngularDistance(int i, int j);
     Eigen::VectorXd dijkstra(int start);
 
     // Sets parameters for various operations
     void setPreprocessingParameters(double geodesic_weight = 0.1,
                                     double convex_coeff = 0.05,
-                                    double concave_coeff = 1);
+                                    double concave_coeff = 1,
+                                    bool use_zero_cost_faces = false);
     void setOversegmentationParameters(int num_seed_faces = 0,
                                        double proportion_seed_faces = 0.1,
                                        double bounding_box_coeff = 0.01,
@@ -56,7 +62,8 @@ public:
                                           double ambient_occlusion_smoothing_alpha = 0.5,
                                           double smoothing_width_t = 0.3,
                                           int ambient_occlusion_samples = 500,
-                                          int footing_samples = 1);
+                                          int footing_samples = 1,
+                                          bool axis_only = false);
 
     // Oversegmentation: returns list of lists of faces
     // Each list of faces represents a connected patch (to be merged and assigned a printing direction)
@@ -70,14 +77,23 @@ public:
                                      std::vector<std::unordered_set<int>> &printable_components,
                                      std::vector<Eigen::Vector3f> &printing_directions);
 
+    // Visualization routines
+    void visualize(const std::vector<std::unordered_set<int>>& coloringGroups);
+    void visualizePrintableComponents(const std::vector<std::unordered_set<int>> &printable_components, const std::vector<Eigen::Vector3f> &printing_directions);
+
+    // Debug options for visualization
     void generateRefinedSegmentation(std::vector<std::unordered_set<int>> &printable_components,
                                      std::vector<Eigen::Vector3f> &printing_directions,
                                      std::vector<std::unordered_set<int>> &fuzzyRegions);
-
-    // just for sanity checking
     void visualizeFaceAO();
     void visualizeEdgeAO();
+    void visualizeAngularDistance();
+    void visualizeWeightedDistance();
+    void visualizeSupportCosts(const Eigen::Vector3f &printing_direction);
+    void visualizeSmoothingCosts(const std::vector<std::unordered_set<int>>& patches);
 
+    // Random direction visualization
+    Eigen::Vector3f generateRandomVector();
 
 
 private:
@@ -153,7 +169,6 @@ private:
     Eigen::Vector3f getVertexNormal(const int &vertex);
 
     // Random sampling
-    Eigen::Vector3f generateRandomVector();
     Eigen::Vector3f sampleRandomPoint(const int &face);
 
     // For determining intersections with other faces
@@ -186,6 +201,10 @@ private:
     double getEdgeAO(const std::pair<int, int> &edge);
     double getFaceAO(const int &face);
 
+    // Visualization
+    Eigen::Vector3d mapValueToColor(double value, double max_value);
+    Eigen::Vector3d lerp(const Eigen::Vector3d& color1, const Eigen::Vector3d& color2, double t);
+
     // Distances to sets of points
     std::pair<double, int> getMinGeodesicDistanceToSet(const int &face, const std::unordered_set<int> &faces, bool include_self = false);
     std::pair<double, int> getMinWeightedDistanceToSet(const int &face, const std::unordered_set<int> &faces, bool include_self = false);
@@ -198,6 +217,12 @@ private:
     void addSupportCosts(std::vector<std::vector<const MPVariable*>> &variables, const std::vector<std::unordered_set<int>> &patches);
     void addSmoothingCosts(std::vector<std::vector<const MPVariable*>> &variables);
 
+    // Generic ILP Subroutines
+    const MPVariable* addVariable(const double &coefficient, const double &min_val = 0.0, const double &max_val = 1.0, const std::string &name = "");
+    const MPVariable* addXORVariable(const MPVariable* var_1, const MPVariable* var_2, const double &coefficient, const std::string &name = "");
+    void addConstraint(const std::vector<const MPVariable*> &variables, const std::vector<double> &coefficients, const double &min_val = 0.0, const double &max_val = 1.0, const std::string &name = "");
+    void clearSolver();
+
     double bbd; // bounding box diagonal
     Eigen::MatrixXd _weightedDistances;
 
@@ -206,13 +231,14 @@ private:
     double _geodesic_distance_weight;
     double _convex_coeff;
     double _concave_coeff;
+    bool _use_zero_cost_faces;
 
     // Oversegmentation parameters
     int _num_seed_faces;
     double _proportion_seed_faces;
     double _oversegmentation_bounding_box_coeff;
     int _num_oversegmentation_iterations;
-    bool _seeds_only;
+    bool _visualize_seeds;
 
     // Initial Segmentation parameters
     int _num_random_dir_samples;
@@ -223,15 +249,15 @@ private:
     Eigen::MatrixXd _supportCoefficients;
     int _ambient_occlusion_samples;
     int _footing_samples;
+    bool _axis_only;
+    std::unordered_set<int> _zero_cost_faces;
 
     // Refined Segmentation parameters
     // TODO: Add them
     double _fuzzy_region_width = bbd*0.02;
 
-    // ILP solver used for phases 2 and 3 (should be cleared)
+    // ILP solver used for phases 2 and 3 (should be cleared before using in phase 2)
     operations_research::MPSolver* _solver;
-
-
 
     // Fields for raytracing
     igl::embree::EmbreeIntersector _intersector;

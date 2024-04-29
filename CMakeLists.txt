@@ -22,6 +22,8 @@ include(libigl)
 igl_include(embree)
 igl_include(core)
 igl_include(glfw)
+igl_include(copyleft tetgen)
+igl_include(copyleft cgal)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -54,18 +56,22 @@ add_executable(${PROJECT_NAME}
     src/oversegmentation.cpp
     src/meshop_util.cpp
     src/initialsegmentation.cpp
-    src/sanitycheck.cpp
+    src/visualize.cpp
+    src/preprocess.cpp
+    src/xor_tools_subroutines.cpp
     src/refined_segmentation.cpp
 )
 
 # Specifies libraries to be linked (Qt components, glew, etc)
-target_link_libraries(${PROJECT_NAME} PRIVATE
+target_link_libraries(${PROJECT_NAME} PUBLIC
     Qt::Core
     Qt::Gui
     Qt::Xml
     igl::embree
     igl::core
     igl::glfw
+    igl_copyleft::tetgen
+    igl_copyleft::cgal
     ortools::ortools
 )
 

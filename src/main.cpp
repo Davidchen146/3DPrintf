@@ -11,7 +11,6 @@
 int main(int argc, char *argv[])
 {
     srand(static_cast<unsigned>(time(0)));
-
     QCoreApplication a(argc, argv);
     QCommandLineParser parser;
     parser.addHelpOption();
@@ -64,6 +63,7 @@ int main(int argc, char *argv[])
         // "Preprocess/angular_distance_convex": coefficient for angular distance with convex angles
         // "Preprocess/angular_distance_concave": coefficient for angular distance with concave angles
         // "Preprocess/geodesic_distance_weight": proportion of weighted distance is geodesic (instead of angular) distance
+        // "Preprocess/use_zero_cost_faces": allows for specifying faces to have 0 support cost as a preprocessing step to initial segmentation
     // Oversegmentation:
         // "Oversegmentation/num_seed_faces": number of seed faces to randomly sample
         // "Oversegmentation/proportion_seed_faces": proportion of faces to sample as seed faces (num_seed_faces will take precedence)
@@ -78,12 +78,24 @@ int main(int argc, char *argv[])
         // "Initial/smoothing_width_t": t coefficient for smoothing cost (measures size of cut)
         // "Initial/ambient_occlusion_samples": number of samples to cast for ambient occlusion; more samples is more accurate but takes longer
         // "Initial/footing_samples": number of samples to cast for footing faces
+        // "Initial/axis_only": only use the 6 cardinal printing directions
         // Extension: specify faces to hardcode cost values for support (or a region of faces)
     // Refined:
         // TODO: Implement!
     // Fabricate:
         // TODO: Implement!
         // Extension: solid/hollow shell objects and if they should have internal connectors
+    // Debug:
+        // "Debug/function": function to debug. Should be one of:
+            // "ao_face": ambient occlusion for each face; red values are visible, green are not as visible, and blue are occluded
+            // "ao_edge": ambient occlusion for each edge; red values are visible, green are not as visible, and blue are occluded
+            // "support_costs": costs for supports in a specified printing direction; red values are heavy support costs, green are not as heavy, blue are light
+            // "smoothing_costs": costs for smoothing a patch. Costs are averaged by patch edge length boundary, red are high costs, blue are lower costs
+            // "angular_distance": average angular distance from a face to its neighbors; red are high distances, blue are lower
+            // "weighted_distance": average weighted distance a face to its neighbors; red are high distances, blue are lower
+        // "Debug/debug_x": X coordinate for printing direction to determine support costs
+        // "Debug/debug_y": Y coordinate for printing direction to determine support costs
+        // "Debug/debug_z": Z coordinate for printing direction to determine support costs
 
     // Parse common inputs
     std::cout << "Loading config " << args[0].toStdString() << std::endl;
@@ -106,7 +118,7 @@ int main(int argc, char *argv[])
     // Determine operation
     // Control flow flag to determine if doing 3Dprintf or mesh operations
     bool is_mesh_operation = method == "subdivide" || method == "simplify" || method == "remesh";
-    bool is_3d_print_operation = method == "preprocess" || method == "oversegmentation" || method == "initial" || method == "refined" || method == "fabricate" || method == "sanity";
+    bool is_3d_print_operation = method == "preprocess" || method == "oversegmentation" || method == "initial" || method == "refined" || method == "fabricate" || method == "debug";
 
     // Mesh project operations
     if (is_mesh_operation) {
@@ -150,43 +162,60 @@ int main(int argc, char *argv[])
         double angular_distance_convex = settings.value("Preprocess/angular_distance_convex").toDouble();
         double angular_distance_concave = settings.value("Preprocess/angular_distance_concave").toDouble();
         double geodesic_dist_coeff = settings.value("Preprocess/geodesic_distance_weight").toDouble();
+        bool use_zero_cost_faces = settings.value("Preprocess/use_zero_cost_faces").toBool();
         // Oversegmentation
         int num_seed_faces = settings.value("Oversegmentation/num_seed_faces").toInt();
         double proportion_seed_faces = settings.value("Oversegmentation/proportion_seed_faces").toDouble();
         double e_patch = settings.value("Oversegmentation/e_patch").toDouble();
         int num_iterations = settings.value("Oversegmentation/num_iterations").toInt();
-        bool seeds_only = settings.value("Oversegmentation/seeds_only").toBool();
+        bool visualize_seeds = settings.value("Oversegmentation/visualize_seeds").toBool();
         // Initial Segmentation
-        int num_random_dir_samples = settings.value("Intital/num_random_dir_samples").toInt();
+        int num_random_dir_samples = settings.value("Initial/num_random_dir_samples").toInt();
         double printer_tolerance_angle = settings.value("Initial/printer_tolerance_angle").toDouble(); // In degrees
         double ambient_occlusion_supports_alpha = settings.value("Initial/ambient_occlusion_supports_alpha").toDouble();
         double ambient_occlusion_smoothing_alpha = settings.value("Initial/ambient_occlusion_smoothing_alpha").toDouble();
         double smoothing_width_t = settings.value("Initial/smoothing_width_t").toDouble();
         int ambient_occlusion_samples = settings.value("Initial/ambient_occlusion_samples").toInt();
         int footing_samples = settings.value("Initial/footing_samples").toInt();
+        bool axis_only = settings.value("Initial/axis_only").toBool();
+
+        // Debug
+        std::string debug_mode = settings.value("Debug/mode").toString().toStdString();
+        double debug_x = settings.value("Debug/debug_x").toDouble();
+        double debug_y = settings.value("Debug/debug_y").toDouble();
+        double debug_z = settings.value("Debug/debug_z").toDouble();
 
         // Case on the method
         if (method == "preprocess") {
-            m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
-            m_o.preprocess();
+            m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
+            m_o.preprocessData();
+            m_o.preprocessDistances();
+            m_o.preprocessRaytracer();
+            m_o.preprocessZeroCostFaces();
         }
         else if (method == "oversegmentation") {
-            m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
-            m_o.preprocess();
+            m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
+            m_o.preprocessData();
+            m_o.preprocessDistances();
+            m_o.preprocessRaytracer();
 
             // This vec will hold the labelings
             std::vector<std::unordered_set<int>> patches;
-            m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, seeds_only);
+            m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, visualize_seeds);
             m_o.generateOversegmentation(patches);
             m_o.visualize(patches);
         }
         else if (method == "initial") {
-            m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
-            m_o.preprocess();
+            m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
+            m_o.preprocessData();
+            m_o.preprocessDistances();
+            m_o.preprocessRaytracer();
+            m_o.preprocessZeroCostFaces();
+            m_o.preprocessSolver();
 
             // This vec will hold the labelings
             std::vector<std::unordered_set<int>> patches;
-            m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, seeds_only);
+            m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, visualize_seeds);
             m_o.generateOversegmentation(patches);
             m_o.visualize(patches);
 
@@ -194,10 +223,11 @@ int main(int argc, char *argv[])
             std::vector<std::unordered_set<int>> printable_components;
             // Printing directions for each component
             std::vector<Eigen::Vector3f> printing_directions;
-            m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
+            m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples, axis_only);
             m_o.generateInitialSegmentation(patches, printable_components, printing_directions);
+            // Visualize printing components, then each printable components with supported faces highlighted in red
             m_o.visualize(printable_components);
-            // TODO: Include a way to orient/visualize printing directions for each printable component
+            m_o.visualizePrintableComponents(printable_components, printing_directions);
         }
         else if (method == "refined") {
             m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
@@ -224,31 +254,79 @@ int main(int argc, char *argv[])
         else if (method == "fabricate") {
             std::cerr << "Error: This phase hasn't been implemented yet" << std::endl;
         }
-        else if (method == "sanity") {
-            m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave);
-            m_o.preprocess();
-            m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
+        else if (method == "debug") {
+            // Case on the debug option
+            if (debug_mode == "ao_face") {
+                // Setup
+                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
+                m_o.preprocessData();
+                m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples, axis_only);
 
-            QString sanity_method  = settings.value("Global/sanity_method").toString();
-
-            if (sanity_method == "ao_face") {
+                // Visualize!
                 m_o.visualizeFaceAO();
-            } else if (sanity_method == "ao_edge") {
+            } else if (debug_mode == "ao_edge") {
+                // Setup
+                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
+                m_o.preprocessData();
+                m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples, axis_only);
+
+                // Visualize!
                 m_o.visualizeEdgeAO();
+            } else if (debug_mode == "support_costs") {
+                // Setup
+                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
+                m_o.preprocessData();
+                m_o.preprocessZeroCostFaces();
+                m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples, axis_only);
+                m_o.preprocessRaytracer();
+
+                // Determine visualization direction
+                Eigen::Vector3f direction(debug_x, debug_y, debug_z);
+                direction.normalize();
+                if (direction.norm() == 0) {
+                    direction = m_o.generateRandomVector();
+                    direction.normalize();
+                }
+
+                // Visualize!
+                std::cout << "Visualizing support costs in direction (" << direction(0) << ", " << direction(1) << ", " << direction(2) << ")" << std::endl;
+                m_o.visualizeSupportCosts(direction);
+
+            } else if (debug_mode == "smoothing_costs"){
+                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
+                m_o.preprocessData();
+                m_o.preprocessDistances();
+                m_o.preprocessRaytracer();
+                std::vector<std::unordered_set<int>> patches;
+                m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, visualize_seeds);
+                m_o.generateOversegmentation(patches);
+                m_o.visualize(patches);
+                m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
+                m_o.visualizeSmoothingCosts(patches);
+            }
+            else if (debug_mode == "angular_distance") {
+                // Setup
+                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
+                m_o.preprocessData();
+                m_o.preprocessDistances();
+
+                // View distances
+                m_o.visualizeAngularDistance();
             }
 
+            else if (debug_mode == "weighted_distance") {
+                // Setup
+                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
+                m_o.preprocessData();
+                m_o.preprocessDistances();
 
-            // things to check
+                // View distances
+                m_o.visualizeWeightedDistance();
+            }
 
-            // pick one patch, get its neighboring patches, visualize coefficients for smoothing cost
-
-            // pick one printing direction, for this printing direction compute the cost of each patch, then visualize these costs (ex: higher costs are red)
-
-            // visualize ambient occlusion (get something similar to figure 5 from the paper)
-
-            // ambient occlusion of faces
-
-            // ambient occlusion of edges
+            else {
+                std::cout << "Error: Unknown debug mode \"" << debug_mode << "\"" << std::endl;
+            }
 
         }
     }
