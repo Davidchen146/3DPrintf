@@ -60,6 +60,7 @@ add_executable(${PROJECT_NAME}
     src/preprocess.cpp
     src/xor_tools_subroutines.cpp
     src/refined_segmentation.cpp
+    src/fabrication.cpp
 )
 
 # Specifies libraries to be linked (Qt components, glew, etc)

@@ -25,7 +25,7 @@ void MeshOperations::visualize(const vector<unordered_set<int>>& coloringGroups)
     Eigen::MatrixXd C;
     C.resize(_faces.size(), 3);
 
-    std::unordered_map<int, int> faceToGroup;
+    faceToGroup.clear();
     for (int i = 0; i < coloringGroups.size(); i++) {
         std::unordered_set<int> group_i = coloringGroups[i];
         for (auto j = group_i.begin(); j != group_i.end(); j++) {
@@ -35,7 +35,7 @@ void MeshOperations::visualize(const vector<unordered_set<int>>& coloringGroups)
         }
     }
 
-    std::unordered_map<int, Vector3d> groupToColor;
+    groupToColor.clear();
     for (int i = 0; i < coloringGroups.size(); i++) {
         double m_red = static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
         double m_green = static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
@@ -382,4 +382,73 @@ void MeshOperations::visualizeEdgeAO() {
     viewer.launch();
 }
 
+void MeshOperations::visualizePrintableVolumes(const std::vector<std::unordered_set<int>> &printable_components,
+                                               const std::vector<Eigen::Vector3f> &printing_directions,
+                                               const std::vector<std::vector<Eigen::Vector4i>> &printable_volumes) {
+    if (printable_components.size() != printable_volumes.size()) {
+        std::cerr << "NUMBER OF PRINTABLE COMPONENTS SHOULD BE SAME AS NUMBER OF PRINTABLE VOLUMES" << std::endl;
+        return;
+    }
+    if (groupToColor.size() == 0) {
+        std::cerr << "SHOULD CALL visualize() before visualizePrintableVolumes()" << std::endl;
+        return;
+    }
+    int num_components = printable_components.size();
+    for (int component = 0; component < num_components; component++) {
+        Vector3d RGB = groupToColor[component];
+
+        // Rotate all the vertices so the printing direction points upward
+        Eigen::MatrixXd component_vertices;
+        component_vertices.resize(_V.rows(), 3);
+        Eigen::Vector3d printing_direction = printing_directions[component].cast<double>();
+        // this matrix will rotate the printing direction directly upwards, so it will rotate the mesh so the printing direction is upwards
+        Eigen::Matrix3d rotation = igl::rotation_matrix_from_directions(printing_direction, Eigen::Vector3d(0.0, 1.0, 0.0)).transpose();
+        component_vertices = _V.cast<double>() * rotation;
+
+        // determine what faces we want to visualize
+        int faces_to_visualize = printable_components[component].size();
+        Eigen::MatrixXi component_faces;
+        component_faces.resize(faces_to_visualize, 3);
+
+        Eigen::MatrixXd color;
+        color.resize(faces_to_visualize, 3);
+        int current_face = 0;
+        for (const auto &face : printable_components[component]) {
+            // this is a face we want to visualize
+            component_faces.row(current_face) = _F.row(face);
+            color.row(current_face) = RGB;
+            current_face++;
+        }
+
+        // visualize the printable component
+        igl::opengl::glfw::Viewer viewer;
+        viewer.data().set_mesh(component_vertices, component_faces);
+        viewer.data().set_colors(color);
+        viewer.launch();
+
+        // visualize the printable volume
+        std::vector<Eigen::Vector4i> volume = printable_volumes[component];
+        std::vector<Eigen::Vector3i> surfaceFaces;
+        extractSurface(volume, surfaceFaces);
+
+        std::cout << "NUMBER OF SURFACE FACES: " << surfaceFaces.size() << std::endl;
+
+        color.resize(surfaceFaces.size(), 3);
+        Eigen::MatrixXi faces;
+        faces.resize(surfaceFaces.size(), 3);
+        for (int i = 0; i < surfaceFaces.size(); i++) {
+            faces.row(i) = surfaceFaces[i];
+            color.row(i) = RGB;
+        }
+
+        component_vertices.setZero();
+        component_vertices.resize(_TV.rows(), 3);
+        component_vertices = _TV * rotation;
+
+        igl::opengl::glfw::Viewer anotherViewer;
+        anotherViewer.data().set_mesh(component_vertices, faces);
+        anotherViewer.data().set_colors(color);
+        anotherViewer.launch();
+    }
+}
 
