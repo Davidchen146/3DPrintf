@@ -452,36 +452,3 @@ void MeshOperations::visualizePrintableVolumes(const std::vector<std::unordered_
     }
 }
 
-// void MeshOperations::visualizePrintableVolume(std::vector<Eigen::Vector3i> &surface_faces, int groupNum, Eigen::Vector3f printing_direction) {
-//     std::cout << "number of surface faces: " << surface_faces.size() << std::endl;
-
-//     Eigen::MatrixXd C;
-//     C.resize(surface_faces.size(), 3);
-
-//     // convert surface_faces to matrixXi
-//     MatrixXi faces;
-//     faces.resize(surface_faces.size(), 3);
-
-
-//     Vector3d RGB = groupToColor[groupNum];
-
-//     for (int i = 0; i < surface_faces.size(); i++) {
-//         faces.row(i) = surface_faces[i];
-//         C.row(i) = RGB;
-//     }
-
-//     // Rotate all the vertices so the printing direction points upward
-//     Eigen::MatrixXd component_vertices;
-//     component_vertices.resize(_TV.rows(), 3);
-//     //This matrix will rotate the printing direction to directly upwards, so it will rotate the mesh so the printing direction is upwards
-//     Eigen::Matrix3d rotation = igl::rotation_matrix_from_directions(printing_direction, Vector3f(0, 1, 0)).transpose();
-//     component_vertices = _TV * rotation;
-
-//     igl::opengl::glfw::Viewer viewer;
-//     viewer.data().set_mesh(component_vertices, faces);
-//     viewer.data().set_colors(C);
-//     viewer.launch();
-//     std::cout << std::endl;
-// }
-
-
