@@ -9,6 +9,8 @@ MeshOperations::MeshOperations(Mesh m) {
     _geodesic_distance_weight = 0.1;
     _convex_coeff = 0.05;
     _concave_coeff = 1;
+    _use_zero_cost_faces = false;
+    _solver = nullptr;
 
     // Oversegmentation parameters
     _num_seed_faces = 0;
