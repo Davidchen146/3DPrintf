@@ -121,6 +121,7 @@ public:
     // Fabrication step
     void tetrahedralizeMesh();
     Eigen::Vector3d computeTetCentroid(Eigen::Vector4i &tetrahedron);
+    void getComponentBoundingBox(const std::unordered_set<int> &component, Eigen::Vector3d& min, Eigen::Vector3d& max);
     void partitionVolume(const std::vector<std::unordered_set<int>> &printable_components,
                          std::vector<std::vector<Eigen::Vector4i>> &printable_volumes);
     void updateFaceMap(std::unordered_map<Vector3i, Vector4i, Vector3iHash, Vector3iEqual>& faceMap, Vector3i face, Vector4i tet);

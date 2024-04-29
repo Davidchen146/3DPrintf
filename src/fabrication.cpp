@@ -17,6 +17,7 @@ void MeshOperations::tetrahedralizeMesh() {
     double area_avg = area.mean();
     double edge_length = sqrt(4 * area_avg / sqrt(3));
     double volume = pow(edge_length, 3) / (6 * sqrt(2));
+    volume /= 2;
     std::cout << "volume: " << volume << std::endl;
     std::ostringstream oss;
     oss << std::fixed << std::setprecision(5) << volume;
@@ -36,11 +37,49 @@ Eigen::Vector3d MeshOperations::computeTetCentroid(Eigen::Vector4i &tetrahedron)
     return (tetVertex1 + tetVertex2 + tetVertex3 + tetVertex4) / 4.f;
 }
 
+void MeshOperations::getComponentBoundingBox(const std::unordered_set<int> &component, Eigen::Vector3d& min, Eigen::Vector3d& max) {
+    std::unordered_set<int> vertexIndices;
+    for (int f : component) {
+        Vector3i face = _faces[f];
+        if (!vertexIndices.contains(face[0])) {
+            vertexIndices.insert(face[0]);
+        }
+        if (!vertexIndices.contains(face[1])) {
+            vertexIndices.insert(face[1]);
+        }
+        if (!vertexIndices.contains(face[2])) {
+            vertexIndices.insert(face[2]);
+        }
+    }
+    MatrixXf V;
+    V.resize(vertexIndices.size(), 3);
+    int num = 0;
+    for (int vertex : vertexIndices) {
+        V.row(num) = _vertices[vertex];
+        num++;
+    }
+    // get the bounding box of printable component?
+    min = _V.cast<double>().colwise().minCoeff();
+    max = _V.cast<double>().colwise().maxCoeff();
+}
+
 void MeshOperations::partitionVolume(const std::vector<std::unordered_set<int>> &printable_components,
                                      std::vector<std::vector<Eigen::Vector4i>> &printable_volumes) {
     printable_volumes.clear();
     for (int i = 0; i < printable_components.size(); i++) {
         printable_volumes.push_back({});
+    }
+
+    std::vector<Eigen::Vector3d> boxMin;
+    std::vector<Eigen::Vector3d> boxMax;
+    boxMin.resize(printable_components.size());
+    boxMax.resize(printable_components.size());
+    for (int i = 0; i < printable_components.size(); i++) {
+        Eigen::Vector3d min;
+        Eigen::Vector3d max;
+        getComponentBoundingBox(printable_components[i], min, max);
+        boxMin[i] = min;
+        boxMax[i] = max;
     }
 
     int n = 512;
@@ -69,13 +108,16 @@ void MeshOperations::partitionVolume(const std::vector<std::unordered_set<int>> 
         for (Eigen::Vector3f& direction : directions) {
             float distance;
             int intersectedFace = getIntersectionWithDistance(centroid, direction, distance);
-            if (intersectedFace >= 0 && distance < minDistance) {
-                if (distance == 0) {
-                    std::cerr << "????????" << std::endl;
+            if (intersectedFace >= 0 && distance < minDistance && distance > 0) {
+                int groupNum = faceToGroup[intersectedFace];
+                Eigen::Vector3d min = boxMin[groupNum];
+                Eigen::Vector3d max = boxMax[groupNum];
+                if (centroid[0] >= min[0] && centroid[0] <= max[0] && centroid[1] >= min[1] && centroid[1] <= max[1] && centroid[2] >= min[2] && centroid[2] <= max[2]) {
+                    minDistance = distance;
+                    boundaryFace = intersectedFace;
                 }
-                assert(distance > 0);
-                boundaryFace = intersectedFace;
-            } else {
+            }
+            if (intersectedFace == -1) {
                 std::cerr << "DID NOT HIT A FACE ON THE BOUNDARY?" << std::endl;
             }
         }
