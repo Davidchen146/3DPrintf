@@ -1,8 +1,6 @@
 #include "meshoperations.h"
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/unproject_onto_mesh.h>
-#include <igl/copyleft/tetgen/tetrahedralize.h>
-#include <igl/copyleft/cgal/remesh_self_intersections.h>
 
 int minDistanceVertex(vector<double> distances, vector<bool> visited) {
     double minDistance = std::numeric_limits<double>::infinity();
@@ -69,17 +67,6 @@ void MeshOperations::preprocessData() {
     for (int i = 0; i < numFaces; i++) {
         _F.row(i) = _faces[i];
     }
-
-    igl::copyleft::cgal::RemeshSelfIntersectionsParam params;
-    Eigen::MatrixXf _VV;
-    Eigen::MatrixXi _FF;
-    Eigen::MatrixXi _IF;
-    Eigen::VectorXi _J;
-    Eigen::VectorXi _IM;
-
-    igl::copyleft::cgal::remesh_self_intersections(_V, _F, params, _VV, _FF, _IF, _J, _IM);
-    std::cout << "Original mesh had " << _V.rows() << " vertices and " << _F.rows() << " faces" << std::endl;
-    std::cout << "After processing has " << _VV.rows() << " vertices and " << _FF.rows() << " faces" << std::endl;
 }
 
 void MeshOperations::makeAdjacency() {
