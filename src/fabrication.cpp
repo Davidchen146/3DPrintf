@@ -12,7 +12,20 @@
 // (contents of TF are the same as _F --> IF "p" option is specified)
 void MeshOperations::tetrahedralizeMesh() {
     // i just took the options from the example, not 100% what to use here
-    igl::copyleft::tetgen::tetrahedralize(_V.cast<double>(), _F, "pq1.414a0.005Y", _TV, _TT, _TF);
+    VectorXd area;
+    igl::doublearea(_V.cast<double>(),_F,area);
+    double area_avg = area.mean();
+    double edge_length = sqrt(4 * area_avg / sqrt(3));
+    double volume = pow(edge_length, 3) / (6 * sqrt(2));
+    std::cout << "volume: " << volume << std::endl;
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(5) << volume;
+    std::string volume_string = oss.str();
+    std::string options = "pq1.414Ya";
+    options.append(volume_string);
+    options.append("Y");
+    std::cout << "options: " << options << std::endl;
+    igl::copyleft::tetgen::tetrahedralize(_V.cast<double>(), _F, options, _TV, _TT, _TF);
 }
 
 Eigen::Vector3d MeshOperations::computeTetCentroid(Eigen::Vector4i &tetrahedron) {
@@ -24,7 +37,6 @@ Eigen::Vector3d MeshOperations::computeTetCentroid(Eigen::Vector4i &tetrahedron)
 }
 
 void MeshOperations::partitionVolume(const std::vector<std::unordered_set<int>> &printable_components,
-                                     const std::vector<Eigen::Vector3f> &printing_directions,
                                      std::vector<std::vector<Eigen::Vector4i>> &printable_volumes) {
     printable_volumes.clear();
     for (int i = 0; i < printable_components.size(); i++) {
@@ -43,15 +55,9 @@ void MeshOperations::partitionVolume(const std::vector<std::unordered_set<int>> 
         directions[i] = Vector3f(x, y, z);
     }
 
-    // NOTE: make a global variable since this is also used for the visualizer?
-    std::unordered_map<int, int> faceToGroup;
-    for (int i = 0; i < printable_components.size(); i++) {
-        std::unordered_set<int> group_i = printable_components[i];
-        for (auto j = group_i.begin(); j != group_i.end(); j++) {
-            int face_index = *j;
-            assert(!faceToGroup.contains(face_index));
-            faceToGroup[face_index] = i;
-        }
+    if (faceToGroup.size() == 0) {
+        std::cerr << "MUST CALL visualize() first to initialize faceToGroup" << std::endl;
+        return;
     }
 
     for (int i = 0; i < _TT.rows(); i++) {
@@ -75,12 +81,6 @@ void MeshOperations::partitionVolume(const std::vector<std::unordered_set<int>> 
         }
         int groupNum = faceToGroup[boundaryFace];
         printable_volumes[groupNum].push_back(tetrahedron);
-    }
-
-    if (printable_components.size() != printable_volumes.size()) {
-        std::cerr << "??????????????" << std::endl;
-    } else {
-        std::cout << "NUMBER OF COMPONENTS: " << printable_components.size() << std::endl;
     }
 }
 

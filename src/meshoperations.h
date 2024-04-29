@@ -110,17 +110,18 @@ public:
     void visualizeWeightedDistance();
     void visualizeSupportCosts(const Eigen::Vector3f &printing_direction);
     void visualizeSmoothingCosts(const std::vector<std::unordered_set<int>>& patches);
-    void visualizePrintableVolume(std::vector<Eigen::Vector3i> &surface_faces);
+    void visualizePrintableVolumes(const std::vector<std::unordered_set<int>> &printable_components,
+                                   const std::vector<Eigen::Vector3f> &printing_directions,
+                                   const std::vector<std::vector<Eigen::Vector4i>> &printable_volumes);
+    // void visualizePrintableVolume(std::vector<Eigen::Vector3i> &surface_faces, int groupNum, Eigen::Vector3f printing_direction);
 
     // Random direction visualization
     Eigen::Vector3f generateRandomVector();
-
 
     // Fabrication step
     void tetrahedralizeMesh();
     Eigen::Vector3d computeTetCentroid(Eigen::Vector4i &tetrahedron);
     void partitionVolume(const std::vector<std::unordered_set<int>> &printable_components,
-                         const std::vector<Eigen::Vector3f> &printing_directions,
                          std::vector<std::vector<Eigen::Vector4i>> &printable_volumes);
     void updateFaceMap(std::unordered_map<Vector3i, Vector4i, Vector3iHash, Vector3iEqual>& faceMap, Vector3i face, Vector4i tet);
     Vector3i orderVertices(Vector3i& face, Vector4i& tet);
@@ -150,6 +151,12 @@ private:
     Eigen::MatrixXd _angularDistances;
     double _avgGeodesic;
     double _avgAngular;
+
+    // for visualization routines
+    // mostly so that the colors of the patches from initial segmentation step
+    // will match the colors of the patches from fabrication
+    std::unordered_map<int, int> faceToGroup;
+    std::unordered_map<int, Vector3d> groupToColor;
 
     // Subroutines used for Phase 1 (Oversegmentation)
     // Initial seed computation
