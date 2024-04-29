@@ -158,18 +158,18 @@ private:
 
     // helper for getPatchBoundary
     void updateBoundarySet(const std::pair<int, int> edge, std::unordered_set<std::pair<int, int>, PairHash>& boundary_set);
-    // helper for getBoundaryFaces
-    void updateFaceBoundarySet(std::unordered_set<std::pair<int, int>, PairHash> &boundaryEdges, std::unordered_set<int> &boundaryFaces, int face);
-    // helper for getFuzzyRegion
+    // helper for getPairwiseFuzzyRegion
     void updateFuzzyRegion(std::unordered_set<int> &fuzzyRegion, std::unordered_set<int> &boundaryFaces, int f);
     // given a patch, populate the set which contains the edges of the boundary
     void getPatchBoundary(const std::unordered_set<int>& patch, std::unordered_set<std::pair<int, int>, PairHash>& patch_boundary);
     // Gets intersection of edges between two patches
-    void getBoundaryEdges(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two, std::unordered_set<std::pair<int, int>, PairHash> &boundaryEdges);
+    void getBoundaryEdges(const std::unordered_set<int> &patch_one,
+                          const std::unordered_set<int> &patch_two,
+                          std::unordered_set<std::pair<int, int>, PairHash> &boundaryEdges);
     // Gets the set of faces adjacent to the boundary edge between two patches
     void getBoundaryFaces(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two, std::unordered_set<int> &boundaryFaces);
     // Gets the fuzzy region between two patches
-    void getFuzzyRegion(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two, std::unordered_set<int> &fuzzyRegion);
+    void getPairwiseFuzzyRegion(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two, std::unordered_set<int> &fuzzyRegion);
 
     // Basic utility functions for faces
     Eigen::Vector3f getCentroid(const int &face);

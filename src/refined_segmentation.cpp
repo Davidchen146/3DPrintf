@@ -3,26 +3,29 @@
 void MeshOperations::getBoundaryFaces(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two, std::unordered_set<int> &boundaryFaces) {
     std::unordered_set<std::pair<int, int>, PairHash> boundaryEdges;
     getBoundaryEdges(patch_one, patch_two, boundaryEdges);
-    // We have the boundary edges, now let's check which faces share those edges
+    unordered_set<int> edgeVertices;
+    for (pair<int, int> edge: boundaryEdges) {
+        edgeVertices.insert(edge.first);
+        edgeVertices.insert(edge.second);
+    }
+    // We have the boundary edges, now let's check which faces are adjacent to those edges
     for (int f: patch_one) {
-        updateFaceBoundarySet(boundaryEdges, boundaryFaces, f);
+        Vector3i vertex_indices = _faces[f];
+        // if any of the face's vertices are in the boundary, add face to boundaryFaces
+        if (edgeVertices.contains(vertex_indices[0]) || edgeVertices.contains(vertex_indices[1]) || edgeVertices.contains(vertex_indices[2])) {
+            boundaryFaces.insert(f);
+        }
     }
     for (int f: patch_two) {
-        updateFaceBoundarySet(boundaryEdges, boundaryFaces, f);
+        Vector3i vertex_indices = _faces[f];
+        // if any of the face's vertices are in the boundary, add face to boundaryFaces
+        if (edgeVertices.contains(vertex_indices[0]) || edgeVertices.contains(vertex_indices[1]) || edgeVertices.contains(vertex_indices[2])) {
+            boundaryFaces.insert(f);
+        }
     }
 }
 
-void MeshOperations::updateFaceBoundarySet(std::unordered_set<std::pair<int, int>, PairHash> &boundaryEdges, std::unordered_set<int> &boundaryFaces, int face) {
-    Vector3i vertex_indices = _faces[face];
-    std::pair<int, int> e1 = _mesh.getSortedPair(vertex_indices[0], vertex_indices[1]);
-    std::pair<int, int> e2 = _mesh.getSortedPair(vertex_indices[0], vertex_indices[2]);
-    std::pair<int, int> e3 = _mesh.getSortedPair(vertex_indices[1], vertex_indices[2]);
-    // if any of the face's edges are in the boundary, add face to boundaryFaces
-    if (boundaryEdges.contains(e1) || boundaryEdges.contains(e2) || boundaryEdges.contains(e3)) {
-        boundaryFaces.insert(face);
-    }
-}
-
+// Given a face, see if it belongs to the given fuzzy region
 void MeshOperations::updateFuzzyRegion(std::unordered_set<int> &fuzzyRegion, std::unordered_set<int> &boundaryFaces, int f) {
     double minDistance = std::numeric_limits<double>::max();
     for (int b_f: boundaryFaces) {
@@ -33,12 +36,11 @@ void MeshOperations::updateFuzzyRegion(std::unordered_set<int> &fuzzyRegion, std
     }
 }
 
-void MeshOperations::getFuzzyRegion(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two, std::unordered_set<int> &fuzzyRegion) {
+void MeshOperations::getPairwiseFuzzyRegion(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two, std::unordered_set<int> &fuzzyRegion) {
     // A fuzzy region is a set of faces, we are storing all fuzzy regions in a vector
     unordered_set<int> boundaryFaces;
     getBoundaryFaces(patch_one, patch_two, boundaryFaces);
     // the fuzzy region starts by including all boundary faces
-    // fuzzyRegion.insert(boundaryFaces.begin(), boundaryFaces.end());
     for (int f: patch_one) {
         updateFuzzyRegion(fuzzyRegion, boundaryFaces, f);
     }
@@ -54,9 +56,14 @@ void MeshOperations::generateFuzzyRegions(std::vector<std::unordered_set<int>> &
             // pointer to fuzzyRegion to avoid the struct having to copy everything over on initialization
             unordered_set<int>* fuzzyRegion = new unordered_set<int>();
             unordered_set<FuzzyNode*> neighbors;
-            getFuzzyRegion(printable_components[i], printable_components[j], *fuzzyRegion);
-            FuzzyNode* fuzzyNode = new FuzzyNode{fuzzyRegion, neighbors};
-            nodes.push_back(fuzzyNode);
+            getPairwiseFuzzyRegion(printable_components[i], printable_components[j], *fuzzyRegion);
+            if (fuzzyRegion->size() == 0) {
+                // If the pairwise patches don't share boundaries
+                delete fuzzyRegion;
+            } else {
+                FuzzyNode* fuzzyNode = new FuzzyNode{fuzzyRegion, neighbors};
+                nodes.push_back(fuzzyNode);
+            }
         }
     }
 }
@@ -116,11 +123,21 @@ void MeshOperations::combineFuzzyRegions(std::vector<FuzzyNode*> &nodes, std::ve
 
 void MeshOperations::generateRefinedSegmentation(std::vector<std::unordered_set<int>> &printable_components, std::vector<std::unordered_set<int>> &fuzzyRegions) {
     vector<FuzzyNode*> nodes;
+    std::cout << "Making initial fuzzy regions..." << std::endl;
     generateFuzzyRegions(printable_components, nodes);
     std::cout << "Number of initial fuzzy regions: " << nodes.size() << std::endl;
     makeFuzzyGraph(nodes);
     combineFuzzyRegions(nodes, fuzzyRegions);
     std::cout << "Number of total fuzzy regions: " << fuzzyRegions.size() << std::endl;
+
+    std::cout << "Size of Fuzzy Region 1: " << fuzzyRegions[0].size() <<  std::endl;
+    // for (int i: fuzzyRegions[0]) {
+    //     std::cout << i << std::endl;
+    // }
+    std::cout << "Size of Fuzzy Region 2: " << fuzzyRegions[1].size() << std::endl;
+    // for (int i: fuzzyRegions[1]) {
+    //     std::cout << i << std::endl;
+    // }
 }
 
 
