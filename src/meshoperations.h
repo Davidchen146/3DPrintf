@@ -15,6 +15,9 @@
 #include <limits>
 #include <numbers>
 
+// TODO: Reorganize this file into multiple subclasses for each phases along with common util functions
+// TODO: Mesh class, preprocessing, oversegmentation, initial segmentation, refined segmentation, and fabrication should all have different classes
+// TODO: Get rid of the namespace; that's lazy
 using namespace Eigen;
 using namespace std;
 using namespace operations_research;
@@ -160,6 +163,13 @@ private:
     void combineFuzzyRegions(std::vector<FuzzyNode*> &nodes,
                              std::vector<std::unordered_set<int>> &fuzzyRegions,
                              std::vector<std::unordered_set<int>> &fuzzyRegionDirections);
+    double computeRefinedCoefficient(const int &face_one, const int &face_two);
+    void initializeFuzzyRegionCoefficients(const std::unordered_set<int> &fuzzy_region, std::unordered_map<std::pair<int, int>, double, PairHash> &adjacent_face_coefficients);
+    void solveFuzzyRegion(std::vector<std::unordered_set<int>> &printable_components,
+                          const std::unordered_set<int> &fuzzy_region,
+                          const unordered_set<int> &fuzzy_region_directions,
+                          const std::unordered_map<std::pair<int, int>, double, PairHash> &adjacent_face_coefficients);
+
 
     // Other general subroutines
 /*-------------------------------------------------------------------------------------------------*/

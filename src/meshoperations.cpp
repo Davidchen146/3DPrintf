@@ -28,6 +28,8 @@ MeshOperations::MeshOperations(Mesh m) {
     _ambient_occlusion_samples = 500;
     _footing_samples = 1;
     _axis_only = false;
+
+    // Refined segmentation parameters
 }
 
 // Configure parameters for 3D printing operations

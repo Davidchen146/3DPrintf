@@ -31,6 +31,8 @@ void MeshOperations::updateFuzzyRegion(std::unordered_set<int> &fuzzyRegion, std
     for (int b_f: boundaryFaces) {
         minDistance = std::min(minDistance, getGeodesicDistance(f, b_f));
     }
+
+    // TODO: This is where the config value should be
     if (minDistance <= _fuzzy_region_width) {
         fuzzyRegion.insert(f);
     }
@@ -55,9 +57,11 @@ void MeshOperations::generateFuzzyRegions(std::vector<std::unordered_set<int>> &
                                           std::vector<Eigen::Vector3f> &printing_directions,
                                           std::vector<FuzzyNode*> &nodes) {
     // generate pairwise fuzzy regions
+    // TODO: Can leverage multithreading here to make this faster
     for (int i = 0; i < printable_components.size(); i++) {
         for (int j = i+1; j < printable_components.size(); j++) {
             // pointer to fuzzyRegion to avoid the struct having to copy everything over on initialization
+            // This will need to be cleaned up later
             unordered_set<int>* fuzzyRegion = new unordered_set<int>();
             getPairwiseFuzzyRegion(printable_components[i], printable_components[j], *fuzzyRegion);
             if (fuzzyRegion->size() == 0) {
@@ -66,6 +70,7 @@ void MeshOperations::generateFuzzyRegions(std::vector<std::unordered_set<int>> &
             } else {
                 unordered_set<FuzzyNode*> neighbors;
                 vector<int> patchDirections = {i, j};
+                // This will need to be cleaned up later
                 FuzzyNode* fuzzyNode = new FuzzyNode{fuzzyRegion, neighbors, patchDirections};
                 nodes.push_back(fuzzyNode);
             }
@@ -85,6 +90,7 @@ bool areNodesConnected(FuzzyNode* n1, FuzzyNode* n2) {
 }
 
 void MeshOperations::makeFuzzyGraph(std::vector<FuzzyNode*> &nodes) {
+    // TODO: Can leverage multithreading to make this faster
     for (int i = 0; i < nodes.size(); i++) {
         for (int j = i+1; j < nodes.size(); j++) {
             FuzzyNode* n1 = nodes[i];
@@ -121,6 +127,7 @@ void fuzzyDFS(unordered_set<FuzzyNode*> &visited,
     }
 }
 
+// Combines the fuzzy regions
 void MeshOperations::combineFuzzyRegions(std::vector<FuzzyNode*> &nodes,
                                          std::vector<std::unordered_set<int>> &fuzzyRegions,
                                          std::vector<std::unordered_set<int>> &fuzzyRegionDirections) {
@@ -140,11 +147,14 @@ void MeshOperations::combineFuzzyRegions(std::vector<FuzzyNode*> &nodes,
 void MeshOperations::generateRefinedSegmentation(std::vector<std::unordered_set<int>> &printable_components,
                                                  std::vector<Eigen::Vector3f> &printing_directions,
                                                  std::vector<std::unordered_set<int>> &fuzzyRegions) {
+    // Create pairwise fuzzy regions (FuzzyNodes)
     vector<FuzzyNode*> nodes;
     vector<unordered_set<int>> fuzzyRegionDirections;
     std::cout << "Making initial fuzzy regions..." << std::endl;
     generateFuzzyRegions(printable_components, printing_directions, nodes);
     std::cout << "Number of initial fuzzy regions: " << nodes.size() << std::endl;
+
+    // Combine the fuzzy regions into the largest possible connected components
     makeFuzzyGraph(nodes);
     combineFuzzyRegions(nodes, fuzzyRegions, fuzzyRegionDirections);
     std::cout << "Number of total fuzzy regions: " << fuzzyRegions.size() << std::endl;
@@ -153,6 +163,186 @@ void MeshOperations::generateRefinedSegmentation(std::vector<std::unordered_set<
     for (int i: fuzzyRegionDirections[0]) {
         std::cout << i << std::endl;
     }
+    // After this point, we no longer need the nodes (these are heap allocated, so they can be freed)
+    for (int node = 0; node < nodes.size(); node++) {
+        delete nodes[node]->fuzzyRegion;
+        delete nodes[node];
+    }
+    nodes.clear();
+
+    // TODO: Visualize the fuzzy regions here before we cut them
+    visualize(fuzzyRegions);
+
+    // Begin optimizing the fuzzy regions
+    // TODO: Can *maybe* use multithreading to parallelize this
+    for (int region = 0; region < fuzzyRegions.size(); region++) {
+        // Generate coefficients for this region
+        std::unordered_map<std::pair<int, int>, double, PairHash> adjacent_face_coefficients;
+        initializeFuzzyRegionCoefficients(fuzzyRegions[region], adjacent_face_coefficients);
+
+        // Solve and update the printable components
+        solveFuzzyRegion(printable_components, fuzzyRegions[region], fuzzyRegionDirections[region], adjacent_face_coefficients);
+    }
 }
 
+// Compute refined smoothing coefficient between two faces
+double MeshOperations::computeRefinedCoefficient(const int &face_one, const int &face_two) {
+    // If faces are not connected, it is 0
+    if (_adjacency[face_one][face_two] == false) {
+        return 0.0;
+    }
 
+    // Otherwise find the overlapping edge (this code is lmao)
+    // TODO: Turn this into a helper for the mesh class or something (when it gets refactored)
+    Eigen::Vector3i face_one_verts = _F.row(face_one);
+    Eigen::Vector3i face_two_verts = _F.row(face_two);
+
+    bool vert_zero_shared = (face_one_verts(0) == face_two_verts(0)) || (face_one_verts(0) == face_two_verts(1)) || (face_one_verts(0) == face_two_verts(2));
+    bool vert_one_shared = (face_one_verts(1) == face_two_verts(0)) || (face_one_verts(1) == face_two_verts(1)) || (face_one_verts(1) == face_two_verts(2));
+    bool vert_two_shared = (face_one_verts(2) == face_two_verts(0)) || (face_one_verts(2) == face_two_verts(1)) || (face_one_verts(2) == face_two_verts(2));
+
+    // Determine shared edge
+    int vert_one = -1;
+    int vert_two = -1;
+    if (vert_zero_shared && vert_one_shared) {
+        vert_one = face_one_verts(0);
+        vert_two = face_one_verts(1);
+    } else if (vert_one_shared && vert_two_shared) {
+        vert_one = face_one_verts(1);
+        vert_two = face_one_verts(2);
+    } else if (vert_zero_shared && vert_two_shared) {
+        vert_one = face_one_verts(0);
+        vert_two = face_one_verts(2);
+    }
+    // Here, the helper function would return the vertices making up the edge
+
+    // Compute the coefficient
+    double edge_length = (_V.row(vert_one) - _V.row(vert_two)).norm();
+    double edge_AO = getEdgeAO(std::make_pair(std::min(vert_one, vert_two), std::max(vert_one, vert_two)));
+
+    // TODO: Make this value config-specifiable
+    double lambda = 4;
+    return edge_length * (std::exp(lambda * edge_AO) - 1);
+}
+
+// Initialize coefficients to pass into the solver for adjacent faces
+void MeshOperations::initializeFuzzyRegionCoefficients(const std::unordered_set<int> &fuzzy_region, std::unordered_map<std::pair<int, int>, double, PairHash> &adjacent_face_coefficients) {
+    // Initialize map
+    adjacent_face_coefficients.clear();
+
+    // We will optimize over all faces in the fuzzy region and their neighbors
+    for (const int &face : fuzzy_region) {
+        // Neighbors
+        for (Face* const &neighbor : _mesh.getFace(face)->neighbors) {
+            std::pair<int, int> adjacent_faces = std::make_pair(std::min(face, neighbor->index), std::max(face, neighbor->index));
+            // Skip repeated computation
+            if (!adjacent_face_coefficients.contains(adjacent_faces)) {
+                adjacent_face_coefficients[adjacent_faces] = computeRefinedCoefficient(adjacent_faces.first, adjacent_faces.second);
+            }
+        }
+    }
+}
+
+// Function to actually interface with the solver
+void MeshOperations::solveFuzzyRegion(std::vector<std::unordered_set<int>> &printable_components,
+                                      const std::unordered_set<int> &fuzzy_region,
+                                      const unordered_set<int> &fuzzy_region_directions,
+                                      const std::unordered_map<std::pair<int, int>, double, PairHash> &adjacent_face_coefficients) {
+    // Reset solver in case this is called multiple times
+    clearSolver();
+
+    // Variables
+    std::vector<std::vector<const MPVariable*>> variables;
+    // Maps face index to variables
+    std::unordered_map<int, int> face_to_variable;
+    int num_face_variables = 0;
+    // Maps printing direction to variables
+    std::unordered_map<int, int> variable_to_direction;
+    int num_region_directions = 0;
+
+    // Populate direction mapping
+    for (const int &direction : fuzzy_region_directions) {
+        variable_to_direction[num_region_directions] = direction;
+        num_region_directions++;
+    }
+
+    // Make variables
+    for (const auto &[adjacent_faces, smoothing_cost] : adjacent_face_coefficients) {
+        // Create direction variables for each face if they don't exist
+        for (int i = 0; i < 2; i++) {
+            int face = adjacent_faces.first;
+            if (i == 1) {
+                face = adjacent_faces.second;
+            }
+
+            if (!face_to_variable.contains(face)) {
+                // Create a vector of variables (for each direction) at index num_face_variables
+                variables.emplace_back();
+                variables[num_face_variables].resize(num_region_directions);
+
+                bool in_fuzzy_region = fuzzy_region.contains(face);
+                int original_component = -1;
+                for (int component = 0; component < printable_components.size(); component++) {
+                    if (printable_components[component].contains(face)) {
+                        original_component = component;
+                        break;
+                    }
+                }
+
+                // Populate with appropriate values
+                for (int direction = 0; direction < num_region_directions; direction++) {
+                    if (in_fuzzy_region) {
+                        // Coefficient is 0 because this doesn't matter for the objective
+                        variables[num_face_variables][direction] = addVariable(0.0, 0.0, 1.0);
+                    } else {
+                        // Faces on boundary of fuzzy region must have constrained values
+                        if (variable_to_direction[direction] == original_component) {
+                            // In original region, must be printed in this direction
+                            variables[num_face_variables][direction] = addVariable(0.0, 1.0, 1.0);
+                        } else {
+                            // Not in original region, cannot be printed in this direction
+                            variables[num_face_variables][direction] = addVariable(0.0, 0.0, 0.0);
+                        }
+                    }
+                }
+
+                num_face_variables++;
+            }
+        }
+
+        // Encode XOR variable for this pair
+        for (int direction = 0; direction < num_region_directions; direction++) {
+            addXORVariable(variables[face_to_variable[adjacent_faces.first]][direction], variables[face_to_variable[adjacent_faces.second]][direction], smoothing_cost);
+        }
+    }
+
+    // Solve!
+    MPObjective* const objective = _solver->MutableObjective();
+    objective->SetMinimization();
+    _solver->Solve();
+
+    // Unpack the variables and update how the printable components changed
+    for (const auto &[face, face_variable] : face_to_variable) {
+        for (int direction_variable = 0; direction_variable < num_region_directions; direction_variable++) {
+            // Recover corresponding printing direction
+            int direction = variable_to_direction[direction_variable];
+
+            // If the solution is 0, the face is not printed in this direction
+            if (variables[face_variable][direction_variable]->solution_value() == 0.0) {
+                // Therefore, it should be removed from the corresponding set
+                // If no debug statements used, this if condition can be removed
+                if (printable_components[direction].contains(face)) {
+                    std::cout << "Face " << face << " removed from printable component " << direction << std::endl;
+                    printable_components[direction].erase(face);
+                }
+            }
+
+            // If the solution is 1, the face is printed in this direction
+            if (variables[face_variable][direction_variable]->solution_value() == 1.0) {
+                // Therefore it should be added to this printable component
+                std::cout << "Face " << face << " added to printable component " << direction << std::endl;
+                printable_components[direction].insert(face);
+            }
+        }
+    }
+}
