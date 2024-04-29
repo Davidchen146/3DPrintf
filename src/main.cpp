@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
             m_o.visualize(printable_components);
 
             std::vector<std::unordered_set<int>> fuzzyRegions;
-            m_o.generateRefinedSegmentation(printable_components, fuzzyRegions);
+            m_o.generateRefinedSegmentation(printable_components, printing_directions, fuzzyRegions);
             m_o.visualize(fuzzyRegions);
         }
         else if (method == "fabricate") {

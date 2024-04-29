@@ -71,6 +71,7 @@ public:
                                      std::vector<Eigen::Vector3f> &printing_directions);
 
     void generateRefinedSegmentation(std::vector<std::unordered_set<int>> &printable_components,
+                                     std::vector<Eigen::Vector3f> &printing_directions,
                                      std::vector<std::unordered_set<int>> &fuzzyRegions);
 
     // just for sanity checking
@@ -134,11 +135,15 @@ private:
                                      std::vector<Eigen::Vector3f> &component_printing_directions);
 
     // Phase 3 (Refined Segmentation)
-    void generateFuzzyRegions(std::vector<std::unordered_set<int>> &printable_components, std::vector<FuzzyNode*> &nodes);
+    void generateFuzzyRegions(std::vector<std::unordered_set<int>> &printable_components,
+                              std::vector<Eigen::Vector3f> &printing_directions,
+                              std::vector<FuzzyNode*> &nodes);
     // Using results generateFuzzyRegions, make graphs connecting regions
     void makeFuzzyGraph(std::vector<FuzzyNode*> &nodes);
     // combine nodes into connected fuzzy regions
-    void combineFuzzyRegions(std::vector<FuzzyNode*> &nodes, std::vector<std::unordered_set<int>> &fuzzyRegions);
+    void combineFuzzyRegions(std::vector<FuzzyNode*> &nodes,
+                             std::vector<std::unordered_set<int>> &fuzzyRegions,
+                             std::vector<std::unordered_set<int>> &fuzzyRegionDirections);
 
     // Other general subroutines
 /*-------------------------------------------------------------------------------------------------*/
@@ -169,7 +174,9 @@ private:
     // Gets the set of faces adjacent to the boundary edge between two patches
     void getBoundaryFaces(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two, std::unordered_set<int> &boundaryFaces);
     // Gets the fuzzy region between two patches
-    void getPairwiseFuzzyRegion(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two, std::unordered_set<int> &fuzzyRegion);
+    void getPairwiseFuzzyRegion(const std::unordered_set<int> &patch_one,
+                                const std::unordered_set<int> &patch_two,
+                                std::unordered_set<int> &fuzzyRegion);
 
     // Basic utility functions for faces
     Eigen::Vector3f getCentroid(const int &face);
