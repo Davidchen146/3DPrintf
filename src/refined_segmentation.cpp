@@ -342,6 +342,11 @@ void MeshOperations::addRefinedFaceVariable(const int &face,
             }
         }
     }
+
+    // Add constraint to make sure this face will have an assigned printing direction
+    std::vector<double> coefficients;
+    coefficients.resize(num_region_directions, 1.0);
+    addConstraint(variables[num_face_variables], coefficients, 1.0, 1.0);
 }
 
 // Adjust printable components based on the value from a face
@@ -351,6 +356,12 @@ void MeshOperations::updatePrintableComponents(const int &face,
                                                std::vector<std::unordered_set<int>> &printable_components,
                                                std::unordered_map<int, int> &variable_to_direction,
                                                std::vector<std::vector<const MPVariable*>> &variables) {
+    // For faces not in the fuzzy region, we don't want to update them
+    if (!fuzzy_region.contains(face)) {
+        std::cout << "Skipping update of face " << face << " since it is not in fuzzy region" << std::endl;
+        return;
+    }
+
     int num_printable_directions = variable_to_direction.size();
     int original_dir = -1;
     for (int component = 0; component < printable_components.size(); component++) {
