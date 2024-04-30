@@ -279,7 +279,7 @@ void MeshOperations::solveFuzzyRegion(std::vector<std::unordered_set<int>> &prin
 
         // Encode XOR variable for this pair
         for (int direction = 0; direction < num_region_directions; direction++) {
-            addXORVariable(variables[face_to_variable[adjacent_faces.first]][direction], variables[face_to_variable[adjacent_faces.second]][direction], smoothing_cost);
+            addXORVariable(variables[face_to_variable.at(adjacent_faces.first)][direction], variables[face_to_variable.at(adjacent_faces.second)][direction], smoothing_cost);
         }
     }
 
@@ -311,6 +311,9 @@ void MeshOperations::addRefinedFaceVariable(const int &face,
     variables.emplace_back();
     variables[num_face_variables].resize(num_region_directions);
 
+    // Add this variable so we can look it up
+    face_to_variable[face] = num_face_variables;
+
     // Determine if this face should stay fixed
     bool in_fuzzy_region = fuzzy_region.contains(face);
     int original_component = -1;
@@ -330,7 +333,7 @@ void MeshOperations::addRefinedFaceVariable(const int &face,
             variables[num_face_variables][direction] = addVariable(0.0, 0.0, 1.0);
         } else {
             // Faces on boundary of fuzzy region must have constrained values
-            if (variable_to_direction[direction] == original_component) {
+            if (variable_to_direction.at(direction) == original_component) {
                 // In original region, must be printed in this direction
                 variables[num_face_variables][direction] = addVariable(0.0, 1.0, 1.0);
             } else {
@@ -361,15 +364,15 @@ void MeshOperations::updatePrintableComponents(const int &face,
 
     for (int direction_variable = 0; direction_variable < num_printable_directions; direction_variable++) {
         // Recover corresponding printing direction
-        int direction = variable_to_direction[direction_variable];
+        int direction = variable_to_direction.at(direction_variable);
         // If the solution is 0, the face is not printed in this direction
-        if (variables[face_variable][direction_variable]->solution_value() == 0.0) {
+        if (variables[face_variable][direction_variable]->solution_value() == 0) {
             // Therefore, it should be removed from the corresponding set
             // This is done previously because of debug statements
         }
 
         // If the solution is 1, the face is printed in this direction
-        if (variables[face_variable][direction_variable]->solution_value() == 1.0) {
+        if (variables[face_variable][direction_variable]->solution_value() == 1) {
             // Therefore it should be added to this printable component
             printable_components[direction].insert(face);
             new_dir = direction;
