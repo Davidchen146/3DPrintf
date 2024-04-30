@@ -18,6 +18,7 @@ MeshOperations::MeshOperations(Mesh m) {
     _oversegmentation_bounding_box_coeff = 0.01;
     _num_oversegmentation_iterations = 3;
     _visualize_seeds = false;
+    _oversegmentation_skip_visualization = false;
 
     // Initial segmentation parameters
     _num_random_dir_samples = 512;
@@ -28,9 +29,12 @@ MeshOperations::MeshOperations(Mesh m) {
     _ambient_occlusion_samples = 500;
     _footing_samples = 1;
     _axis_only = false;
+    _initial_skip_visualization = false;
 
     // Refined segmentation parameters
-    _fuzzy_region_width = 0;
+    _e_fuzzy = 0.02;
+    _ambient_occlusion_lambda = 4;
+    _refined_skip_visualization = false;
 }
 
 // Configure parameters for 3D printing operations
@@ -60,7 +64,8 @@ void MeshOperations::setOversegmentationParameters(int num_seed_faces,
                                                    double proportion_seed_faces,
                                                    double bounding_box_coeff,
                                                    int num_iterations,
-                                                   bool visualize_seeds) {
+                                                   bool visualize_seeds,
+                                                   bool oversegmentation_skip_visualization) {
     // Check against default value (0) to prevent loading in unspecified parameters
     if (num_seed_faces != 0.0) {
         _num_seed_faces = num_seed_faces;
@@ -81,6 +86,10 @@ void MeshOperations::setOversegmentationParameters(int num_seed_faces,
     if (visualize_seeds) {
         _visualize_seeds = visualize_seeds;
     }
+
+    if (oversegmentation_skip_visualization) {
+        _oversegmentation_skip_visualization = oversegmentation_skip_visualization;
+    }
 }
 
 void MeshOperations::setInitialSegmentationParameters(int num_random_dir_samples,
@@ -90,7 +99,8 @@ void MeshOperations::setInitialSegmentationParameters(int num_random_dir_samples
                                                       double smoothing_width_t,
                                                       int ambient_occlusion_samples,
                                                       int footing_samples,
-                                                      bool axis_only) {
+                                                      bool axis_only,
+                                                      bool initial_skip_visualization) {
     // Check against default value (0) to prevent loading in unspecified parameters
     if (num_random_dir_samples != 0) {
         _num_random_dir_samples = num_random_dir_samples;
@@ -126,6 +136,27 @@ void MeshOperations::setInitialSegmentationParameters(int num_random_dir_samples
     if (axis_only) {
         _axis_only = true;
         _num_random_dir_samples = 6;
+    }
+
+    if (initial_skip_visualization) {
+        _initial_skip_visualization = initial_skip_visualization;
+    }
+}
+
+void MeshOperations::setRefinedSegmentationParameters(double e_fuzzy,
+                                                      double ambient_occlusion_lambda,
+                                                      bool refined_skip_visualization) {
+    // Check against default value (0) to prevent loading unspecified parameters
+    if (e_fuzzy != 0) {
+        _e_fuzzy = e_fuzzy;
+    }
+
+    if (ambient_occlusion_lambda != 0) {
+        _ambient_occlusion_lambda = ambient_occlusion_lambda;
+    }
+
+    if (refined_skip_visualization) {
+        _refined_skip_visualization = refined_skip_visualization;
     }
 }
 

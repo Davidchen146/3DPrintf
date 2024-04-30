@@ -69,8 +69,8 @@ int main(int argc, char *argv[])
         // "Oversegmentation/proportion_seed_faces": proportion of faces to sample as seed faces (num_seed_faces will take precedence)
         // "Oversegmentation/e_patch": controls initial seed termination; when distance from seeds is less than this * bounding box diagonal, terminate
         // "Oversegmentation/num_iterations": number of iterations to recenter and regrow seeds; 0 means patches will be regrown, but will not recenter
-        // "Oversegmentation/seeds_only": only returns the center seed faces of patches
-        // TODO: Visualize oversegmentation results
+        // "Oversegmentation/visualize_seeds": provides a visual of the seed faces before the patches are grown from seeds
+        // "Oversegmentation/skip_visualization": skips visualization for oversegmentation
     // Initial:
         // "Intital/num_random_dir_samples": number of directions to randomly sample
         // "Initial/printer_tolerance_angle": how far faces can deviate from the printing direction without requiring supports (in degrees)
@@ -80,11 +80,11 @@ int main(int argc, char *argv[])
         // "Initial/ambient_occlusion_samples": number of samples to cast for ambient occlusion; more samples is more accurate but takes longer
         // "Initial/footing_samples": number of samples to cast for footing faces
         // "Initial/axis_only": only use the 6 cardinal printing directions
-        // TODO: Visualize initial segmentation results
+        // "Initial/skip_visualization": skips visualization for initial segmentation
     // Refined:
-        // TODO: Coefficient for bounding box diagonal to determine size of fuzzy regions
-        // TODO: Lambda for ambient occlusion computation
-        // TODO: Visualize refined segmentation results
+        // "Refined/e_fuzzy": coefficient controlling how large the fuzzy region is in relation to bounding box
+        // "Refined/ambient_occlusion_lambda": determines how important occlusion is for reshaping cuts; larger values are more important
+        // "Refined/skip_visualization": skips visualization of refined segmentation
     // Fabricate:
         // TODO: Parameters for tetgen operations
         // TODO: Parameters for smoothing operations
@@ -170,12 +170,15 @@ int main(int argc, char *argv[])
         double angular_distance_concave = settings.value("Preprocess/angular_distance_concave").toDouble();
         double geodesic_dist_coeff = settings.value("Preprocess/geodesic_distance_weight").toDouble();
         bool use_zero_cost_faces = settings.value("Preprocess/use_zero_cost_faces").toBool();
+
         // Oversegmentation
         int num_seed_faces = settings.value("Oversegmentation/num_seed_faces").toInt();
         double proportion_seed_faces = settings.value("Oversegmentation/proportion_seed_faces").toDouble();
         double e_patch = settings.value("Oversegmentation/e_patch").toDouble();
         int num_iterations = settings.value("Oversegmentation/num_iterations").toInt();
         bool visualize_seeds = settings.value("Oversegmentation/visualize_seeds").toBool();
+        bool oversegmentation_skip_visual = settings.value("Oversegmentation/skip_visualization").toBool();
+
         // Initial Segmentation
         int num_random_dir_samples = settings.value("Initial/num_random_dir_samples").toInt();
         double printer_tolerance_angle = settings.value("Initial/printer_tolerance_angle").toDouble(); // In degrees
@@ -185,6 +188,12 @@ int main(int argc, char *argv[])
         int ambient_occlusion_samples = settings.value("Initial/ambient_occlusion_samples").toInt();
         int footing_samples = settings.value("Initial/footing_samples").toInt();
         bool axis_only = settings.value("Initial/axis_only").toBool();
+        bool initial_skip_visual = settings.value("Initial/skip_visualization").toBool();
+
+        // Refined segmentation
+        double e_fuzzy = settings.value("Refined/e_fuzzy").toDouble();
+        double ambient_occlusion_lambda = settings.value("Refined/ambient_occlusion_lambda").toDouble();
+        bool refined_skip_visual = settings.value("Refined/skip_visualization").toBool();
 
         // Debug
         std::string debug_mode = settings.value("Debug/mode").toString().toStdString();
@@ -204,13 +213,15 @@ int main(int argc, char *argv[])
             m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
             m_o.preprocessData();
             m_o.preprocessDistances();
-            m_o.preprocessRaytracer();
+            m_o.preprocessRaytracer();            
 
             // This vec will hold the labelings
             std::vector<std::unordered_set<int>> patches;
-            m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, visualize_seeds);
+            m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, visualize_seeds, oversegmentation_skip_visual);
             m_o.generateOversegmentation(patches);
-            m_o.visualize(patches);
+            if (!oversegmentation_skip_visual) {
+                m_o.visualize(patches);
+            }
         }
         else if (method == "initial") {
             m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
@@ -222,19 +233,23 @@ int main(int argc, char *argv[])
 
             // This vec will hold the labelings
             std::vector<std::unordered_set<int>> patches;
-            m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, visualize_seeds);
+            m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, visualize_seeds, oversegmentation_skip_visual);
             m_o.generateOversegmentation(patches);
-            m_o.visualize(patches);
+            if (!oversegmentation_skip_visual) {
+                m_o.visualize(patches);
+            }
 
             // The printable components
             std::vector<std::unordered_set<int>> printable_components;
             // Printing directions for each component
             std::vector<Eigen::Vector3f> printing_directions;
-            m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples, axis_only);
+            m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples, axis_only, initial_skip_visual);
             m_o.generateInitialSegmentation(patches, printable_components, printing_directions);
             // Visualize printing components, then each printable components with supported faces highlighted in red
-            m_o.visualize(printable_components);
-            m_o.visualizePrintableComponents(printable_components, printing_directions);
+            if (!initial_skip_visual) {
+                m_o.visualize(printable_components);
+                m_o.visualizePrintableComponents(printable_components, printing_directions);
+            }
         }
         else if (method == "refined") {
             m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
@@ -246,25 +261,32 @@ int main(int argc, char *argv[])
 
             // This vec will hold the labelings
             std::vector<std::unordered_set<int>> patches;
-            m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, visualize_seeds);
+            m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, visualize_seeds, oversegmentation_skip_visual);
             m_o.generateOversegmentation(patches);
-            m_o.visualize(patches);
+            if (!oversegmentation_skip_visual) {
+                m_o.visualize(patches);
+            }
 
             // The printable components
             std::vector<std::unordered_set<int>> printable_components;
             // Printing directions for each component
             std::vector<Eigen::Vector3f> printing_directions;
-            m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples, axis_only);
+            m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples, axis_only, initial_skip_visual);
             m_o.generateInitialSegmentation(patches, printable_components, printing_directions);
             // Visualize printing components, then each printable components with supported faces highlighted in red
-            m_o.visualize(printable_components);
-            m_o.visualizePrintableComponents(printable_components, printing_directions);
+            if (!initial_skip_visual) {
+                m_o.visualize(printable_components);
+                m_o.visualizePrintableComponents(printable_components, printing_directions);
+            }
 
             std::vector<std::unordered_set<int>> fuzzyRegions;
+            m_o.setRefinedSegmentationParameters(e_fuzzy, ambient_occlusion_lambda, refined_skip_visual);
             m_o.generateRefinedSegmentation(printable_components, printing_directions, fuzzyRegions);
             // Visualize with the changes
-            m_o.visualize(printable_components);
-            m_o.visualizePrintableComponents(printable_components, printing_directions);
+            if (!refined_skip_visual) {
+                m_o.visualize(printable_components);
+                m_o.visualizePrintableComponents(printable_components, printing_directions);
+            }
         }
         else if (method == "fabricate") {
             std::cerr << "Error: This phase hasn't been implemented yet" << std::endl;
@@ -313,10 +335,10 @@ int main(int argc, char *argv[])
                 m_o.preprocessDistances();
                 m_o.preprocessRaytracer();
                 std::vector<std::unordered_set<int>> patches;
-                m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, visualize_seeds);
+                m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, visualize_seeds, oversegmentation_skip_visual);
                 m_o.generateOversegmentation(patches);
                 m_o.visualize(patches);
-                m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples);
+                m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples, axis_only, initial_skip_visual);
                 m_o.visualizeSmoothingCosts(patches);
             }
             else if (debug_mode == "angular_distance") {

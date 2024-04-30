@@ -32,8 +32,8 @@ void MeshOperations::updateFuzzyRegion(std::unordered_set<int> &fuzzyRegion, std
         minDistance = std::min(minDistance, getGeodesicDistance(f, b_f));
     }
 
-    // TODO: This is where the config value should be
-    if (minDistance <= _fuzzy_region_width) {
+    // Distance set by bounding box diagonal + configurable coefficient
+    if (minDistance <= bbd * _e_fuzzy) {
         fuzzyRegion.insert(f);
     }
 }
@@ -170,8 +170,10 @@ void MeshOperations::generateRefinedSegmentation(std::vector<std::unordered_set<
     }
     nodes.clear();
 
-    // TODO: Visualize the fuzzy regions here before we cut them
-    visualize(fuzzyRegions);
+    // Visualize the fuzzy regions here before we cut them
+    if (!_refined_skip_visualization) {
+        visualize(fuzzyRegions);
+    }
 
     // Begin optimizing the fuzzy regions
     // TODO: Can *maybe* use multithreading to parallelize this
@@ -221,9 +223,7 @@ double MeshOperations::computeRefinedCoefficient(const int &face_one, const int 
     double edge_length = (_V.row(vert_one) - _V.row(vert_two)).norm();
     double edge_AO = getEdgeAO(std::make_pair(std::min(vert_one, vert_two), std::max(vert_one, vert_two)));
 
-    // TODO: Make this value config-specifiable
-    double lambda = 4;
-    return edge_length * (std::exp(lambda * edge_AO) - 1);
+    return edge_length * (std::exp(_ambient_occlusion_lambda * edge_AO) - 1);
 }
 
 // Initialize coefficients to pass into the solver for adjacent faces
