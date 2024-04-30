@@ -24,6 +24,10 @@ void MeshOperations::visualize(const vector<unordered_set<int>>& coloringGroups)
     // generate a certain number of colors based on coloringGroups
     Eigen::MatrixXd C;
     C.resize(_faces.size(), 3);
+    Eigen::Vector3d gray(65.0f / 255, 65.0f / 255, 65.0f / 255);
+    for (int i = 0; i < _faces.size(); i++) {
+        C.row(i) = gray;
+    }
 
     faceToGroup.clear();
     for (int i = 0; i < coloringGroups.size(); i++) {
@@ -45,11 +49,11 @@ void MeshOperations::visualize(const vector<unordered_set<int>>& coloringGroups)
     }
 
     for (int i = 0; i < _faces.size(); i++) {
-        if (!_visualize_seeds) {
-            assert(faceToGroup.contains(i));
-            assert(groupToColor.contains(faceToGroup[i]));
+        if (faceToGroup.contains(i)) {
+            C.row(i) = groupToColor[faceToGroup[i]];
+        } else {
+            C.row(i) = gray;
         }
-        C.row(i) = groupToColor[faceToGroup[i]];
     }
 
     igl::opengl::glfw::Viewer viewer;

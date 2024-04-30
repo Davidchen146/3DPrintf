@@ -15,6 +15,9 @@
 #include <limits>
 #include <numbers>
 
+// TODO: Reorganize this file into multiple subclasses for each phases along with common util functions
+// TODO: Mesh class, preprocessing, oversegmentation, initial segmentation, refined segmentation, and fabrication should all have different classes
+// TODO: Get rid of the namespace; that's lazy
 using namespace Eigen;
 using namespace std;
 using namespace operations_research;
@@ -78,7 +81,8 @@ public:
                                        double proportion_seed_faces = 0.1,
                                        double bounding_box_coeff = 0.01,
                                        int num_iterations = 3,
-                                       bool seeds_only = false);
+                                       bool seeds_only = false,
+                                       bool skip_visualization = false);
     void setInitialSegmentationParameters(int num_random_dir_samples = 512,
                                           double printer_tolerance_angle = 55,
                                           double ambient_occlusion_supports_alpha = 0.5,
@@ -86,7 +90,11 @@ public:
                                           double smoothing_width_t = 0.3,
                                           int ambient_occlusion_samples = 500,
                                           int footing_samples = 1,
-                                          bool axis_only = false);
+                                          bool axis_only = false,
+                                          bool skip_visualization = false);
+    void setRefinedSegmentationParameters(double e_fuzzy = 0.02,
+                                          double ambient_occlusion_lambda = 4,
+                                          bool skip_visualization = false);
 
     // Oversegmentation: returns list of lists of faces
     // Each list of faces represents a connected patch (to be merged and assigned a printing direction)
@@ -207,6 +215,25 @@ private:
     void combineFuzzyRegions(std::vector<FuzzyNode*> &nodes,
                              std::vector<std::unordered_set<int>> &fuzzyRegions,
                              std::vector<std::unordered_set<int>> &fuzzyRegionDirections);
+    double computeRefinedCoefficient(const int &face_one, const int &face_two);
+    void initializeFuzzyRegionCoefficients(const std::unordered_set<int> &fuzzy_region, std::unordered_map<std::pair<int, int>, double, PairHash> &adjacent_face_coefficients);
+    void solveFuzzyRegion(std::vector<std::unordered_set<int>> &printable_components,
+                          const std::unordered_set<int> &fuzzy_region,
+                          const unordered_set<int> &fuzzy_region_directions,
+                          const std::unordered_map<std::pair<int, int>, double, PairHash> &adjacent_face_coefficients);
+    void addRefinedFaceVariable(const int &face,
+                                const std::unordered_set<int> &fuzzy_region,
+                                const std::vector<std::unordered_set<int>> &printable_components,
+                                std::unordered_map<int, int> &variable_to_direction,
+                                std::unordered_map<int, int> &face_to_variable,
+                                std::vector<std::vector<const MPVariable*>> &variables);
+    void updatePrintableComponents(const int &face,
+                                   const int &face_variable,
+                                   const std::unordered_set<int> &fuzzy_region,
+                                   std::vector<std::unordered_set<int>> &printable_components,
+                                   std::unordered_map<int, int> &variable_to_direction,
+                                   std::vector<std::vector<const MPVariable*>> &variables);
+
 
     // Other general subroutines
 /*-------------------------------------------------------------------------------------------------*/
@@ -286,6 +313,7 @@ private:
     double _oversegmentation_bounding_box_coeff;
     int _num_oversegmentation_iterations;
     bool _visualize_seeds;
+    bool _oversegmentation_skip_visualization;
 
     // Initial Segmentation parameters
     int _num_random_dir_samples;
@@ -298,10 +326,13 @@ private:
     int _footing_samples;
     bool _axis_only;
     std::unordered_set<int> _zero_cost_faces;
+    bool _initial_skip_visualization;
 
     // Refined Segmentation parameters
     // TODO: Add them
-    double _fuzzy_region_width = bbd*0.02;
+    double _e_fuzzy;
+    double _ambient_occlusion_lambda;
+    bool _refined_skip_visualization;
 
     // ILP solver used for phases 2 and 3 (should be cleared before using in phase 2)
     operations_research::MPSolver* _solver;

@@ -71,6 +71,7 @@ struct Vector3fCompare {
     }
 };
 
+// TODO: Move this into another file
 // Really jank code that lets you hash pairs of integers
 struct PairHash
 {

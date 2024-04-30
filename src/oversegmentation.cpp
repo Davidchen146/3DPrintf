@@ -13,7 +13,7 @@ void MeshOperations::generateOversegmentation(std::vector<std::unordered_set<int
     generateInitialSeeds(seeds);
 
     // Visualize the seeds
-    if (_visualize_seeds) {
+    if (_visualize_seeds && !_oversegmentation_skip_visualization) {
         std::vector<std::unordered_set<int>> seed_vec;
         seed_vec.resize(seeds.size());
         int current_seed = 0;
@@ -33,7 +33,7 @@ void MeshOperations::generateOversegmentation(std::vector<std::unordered_set<int
         }
 
         // Visualize the seeds
-        if (_visualize_seeds) {
+        if (_visualize_seeds && !_oversegmentation_skip_visualization) {
             std::vector<std::unordered_set<int>> seed_vec;
             seed_vec.resize(seeds.size());
             int current_seed = 0;
