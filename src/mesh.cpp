@@ -8,6 +8,7 @@
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "util/tiny_obj_loader.h"
+#include <igl/copyleft/cgal/remesh_self_intersections.h>
 
 using namespace Eigen;
 using namespace std;
@@ -241,7 +242,46 @@ void Mesh::loadFromFile(const string &filePath)
     for (size_t i = 0; i < attrib.vertices.size(); i += 3) {
         _vertices.emplace_back(attrib.vertices[i], attrib.vertices[i + 1], attrib.vertices[i + 2]);
     }
+
+    // NOTE: get rid of this if it's too slow
+    remeshSelfIntersections();
+
     cout << "Loaded " << _faces.size() << " faces and " << _vertices.size() << " vertices" << endl;
+}
+
+void Mesh::remeshSelfIntersections() {
+    MatrixXd V;
+    V.resize(_vertices.size(), 3);
+    for (int i = 0; i < _vertices.size(); i++) {
+        V.row(i) = _vertices[i].cast<double>();
+    }
+    MatrixXi F;
+    F.resize(_faces.size(), 3);
+    for (int i = 0; i < _faces.size(); i++) {
+        F.row(i) = _faces[i];
+    }
+
+    Eigen::MatrixXd Vs;
+    Eigen::MatrixXi Fs, IF;
+    Eigen::VectorXi J, IM;
+    igl::copyleft::cgal::remesh_self_intersections(V, F, igl::copyleft::cgal::RemeshSelfIntersectionsParam(), Vs, Fs, IF, J, IM);
+    std::for_each(Fs.data(),Fs.data()+Fs.size(),[&IM](int & a){ a=IM(a); });
+    Eigen::MatrixXd HV;
+    Eigen::MatrixXi HF;
+    Eigen::VectorXi UIM;
+    igl::remove_unreferenced(Vs, Fs, HV, HF, UIM);
+
+    _vertices.clear();
+    _vertices.resize(HV.rows());
+    for (int i = 0; i < HV.rows(); i++) {
+        _vertices[i] = HV.row(i).cast<float>();
+    }
+
+    _faces.clear();
+    _faces.resize(HF.rows());
+    for (int i = 0; i < HF.rows(); i++) {
+        _faces[i] = HF.row(i);
+    }
 }
 
 void Mesh::saveToFile(const string &filePath)

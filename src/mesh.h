@@ -98,6 +98,7 @@ public:
                          const std::vector<Eigen::Vector3i> &faces);
 
     void loadFromFile(const std::string &filePath);
+    void remeshSelfIntersections();
     void saveToFile(const std::string &filePath);
     void preProcess();
     std::pair<int, int> getSortedPair(int x, int y);
