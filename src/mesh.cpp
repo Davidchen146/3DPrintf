@@ -263,11 +263,6 @@ void Mesh::remeshSelfIntersections() {
     Eigen::MatrixXi Fs, IF;
     Eigen::VectorXi J, IM;
     igl::copyleft::cgal::remesh_self_intersections(V, F, igl::copyleft::cgal::RemeshSelfIntersectionsParam(), Vs, Fs, IF, J, IM);
-    // std::for_each(Fs.data(),Fs.data()+Fs.size(),[&IM](int & a){ a=IM(a); });
-    // Eigen::MatrixXd HV;
-    // Eigen::MatrixXi HF;
-    // Eigen::VectorXi UIM;
-    // igl::remove_unreferenced(Vs, Fs, HV, HF, UIM);
 
     _vertices.clear();
     _vertices.resize(Vs.rows());

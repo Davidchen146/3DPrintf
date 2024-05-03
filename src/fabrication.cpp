@@ -6,6 +6,8 @@
 #include <igl/adjacency_matrix.h>
 
 #include <igl/per_vertex_attribute_smoothing.h>
+#include <igl/adjacency_list.h>
+
 
 // Mesh the interior of a surface mesh (V,F) using tetgen
 // @param[in] V #V x 3 vertex position list
@@ -29,20 +31,17 @@ void MeshOperations::tetrahedralizeMesh() {
     std::string volume_string = oss.str();
     std::string options = "pq1.414Ya";
     options.append(volume_string);
-    options.append("Y");
+    options.append("n");
     std::cout << "options: " << options << std::endl;
     igl::copyleft::tetgen::tetrahedralize(_V.cast<double>(), _F, options, _TV, _TT, _TF);
 
-
     // Next: let's apply Laplacian Smoothing to only the inside vertices
-
     std::set<int> newVertexIndices; // to newly created inside-vertices
-
-    // Step 1: ID all new vertices added from tetrahedralization, subtract
+    // // Step 1: ID all new vertices added from tetrahedralization, subtract
     Eigen::MatrixXd _VCast = _V.cast<double>();
-    for (int i = 0; i < _TV.rows(); ++i) {
+    for (int i = 0; i < _TV.rows(); i++) {
         bool isNew = true;
-        for (int j = 0; j < _VCast.rows(); ++j) {
+        for (int j = 0; j < _VCast.rows(); j++) {
             if ((_TV.row(i) - _VCast.row(j)).norm() < 1e-7) { // in case there's some margin of error
                 isNew = false;
                 break;
@@ -52,6 +51,11 @@ void MeshOperations::tetrahedralizeMesh() {
             newVertexIndices.insert(i);
         }
     }
+
+
+
+
+
 
     // now we have a set of indices that key into the rows of _TV that ID new vertices.
     // for (int iteration = 0; iteration < 100; iteration++)
@@ -84,7 +88,6 @@ void MeshOperations::tetrahedralizeMesh() {
     //     //     _TV.row(idx) = smoothedTV.row(idx);
     //     // }
     // }
-
 }
 
 Eigen::Vector3d MeshOperations::computeTetCentroid(Eigen::Vector4i &tetrahedron) {
@@ -182,7 +185,78 @@ void MeshOperations::partitionVolume(const std::vector<std::unordered_set<int>> 
         int groupNum = faceToGroup[boundaryFace];
         printable_volumes[groupNum].push_back(tetrahedron);
     }
+
+    // ALTERNATIVE APPROACH
+    // need igl::adjacency_list which constructs the graph adjacency list of a given mesh (V, F)
+    // gives you a vector<vector<int>> containing at row i the adjacent vertices of vertex i
+    // but if i have the adjacent vertices
+
 }
+
+void MeshOperations::getFacesFromTet(const std::vector<Eigen::Vector4i>& volume, Eigen::MatrixXi& faces) {
+    std::unordered_set<Vector3i, Vector3iHash, Vector3iEqual> faceSet;
+    // (theoretically Vector3iEqual will sort the vector) --> so duplicate faces with different orderings won't exist in the set
+    for (int i = 0; i < volume.size(); i++) {
+        Eigen::Vector4i tet = volume[i];
+        Eigen::Vector3i face1 = {tet[0], tet[1], tet[2]};
+        Eigen::Vector3i face2 = {tet[0], tet[1], tet[3]};
+        Eigen::Vector3i face3 = {tet[0], tet[2], tet[3]};
+        Eigen::Vector3i face4 = {tet[1], tet[2], tet[3]};
+        if (!faceSet.contains(face1)) {
+            faceSet.insert(face1);
+        }
+        if (!faceSet.contains(face2)) {
+            faceSet.insert(face2);
+        }
+        if (!faceSet.contains(face3)) {
+            faceSet.insert(face3);
+        }
+        if (!faceSet.contains(face4)) {
+            faceSet.insert(face4);
+        }
+    }
+
+    faces.resize(faceSet.size(), 3);
+    int rowNum = 0;
+    for (const Vector3i& face : faceSet) {
+        faces.row(rowNum) = face;
+        rowNum++;
+    }
+}
+
+void MeshOperations::pruneVolume(std::vector<std::vector<Eigen::Vector4i>> &printable_volumes) {
+    // each Eigen::Vector4i represents a tetrahedron --> each int is an index into TV
+    for (int i = 0; i < printable_volumes.size(); i++) {
+        MatrixXi faces;
+        getFacesFromTet(printable_volumes[i], faces);
+        vector<vector<double>> A; // containing at row i the adjacent vertices of vertex i
+        // from the printable volumes get the faces
+        igl::adjacency_list(faces, A);
+        std::vector<Eigen::Vector4i> volume = printable_volumes[i];
+        // for (Eigen::Vector4i& tetrahedron : volume) {
+        std::vector<int> toErase;
+        for (int j = 0; j < volume.size(); j++) {
+            Eigen::Vector4i tetrahedron = volume[j];
+            bool v1_dangling = A[tetrahedron[0]].size() == 3;
+            bool v2_dangling = A[tetrahedron[1]].size() == 3;
+            bool v3_dangling = A[tetrahedron[2]].size() == 3;
+            bool v4_dangling = A[tetrahedron[3]].size() == 3;
+            int total_true = v1_dangling + v2_dangling + v3_dangling + v4_dangling;
+            if (total_true >= 2) {
+                // remove the tetrahedron from the printable volume
+                toErase.push_back(j);
+            }
+        }
+        if (toErase.size() > 0) {
+            std::sort(toErase.begin(), toErase.end(), std::greater<int>());
+            for (int j = 0; j < toErase.size(); j++) {
+                auto it = printable_volumes[i].begin() + toErase[j];
+                printable_volumes[i].erase(it);
+            }
+        }
+    }
+}
+
 
 void MeshOperations::updateFaceMap(std::unordered_map<Vector3i, Vector4i, Vector3iHash, Vector3iEqual>& faceMap, Vector3i face, Vector4i tet) {
     if (faceMap.contains(face)) {

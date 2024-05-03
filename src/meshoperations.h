@@ -136,6 +136,8 @@ public:
     void getComponentBoundingBox(const std::unordered_set<int> &component, Eigen::Vector3d& min, Eigen::Vector3d& max);
     void partitionVolume(const std::vector<std::unordered_set<int>> &printable_components,
                          std::vector<std::vector<Eigen::Vector4i>> &printable_volumes);
+    void getFacesFromTet(const std::vector<Eigen::Vector4i>& volume, Eigen::MatrixXi& faces);
+    void pruneVolume(std::vector<std::vector<Eigen::Vector4i>> &printable_volumes);
     void updateFaceMap(std::unordered_map<Vector3i, Vector4i, Vector3iHash, Vector3iEqual>& faceMap, Vector3i face, Vector4i tet);
     Vector3i orderVertices(Vector3i& face, Vector4i& tet);
     void extractSurface(const std::vector<Eigen::Vector4i> &volume, std::vector<Eigen::Vector3i> &surface_faces);

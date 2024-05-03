@@ -366,13 +366,17 @@ int main(int argc, char *argv[])
                 m_o.preprocessData();
                 m_o.preprocessDistances();
                 m_o.preprocessRaytracer();
+                m_o.preprocessZeroCostFaces();
+                m_o.preprocessSolver();
                 std::cout << "preprocessing done" << std::endl;
 
+                // // This vec will hold the labelings
                 std::vector<std::unordered_set<int>> patches;
                 m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, visualize_seeds);
                 m_o.generateOversegmentation(patches);
                 std::cout << "oversegmentation done" << std::endl;
 
+                // The printable components
                 std::vector<std::unordered_set<int>> printable_components;
                 // Printing directions for each component
                 std::vector<Eigen::Vector3f> printing_directions;
@@ -381,24 +385,21 @@ int main(int argc, char *argv[])
                 m_o.visualize(printable_components);
                 std::cout << "initial segmentation done" << std::endl;
 
+                // std::vector<std::unordered_set<int>> fuzzyRegions;
+                // m_o.setRefinedSegmentationParameters(e_fuzzy, ambient_occlusion_lambda, refined_skip_visual);
+                // m_o.generateRefinedSegmentation(printable_components, printing_directions, fuzzyRegions);
+                // // Visualize with the changes
+                // m_o.visualize(printable_components);
+
                 m_o.tetrahedralizeMesh(); // this is effectively a preprocessing step for fabrication
                 std::vector<std::vector<Eigen::Vector4i>> printable_volumes;
                 m_o.partitionVolume(printable_components, printable_volumes);
+                m_o.pruneVolume(printable_volumes);
                 m_o.visualizePrintableVolumes(printable_components, printing_directions, printable_volumes);
                 // m_o.visualizePrintableComponents(printable_components, printing_directions);
-
-                // for (int i = 0; i < printable_volumes.size(); i++) {
-                //     std::vector<Eigen::Vector4i> volume = printable_volumes[i];
-                //     std::vector<Eigen::Vector3i> surfaceFaces;
-                //     m_o.extractSurface(volume, surfaceFaces);
-                //     if (surfaceFaces.size() > 0) {
-                //         m_o.visualizePrintableVolume(surfaceFaces, i, printing_directions[i]);
-                //     }
-                // }
             } else {
                 std::cout << "Error: Unknown debug mode \"" << debug_mode << "\"" << std::endl;
             }
-
         }
     }
     else {
