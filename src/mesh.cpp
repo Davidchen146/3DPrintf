@@ -168,7 +168,7 @@ void Mesh::preProcess() {
         } while (h != f_i->halfedge);
         assert(neighbor_num == 3);
         f_i->neighbors = neighbors;
-    }   
+    }
 }
 
 // Converts our data structure back into the original format of _vertices and _faces
@@ -239,12 +239,10 @@ void Mesh::loadFromFile(const string &filePath)
             index_offset += fv;
         }
     }
+
     for (size_t i = 0; i < attrib.vertices.size(); i += 3) {
         _vertices.emplace_back(attrib.vertices[i], attrib.vertices[i + 1], attrib.vertices[i + 2]);
     }
-
-    // NOTE: get rid of this if it's too slow
-    remeshSelfIntersections();
 
     cout << "Loaded " << _faces.size() << " faces and " << _vertices.size() << " vertices" << endl;
 }
@@ -265,22 +263,22 @@ void Mesh::remeshSelfIntersections() {
     Eigen::MatrixXi Fs, IF;
     Eigen::VectorXi J, IM;
     igl::copyleft::cgal::remesh_self_intersections(V, F, igl::copyleft::cgal::RemeshSelfIntersectionsParam(), Vs, Fs, IF, J, IM);
-    std::for_each(Fs.data(),Fs.data()+Fs.size(),[&IM](int & a){ a=IM(a); });
-    Eigen::MatrixXd HV;
-    Eigen::MatrixXi HF;
-    Eigen::VectorXi UIM;
-    igl::remove_unreferenced(Vs, Fs, HV, HF, UIM);
+    // std::for_each(Fs.data(),Fs.data()+Fs.size(),[&IM](int & a){ a=IM(a); });
+    // Eigen::MatrixXd HV;
+    // Eigen::MatrixXi HF;
+    // Eigen::VectorXi UIM;
+    // igl::remove_unreferenced(Vs, Fs, HV, HF, UIM);
 
     _vertices.clear();
-    _vertices.resize(HV.rows());
-    for (int i = 0; i < HV.rows(); i++) {
-        _vertices[i] = HV.row(i).cast<float>();
+    _vertices.resize(Vs.rows());
+    for (int i = 0; i < Vs.rows(); i++) {
+        _vertices[i] = Vs.row(i).cast<float>();
     }
 
     _faces.clear();
-    _faces.resize(HF.rows());
-    for (int i = 0; i < HF.rows(); i++) {
-        _faces[i] = HF.row(i);
+    _faces.resize(Fs.rows());
+    for (int i = 0; i < Fs.rows(); i++) {
+        _faces[i] = Fs.row(i);
     }
 }
 
