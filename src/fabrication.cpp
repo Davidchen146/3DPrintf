@@ -193,8 +193,8 @@ void MeshOperations::partitionVolume(const std::vector<std::unordered_set<int>> 
 
 }
 
-void MeshOperations::getFacesFromTet(const std::vector<Eigen::Vector4i>& volume, Eigen::MatrixXi& faces) {
-    std::unordered_set<Vector3i, Vector3iHash, Vector3iEqual> faceSet;
+void MeshOperations::getFacesFromTet(const std::vector<Eigen::Vector4i>& volume, Eigen::MatrixXi& faces, std::unordered_set<Vector3i, Vector3iHash, Vector3iEqual>& exposedFaces) {
+    std::unordered_map<Vector3i, int, Vector3iHash, Vector3iEqual> faceMap;
     // (theoretically Vector3iEqual will sort the vector) --> so duplicate faces with different orderings won't exist in the set
     for (int i = 0; i < volume.size(); i++) {
         Eigen::Vector4i tet = volume[i];
@@ -202,24 +202,37 @@ void MeshOperations::getFacesFromTet(const std::vector<Eigen::Vector4i>& volume,
         Eigen::Vector3i face2 = {tet[0], tet[1], tet[3]};
         Eigen::Vector3i face3 = {tet[0], tet[2], tet[3]};
         Eigen::Vector3i face4 = {tet[1], tet[2], tet[3]};
-        if (!faceSet.contains(face1)) {
-            faceSet.insert(face1);
+        if (faceMap.contains(face1)) {
+            faceMap[face1] += 1;
+        } else {
+            faceMap[face1] = 1;
         }
-        if (!faceSet.contains(face2)) {
-            faceSet.insert(face2);
+        if (faceMap.contains(face2)) {
+            faceMap[face2] += 1;
+        } else {
+            faceMap[face2] = 1;
         }
-        if (!faceSet.contains(face3)) {
-            faceSet.insert(face3);
+        if (faceMap.contains(face3)) {
+            faceMap[face3] += 1;
+        } else {
+            faceMap[face3] = 1;
         }
-        if (!faceSet.contains(face4)) {
-            faceSet.insert(face4);
+        if (faceMap.contains(face4)) {
+            faceMap[face4] += 1;
+        } else {
+            faceMap[face4] = 1;
         }
     }
-
-    faces.resize(faceSet.size(), 3);
+    faces.resize(faceMap.size(), 3);
     int rowNum = 0;
-    for (const Vector3i& face : faceSet) {
+    exposedFaces.clear();
+    for (const std::pair<Vector3i, int>& pair : faceMap) {
+        Vector3i face = pair.first;
         faces.row(rowNum) = face;
+        int count = pair.second;
+        if (count == 1) {
+            exposedFaces.insert(face);
+        }
         rowNum++;
     }
 }
@@ -228,7 +241,8 @@ void MeshOperations::pruneVolume(std::vector<std::vector<Eigen::Vector4i>> &prin
     // each Eigen::Vector4i represents a tetrahedron --> each int is an index into TV
     for (int i = 0; i < printable_volumes.size(); i++) {
         MatrixXi faces;
-        getFacesFromTet(printable_volumes[i], faces);
+        std::unordered_set<Vector3i, Vector3iHash, Vector3iEqual> exposedFaces;
+        getFacesFromTet(printable_volumes[i], faces, exposedFaces);
         vector<vector<double>> A; // containing at row i the adjacent vertices of vertex i
         // from the printable volumes get the faces
         igl::adjacency_list(faces, A);
@@ -245,9 +259,23 @@ void MeshOperations::pruneVolume(std::vector<std::vector<Eigen::Vector4i>> &prin
             if (total_true >= 2) {
                 // remove the tetrahedron from the printable volume
                 toErase.push_back(j);
+            } else {
+                Eigen::Vector3i face1 = {tetrahedron[0], tetrahedron[1], tetrahedron[2]};
+                Eigen::Vector3i face2 = {tetrahedron[0], tetrahedron[1], tetrahedron[3]};
+                Eigen::Vector3i face3 = {tetrahedron[0], tetrahedron[2], tetrahedron[3]};
+                Eigen::Vector3i face4 = {tetrahedron[1], tetrahedron[2], tetrahedron[3]};
+                bool f1_exposed = exposedFaces.contains(face1);
+                bool f2_exposed = exposedFaces.contains(face2);
+                bool f3_exposed = exposedFaces.contains(face3);
+                bool f4_exposed = exposedFaces.contains(face4);
+                int num_exposed = f1_exposed + f2_exposed + f3_exposed + f4_exposed;
+                if (num_exposed == 4) {
+                    toErase.push_back(j);
+                }
             }
         }
         if (toErase.size() > 0) {
+            std::cout << "size: " << toErase.size() << std::endl;
             std::sort(toErase.begin(), toErase.end(), std::greater<int>());
             for (int j = 0; j < toErase.size(); j++) {
                 auto it = printable_volumes[i].begin() + toErase[j];
