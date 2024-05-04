@@ -81,7 +81,7 @@ std::pair<double, int> MeshOperations::getMinWeightedDistanceToSet(const int &fa
     double min_distance = std::numeric_limits<double>::max();
     int min_face = -1;
 
-    // FInd smallest distance by iterating over all faces in set
+    // Find smallest distance by iterating over all faces in set
     for (const int &face_in_set : faces) {
         // Only include same faces if include_self is checked (param control this)
         if (!include_self && face_in_set == face) {
@@ -103,13 +103,18 @@ std::pair<double, int> MeshOperations::getMaxGeodesicDistanceToSet(const int &fa
     double max_distance = -1;
     int max_face = -1;
 
-    // FInd smallest distance by iterating over all faces in set
+    // Find smallest distance by iterating over all faces in set
     for (const int &face_in_set : faces) {
         double current_distance = getGeodesicDistance(face, face_in_set);
         if (current_distance > max_distance) {
             max_distance = current_distance;
             max_face = face_in_set;
         }
+    }
+
+    // If it's completely disconnected...
+    if (max_distance == -1) {
+        max_distance = std::numeric_limits<double>::max();
     }
 
     return std::make_pair(max_distance, max_face);
@@ -128,6 +133,11 @@ std::pair<double, int> MeshOperations::getMaxWeightedDistanceToSet(const int &fa
             max_distance = current_distance;
             max_face = face_in_set;
         }
+    }
+
+    // If it's completely disconnected...
+    if (max_distance == -1) {
+        max_distance = std::numeric_limits<double>::max();
     }
 
     return std::make_pair(max_distance, max_face);
