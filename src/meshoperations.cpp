@@ -161,6 +161,16 @@ void MeshOperations::setRefinedSegmentationParameters(double e_fuzzy,
 }
 
 double MeshOperations::getGeodesicDistance(int i, int j) {
+    // Same component
+    if (i == j) {
+        return 0.0;
+    }
+
+    // Disconnected components
+    if (_geodesicDistances(i, j) <= 0.0) {
+        return std::numeric_limits<double>::max();
+    }
+
     return _geodesicDistances(i, j);
 }
 

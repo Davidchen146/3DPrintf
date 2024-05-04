@@ -3,7 +3,7 @@
 #include <igl/unproject_onto_mesh.h>
 
 int minDistanceVertex(vector<double> distances, vector<bool> visited) {
-    double minDistance = std::numeric_limits<double>::infinity();
+    double minDistance = std::numeric_limits<double>::max();
     int v = -1;
     for (int i = 0; i < distances.size(); i++) {
         if (!visited[i] && distances[i] < minDistance) {
@@ -20,7 +20,7 @@ VectorXd MeshOperations::dijkstra(int start) {
     VectorXd d;
     // initialize distances and visited vectors
     for (int i = 0; i < _n; i++) {
-        distances.push_back(std::numeric_limits<double>::infinity());
+        distances.push_back(std::numeric_limits<double>::max());
         visited.push_back(false);
     }
     distances[start] = 0;
@@ -100,6 +100,7 @@ void MeshOperations::preprocessDistances() {
     std::cout << "Performing angular distance computations" << std::endl;
     angularDistance();
     calculateAvgDistances();
+    std::cout << "Performing weighted distance computations" << std::endl;
     weightedDistance();
     assert(_weightedDistances.isApprox(_weightedDistances.transpose()));
 }
