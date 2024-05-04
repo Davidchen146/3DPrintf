@@ -186,6 +186,15 @@ void MeshOperations::generateRefinedSegmentation(std::vector<std::unordered_set<
         // Solve and update the printable components
         solveFuzzyRegion(printable_components, fuzzyRegions[region], fuzzyRegionDirections[region], adjacent_face_coefficients);
     }
+
+    // Remove any empty printable components
+    for (int component = 0; component < printable_components.size(); component++) {
+        if (printable_components[component].empty()) {
+            printable_components.erase(printable_components.begin() + component);
+            printing_directions.erase(printing_directions.begin() + component);
+            component--;
+        }
+    }
 }
 
 // Compute refined smoothing coefficient between two faces
