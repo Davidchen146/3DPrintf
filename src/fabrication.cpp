@@ -193,6 +193,62 @@ void MeshOperations::partitionVolume(const std::vector<std::unordered_set<int>> 
 
 }
 
+// Propagate a single volume collection one step into the mesh
+void MeshOperations::propagateVolume(PrintableVolume* volume,
+                     std::unordered_map<Eigen::Vector3i, std::pair<int, int>, Vector3iHash, Vector3iEqual> &faceToTet,
+                     std::unordered_set<int> &unassignedTets) {
+
+    unordered_set<int> nextLayer;
+    unordered_set<int> currLayer = volume->currentLayer;
+    for (int t: currLayer) {
+        unordered_set<Eigen::Vector3i, Vector3iHash, Vector3iEqual> faces;
+        getTetFaces(t, faces);
+
+        for (auto it = faces.begin(); it != faces.end(); ++it) {
+
+        }
+    }
+}
+
+void MeshOperations::getTetFaces(int tetrahedron, std::unordered_set<Eigen::Vector3i, Vector3iHash, Vector3iEqual> &faces) {
+    Eigen::Vector4i tet = _TT.row(tetrahedron).cast<int>();
+    Eigen::Vector3i face1 = {tet[0], tet[1], tet[2]};
+    Eigen::Vector3i face2 = {tet[0], tet[1], tet[3]};
+    Eigen::Vector3i face3 = {tet[0], tet[2], tet[3]};
+    Eigen::Vector3i face4 = {tet[1], tet[2], tet[3]};
+    // ASSUMING Vector3iEqual IS GONNA SORT EVERYTHING IN CONSISTENT ORDER
+    faces.insert(face1);
+    faces.insert(face2);
+    faces.insert(face3);
+    faces.insert(face4);
+}
+
+void MeshOperations::initializePrintableVolumes(const std::vector<std::unordered_set<int>> &printable_components,
+                                std::vector<PrintableVolume*> &volumes_to_propagate,
+                                std::unordered_map<Eigen::Vector3i, std::pair<int, int>, Vector3iHash, Vector3iEqual> &faceToTet,
+                                std::unordered_set<int> &unassignedTets) {
+
+    for (int i = 0; i < printable_components.size(); i++) {
+        PrintableVolume* volume = new PrintableVolume;
+        for (int f: printable_components[i]) {
+            Vector3i face = _faces[f];
+            pair<int, int> adjacentTets = faceToTet[face];
+            // These are surface faces, so one of the ints in pair should be -1
+            int surfaceTet;
+            if (adjacentTets.first == -1) {
+                surfaceTet = adjacentTets.second;
+            } else {
+                surfaceTet = adjacentTets.first;
+            }
+
+            volume->totalVolume.insert(surfaceTet);
+            volume->currentLayer.insert(surfaceTet);
+            unassignedTets.erase(surfaceTet);
+        }
+        volumes_to_propagate.push_back(volume);
+    }
+}
+
 void MeshOperations::getFacesFromTet(const std::vector<Eigen::Vector4i>& volume, Eigen::MatrixXi& faces, std::unordered_set<Vector3i, Vector3iHash, Vector3iEqual>& exposedFaces) {
     std::unordered_map<Vector3i, int, Vector3iHash, Vector3iEqual> faceMap;
     // (theoretically Vector3iEqual will sort the vector) --> so duplicate faces with different orderings won't exist in the set
@@ -329,20 +385,20 @@ void MeshOperations::extractSurface(const std::vector<Eigen::Vector4i> &volume, 
     // for each tetrahedron
     // get the four faces
     // determine whether the face has already appeared
-    std::unordered_map<Vector3i, Vector4i, Vector3iHash, Vector3iEqual> faceMap;
+    std::unordered_map<Vector3i, Vector4i, Vector3iHash, Vector3iEqual> surfaceFaceMap;
     for (int i = 0; i < volume.size(); i++) {
         Vector3i f0{volume[i][1], volume[i][2], volume[i][3]};
         Vector3i f1{volume[i][0], volume[i][2], volume[i][3]};
         Vector3i f2{volume[i][0], volume[i][1], volume[i][3]};
         Vector3i f3{volume[i][0], volume[i][1], volume[i][2]};
-        updateFaceMap(faceMap, f0, volume[i]);
-        updateFaceMap(faceMap, f1, volume[i]);
-        updateFaceMap(faceMap, f2, volume[i]);
-        updateFaceMap(faceMap, f3, volume[i]);
+        updateFaceMap(surfaceFaceMap, f0, volume[i]);
+        updateFaceMap(surfaceFaceMap, f1, volume[i]);
+        updateFaceMap(surfaceFaceMap, f2, volume[i]);
+        updateFaceMap(surfaceFaceMap, f3, volume[i]);
     }
 
     surface_faces.clear();
-    for (auto it = faceMap.begin(); it != faceMap.end(); ++it) {
+    for (auto it = surfaceFaceMap.begin(); it != surfaceFaceMap.end(); ++it) {
         Vector3i f = it->first;
         Vector4i tet = it->second;
         Vector3i ordered = orderVertices(f, tet);

@@ -142,6 +142,21 @@ public:
     Vector3i orderVertices(Vector3i& face, Vector4i& tet);
     void extractSurface(const std::vector<Eigen::Vector4i> &volume, std::vector<Eigen::Vector3i> &surface_faces);
 
+    // The map maps a face (Vector3i) to a pair of integers, where the integers are the indices into the _TT Matrix, where each index specifies
+    // a Vector4i indicating the coordinates of a tet. The pair of integers denotes the two tetrahedrons that a face is adjacent to. If a face
+    // is only adjacent to 1 tet, the other value in the pair shall be -1.
+    void makeFaceToTetMap(std::unordered_map<Eigen::Vector3i, std::pair<int, int>, Vector3iHash, Vector3iEqual> &faceToTet);
+    // Fill in volumes_to_propagate with surface tets
+    void initializePrintableVolumes(const std::vector<std::unordered_set<int>> &printable_components,
+                                    std::vector<PrintableVolume*> &volumes_to_propagate,
+                                    std::unordered_map<Eigen::Vector3i, std::pair<int, int>, Vector3iHash, Vector3iEqual> &faceToTet,
+                                    std::unordered_set<int> &unassignedTets);
+    // Gets the set of faces given a single tet
+    void getTetFaces(int tet, std::unordered_set<Eigen::Vector3i, Vector3iHash, Vector3iEqual> &faces);
+    void propagateVolume(PrintableVolume* volume,
+                         std::unordered_map<Eigen::Vector3i, std::pair<int, int>, Vector3iHash, Vector3iEqual> &faceToTet,
+                         std::unordered_set<int> &unassignedTets);
+
 private:
     Mesh _mesh;
     std::vector<Eigen::Vector3f> _vertices;

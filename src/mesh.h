@@ -89,6 +89,13 @@ struct FuzzyNode {
     std::vector<int> patchDirections;
 };
 
+struct PrintableVolume {
+    // The current total volume of this component
+    std::unordered_set<int> totalVolume;
+    // The current layer to propagate with
+    std::unordered_set<int> currentLayer;
+};
+
 class Mesh
 {
 public:
