@@ -435,7 +435,60 @@ void MeshOperations::visualizePrintableVolumes(const std::vector<std::unordered_
         std::vector<Eigen::Vector3i> surfaceFaces;
         extractSurface(volume, surfaceFaces);
 
-        std::cout << "NUMBER OF SURFACE FACES: " << surfaceFaces.size() << std::endl;
+        //////////////////////////////////////////////
+
+        // // transfer contents of volume into a matrixXi
+        // Eigen::MatrixXi tets;
+        // tets.resize(volume.size(), 4);
+        // for (int j = 0; j < volume.size(); j++) {
+        //     tets.row(j) = volume[j];
+        // }
+
+        // // 2. get the boundary faces using boundary facets
+        // Eigen::MatrixXi boundary_faces;
+        // igl::boundary_facets(tets, boundary_faces);
+
+        // //boundary faces should now have all faces that surround the mesh
+        // //3. identify the subset of faces that are new to this volume (i.e. not in the original mesh)
+        // std::unordered_set<int> newFaces;
+        // for (int j = 0; j < boundary_faces.rows(); j++) {
+        //     Eigen::Vector3i face = boundary_faces.row(j);
+        //     bool isNew = true;
+        //     for (int k = 0; k < _F.rows(); k++) {
+        //         Eigen::Vector3i originalFace = _F.row(k);
+        //         if (face == originalFace) {
+        //             isNew = false;
+        //             break;
+        //         }
+        //     }
+        //     if (isNew) {
+        //         newFaces.insert(j);
+        //     }
+        // }
+
+        // std::cout << "NUMBER OF SURFACE FACES: " << surfaceFaces.size() << std::endl;
+
+        // // HIGH KEY won't work, we need to eat or think
+        // // color.resize(surfaceFaces.size(), 3);
+        // // Eigen::MatrixXi faces;
+        // // faces.resize(surfaceFaces.size(), 3);
+        // // for (int i = 0; i < surfaceFaces.size(); i++) {
+        // //     faces.row(i) = surfaceFaces[i];
+        // //     color.row(i) = RGB;
+        // // }
+
+        // // Eigen::MatrixXd newColor = color; // Copy original colors
+        // // Eigen::Vector3d newFaceColor(1.0, 0.0, 0.0); // Red color for new faces
+
+        // // // Assign colors to new faces
+        // // for (int i = 0; i < surfaceFaces.size(); i++) {
+        // //     if (newFaces.find(i) != newFaces.end()) {
+        // //         newColor.row(i) = newFaceColor; // Set new face color
+        // //     } else {
+        // //         newColor.row(i) = RGB; // Original component color
+        // //     }
+        // // }
+        //////////////////////////////////////////////
 
         color.resize(surfaceFaces.size(), 3);
         Eigen::MatrixXi faces;

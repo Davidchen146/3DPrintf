@@ -385,16 +385,16 @@ int main(int argc, char *argv[])
                 m_o.visualize(printable_components);
                 std::cout << "initial segmentation done" << std::endl;
 
-                // std::vector<std::unordered_set<int>> fuzzyRegions;
-                // m_o.setRefinedSegmentationParameters(e_fuzzy, ambient_occlusion_lambda, refined_skip_visual);
-                // m_o.generateRefinedSegmentation(printable_components, printing_directions, fuzzyRegions);
-                // // Visualize with the changes
-                // m_o.visualize(printable_components);
+                std::vector<std::unordered_set<int>> fuzzyRegions;
+                m_o.setRefinedSegmentationParameters(e_fuzzy, ambient_occlusion_lambda, refined_skip_visual);
+                m_o.generateRefinedSegmentation(printable_components, printing_directions, fuzzyRegions);
+                // Visualize with the changes
+                m_o.visualize(printable_components);
 
                 m_o.tetrahedralizeMesh(); // this is effectively a preprocessing step for fabrication
                 std::vector<std::vector<Eigen::Vector4i>> printable_volumes;
                 m_o.partitionVolume(printable_components, printable_volumes);
-                m_o.pruneVolume(printable_volumes);
+                //m_o.pruneVolume(printable_volumes);
                 m_o.visualizePrintableVolumes(printable_components, printing_directions, printable_volumes);
                 // m_o.visualizePrintableComponents(printable_components, printing_directions);
             } else {

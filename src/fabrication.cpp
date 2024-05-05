@@ -34,60 +34,6 @@ void MeshOperations::tetrahedralizeMesh() {
     options.append("n");
     std::cout << "options: " << options << std::endl;
     igl::copyleft::tetgen::tetrahedralize(_V.cast<double>(), _F, options, _TV, _TT, _TF);
-
-    // Next: let's apply Laplacian Smoothing to only the inside vertices
-    std::set<int> newVertexIndices; // to newly created inside-vertices
-    // // Step 1: ID all new vertices added from tetrahedralization, subtract
-    Eigen::MatrixXd _VCast = _V.cast<double>();
-    for (int i = 0; i < _TV.rows(); i++) {
-        bool isNew = true;
-        for (int j = 0; j < _VCast.rows(); j++) {
-            if ((_TV.row(i) - _VCast.row(j)).norm() < 1e-7) { // in case there's some margin of error
-                isNew = false;
-                break;
-            }
-        }
-        if (isNew) {
-            newVertexIndices.insert(i);
-        }
-    }
-
-
-
-
-
-
-    // now we have a set of indices that key into the rows of _TV that ID new vertices.
-    // for (int iteration = 0; iteration < 100; iteration++)
-    // {
-    //     //std::cout << "working" << std::endl;
-    //     //Laplacian smoothing -- from
-    //     Eigen::SparseMatrix<double> L;
-    //     igl::cotmatrix(_TV, _TT, L);
-
-    //     // get mass matrix
-    //     Eigen::SparseMatrix<double> M;
-    //     igl::massmatrix(_TV, _TT, igl::MASSMATRIX_TYPE_DEFAULT, M);
-
-    //     // invert the mass matrix
-    //     Eigen::SparseMatrix<double> M_inv;
-    //     igl::invert_diag(M, M_inv);
-    //     Eigen::MatrixXd S = M_inv * (L * _TV);
-
-    //     // apply smoothing only to new vertices
-
-    //     for (int idx : newVertexIndices) {
-    //         //std::cout << S.row(idx) << std::endl;
-    //         _TV.row(idx) = _TV.row(idx) + 100000000000000.0 * S.row(idx); // adjust multiplier -- control the amount of smoothing
-    //     }
-    //     // Eigen::MatrixXd smoothedTV;
-
-    //     // igl::per_vertex_attribute_smoothing(_TV, _TF, smoothedTV);
-
-    //     // for (int idx : newVertexIndices) {
-    //     //     _TV.row(idx) = smoothedTV.row(idx);
-    //     // }
-    // }
 }
 
 Eigen::Vector3d MeshOperations::computeTetCentroid(Eigen::Vector4i &tetrahedron) {
@@ -123,6 +69,7 @@ void MeshOperations::getComponentBoundingBox(const std::unordered_set<int> &comp
     min = _V.cast<double>().colwise().minCoeff();
     max = _V.cast<double>().colwise().maxCoeff();
 }
+
 
 void MeshOperations::partitionVolume(const std::vector<std::unordered_set<int>> &printable_components,
                                      std::vector<std::vector<Eigen::Vector4i>> &printable_volumes) {
@@ -184,6 +131,77 @@ void MeshOperations::partitionVolume(const std::vector<std::unordered_set<int>> 
         }
         int groupNum = faceToGroup[boundaryFace];
         printable_volumes[groupNum].push_back(tetrahedron);
+    }
+
+    // let's do manual laplacian smoothing
+
+    // 1. iterate over the volumes
+    for (int i = 0; i < printable_volumes.size(); i++) {
+        std::vector<Eigen::Vector4i> volume = printable_volumes[i];
+
+        // transfer contents of volume into a matrixXi
+        Eigen::MatrixXi tets;
+        tets.resize(volume.size(), 4);
+        for (int j = 0; j < volume.size(); j++) {
+            tets.row(j) = volume[j];
+        }
+
+        // 2. get the boundary faces using boundary facets
+        Eigen::MatrixXi boundary_faces;
+        igl::boundary_facets(tets, boundary_faces);
+
+        //boundary faces should now have all faces that surround the mesh
+        // identify the subset of faces that are new to this volume (i.e. not in the original mesh)
+        std::unordered_set<int> newFaces; // we will use this to ID indices based on boundary_faces and it alone
+        for (int j = 0; j < boundary_faces.rows(); j++) {
+            Eigen::Vector3i face = boundary_faces.row(j);
+            bool isNew = true;
+            for (int k = 0; k < _F.rows(); k++) {
+                Eigen::Vector3i originalFace = _F.row(k);
+                if (face == originalFace) {
+                    isNew = false;
+                    break;
+                }
+            }
+            if (isNew) {
+                newFaces.insert(j);
+            }
+        }
+
+        // using the new faces, populate a hashmap that maps a vertex included among the new faces to all of its neighbors
+        std::unordered_map<int, std::unordered_set<int>> vertexToNeighbors;
+        for (int j : newFaces) {
+            Eigen::Vector3i face = boundary_faces.row(j);
+            for (int k = 0; k < 3; k++) {
+                int vertex = face[k];
+                if (vertexToNeighbors.find(vertex) == vertexToNeighbors.end()) {
+                    vertexToNeighbors[vertex] = {};
+                }
+                for (int l = 0; l < 3; l++) {
+                    if (l != k) {
+                        vertexToNeighbors[vertex].insert(face[l]);
+                    }
+                }
+            }
+        }
+
+        // for each vertex in vertexToNeighbors determine the average of its neighbors' positions then reassign the corresponding vertex position with this new average scaled by alpha
+        double scale = 0.01;
+        // note: 20
+        for (int iteration = 0; iteration < 50; iteration++) {
+            for (auto& [vertex, neighbors] : vertexToNeighbors) {
+                Eigen::Vector3d average = Eigen::Vector3d::Zero();
+                for (int neighbor : neighbors) {
+                    average += _TV.row(neighbor).transpose();
+                }
+                if (!neighbors.empty()) { // avoid division by zero
+                    average /= static_cast<double>(neighbors.size());
+                }
+                _TV.row(vertex) += scale * (average.transpose() - _TV.row(vertex));
+            }
+        }
+
+
     }
 
     // ALTERNATIVE APPROACH
