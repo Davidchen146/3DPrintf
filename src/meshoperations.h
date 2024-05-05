@@ -142,6 +142,8 @@ public:
     Vector3i orderVertices(Vector3i& face, Vector4i& tet);
     void extractSurface(const std::vector<Eigen::Vector4i> &volume, std::vector<Eigen::Vector3i> &surface_faces);
 
+
+    void boolOpsApply(std::vector<std::vector<Eigen::Vector4i>> &printable_volumes);
 private:
     Mesh _mesh;
     std::vector<Eigen::Vector3f> _vertices;

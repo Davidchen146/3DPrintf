@@ -394,8 +394,9 @@ int main(int argc, char *argv[])
                 m_o.tetrahedralizeMesh(); // this is effectively a preprocessing step for fabrication
                 std::vector<std::vector<Eigen::Vector4i>> printable_volumes;
                 m_o.partitionVolume(printable_components, printable_volumes);
-                //m_o.pruneVolume(printable_volumes);
+                m_o.pruneVolume(printable_volumes);
                 m_o.visualizePrintableVolumes(printable_components, printing_directions, printable_volumes);
+                m_o.boolOpsApply(printable_volumes);
                 // m_o.visualizePrintableComponents(printable_components, printing_directions);
             } else {
                 std::cout << "Error: Unknown debug mode \"" << debug_mode << "\"" << std::endl;

@@ -6,7 +6,12 @@
 #include <igl/adjacency_matrix.h>
 
 #include <igl/per_vertex_attribute_smoothing.h>
+#include <igl/copyleft/cgal/mesh_boolean.h>
+#include <igl/copyleft/cgal/string_to_mesh_boolean_type.h>
 #include <igl/adjacency_list.h>
+
+#include <igl/opengl/glfw/Viewer.h>
+
 
 
 // Mesh the interior of a surface mesh (V,F) using tetgen
@@ -188,7 +193,7 @@ void MeshOperations::partitionVolume(const std::vector<std::unordered_set<int>> 
         // for each vertex in vertexToNeighbors determine the average of its neighbors' positions then reassign the corresponding vertex position with this new average scaled by alpha
         double scale = 0.01;
         // note: 20
-        for (int iteration = 0; iteration < 50; iteration++) {
+        for (int iteration = 0; iteration < 20; iteration++) {
             for (auto& [vertex, neighbors] : vertexToNeighbors) {
                 Eigen::Vector3d average = Eigen::Vector3d::Zero();
                 for (int neighbor : neighbors) {
@@ -200,16 +205,14 @@ void MeshOperations::partitionVolume(const std::vector<std::unordered_set<int>> 
                 _TV.row(vertex) += scale * (average.transpose() - _TV.row(vertex));
             }
         }
-
-
     }
 
     // ALTERNATIVE APPROACH
     // need igl::adjacency_list which constructs the graph adjacency list of a given mesh (V, F)
     // gives you a vector<vector<int>> containing at row i the adjacent vertices of vertex i
     // but if i have the adjacent vertices
-
 }
+
 
 void MeshOperations::getFacesFromTet(const std::vector<Eigen::Vector4i>& volume, Eigen::MatrixXi& faces, std::unordered_set<Vector3i, Vector3iHash, Vector3iEqual>& exposedFaces) {
     std::unordered_map<Vector3i, int, Vector3iHash, Vector3iEqual> faceMap;
@@ -301,6 +304,60 @@ void MeshOperations::pruneVolume(std::vector<std::vector<Eigen::Vector4i>> &prin
             }
         }
     }
+}
+
+void MeshOperations::boolOpsApply(std::vector<std::vector<Eigen::Vector4i>> &printable_volumes) {
+    // step 0: Fix any flipped triangles prior to starting
+    // TODO - doesn't seem to impact results, so not doing it.
+    // print out the number of volumes
+    // std::cout << "Number of volumes to do Bool Ops: " << printable_volumes.size() << std::endl;
+
+    // this is to be passed back out
+    std::vector<Eigen::MatrixXf> printable_meshes_vertices;
+    std::vector<Eigen::MatrixXi> printable_meshes_faces;
+
+    // step 1: convert each volume into a surface mesh -- defined by a _F and _V collection
+    for (int i = 0; i < printable_volumes.size(); i++) {
+        std::vector<Eigen::Vector4i> volume = printable_volumes[i];
+
+        // transfer contents of volume into a matrixXi
+        Eigen::MatrixXi _currTT;
+        _currTT.resize(volume.size(), 4);
+        for (int j = 0; j < volume.size(); j++) {
+            _currTT.row(j) = volume[j];
+        }
+        Eigen::MatrixXi newF;
+        igl::boundary_facets(_currTT, newF);
+
+        // step 2: get the inset of the original mesh, stored at _F and _V
+        Eigen::MatrixXi insetF;
+        Eigen::MatrixXd insetV;
+
+        Eigen::MatrixXd normals;
+        igl::per_vertex_normals(_V.cast<double>(), _F, normals);
+        double inset_amount = 0.2; // pictures in slack with 0.15
+        insetV = _V.cast<double>() - inset_amount * normals;
+        insetF = _F; // same topology
+
+        // step 3: perform the boolean operation
+        Eigen::MatrixXd _VOut;
+        Eigen::MatrixXi _FOut;
+        Eigen::VectorXi _I;
+
+        newF.col(1).swap(newF.col(2));
+        bool debug = igl::copyleft::cgal::mesh_boolean(
+             _TV, newF,
+            insetV, insetF, igl::copyleft::cgal::string_to_mesh_boolean_type("minus"), _VOut, _FOut, _I);
+
+        // debug visualizer
+        igl::opengl::glfw::Viewer viewer;
+        // Set the mesh data
+        viewer.data().set_mesh(_VOut, _FOut);
+        Eigen::RowVector3d mesh_color(0.8, 0.5, 0.2);  // orange color
+        viewer.data().set_colors(mesh_color);
+        viewer.launch();
+    }
+
 }
 
 
