@@ -151,6 +151,9 @@ void Mesh::preProcess() {
     // edge normal is just average of two adjacent faces
     for (const auto& pair : _edgeMap) {
         Edge *e = pair.second;
+        if (e == nullptr) {
+            continue;
+        }
         Vector3f edgeNormal = (e->halfedge->face->normal * e->halfedge->face->area) + (e->halfedge->twin->face->normal * e->halfedge->twin->face->area);
         e->normal = edgeNormal.normalized();
     }
