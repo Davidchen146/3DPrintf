@@ -435,7 +435,12 @@ int main(int argc, char *argv[])
                 m_o.partitionVolume(printable_components, printable_volumes);
                 m_o.pruneVolume(printable_volumes);
                 m_o.visualizePrintableVolumes(printable_components, printing_directions, printable_volumes);
-                m_o.boolOpsApply(printable_volumes);
+
+                // Send to file
+                std::vector<Eigen::MatrixXf> printable_vertices;
+                std::vector<Eigen::MatrixXi> printable_faces;
+                m_o.boolOpsApply(printable_volumes, printable_vertices, printable_faces);
+                m_o.outputComponentsToFile(printable_vertices, printable_faces, printing_directions, outfile.toStdString());
                 // m_o.visualizePrintableComponents(printable_components, printing_directions);
             } else if (debug_mode == "remesh_intersection") {
                 // NOTE: make sure to specify outfile

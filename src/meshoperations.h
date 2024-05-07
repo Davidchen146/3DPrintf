@@ -141,9 +141,9 @@ public:
     void updateFaceMap(std::unordered_map<Vector3i, Vector4i, Vector3iHash, Vector3iEqual>& faceMap, Vector3i face, Vector4i tet);
     Vector3i orderVertices(Vector3i& face, Vector4i& tet);
     void extractSurface(const std::vector<Eigen::Vector4i> &volume, std::vector<Eigen::Vector3i> &surface_faces);
+    void boolOpsApply(std::vector<std::vector<Eigen::Vector4i>> &printable_volumes, std::vector<Eigen::MatrixXf> &printable_vertices, std::vector<Eigen::MatrixXi> &printable_faces);
+    void outputComponentsToFile(const std::vector<Eigen::MatrixXf> &printable_vertices, const std::vector<Eigen::MatrixXi> &printable_faces, const std::vector<Eigen::Vector3f> &printing_directions, const std::string &filename);
 
-
-    void boolOpsApply(std::vector<std::vector<Eigen::Vector4i>> &printable_volumes);
 private:
     Mesh _mesh;
     std::vector<Eigen::Vector3f> _vertices;
