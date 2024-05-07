@@ -11,6 +11,7 @@
 #include <igl/adjacency_list.h>
 #include <igl/writeOBJ.h>
 #include <igl/rotation_matrix_from_directions.h>
+#include <igl/remove_unreferenced.h>
 
 #include <igl/opengl/glfw/Viewer.h>
 
@@ -350,7 +351,7 @@ void MeshOperations::boolOpsApply(std::vector<std::vector<Eigen::Vector4i>> &pri
         if (_solid_components) {
             Eigen::VectorXi I;
             // Remove unnecessary vertices (interior) to generate the boundary values
-            igl::remove_unreferenced(_TV, newF, printable_vertices[i], printable_faces[i], I);
+            igl::remove_unreferenced(_TV.cast<float>(), newF, printable_vertices[i], printable_faces[i], I);
         }
 
         // Hollow components requires subtracting out inset surface
