@@ -398,6 +398,11 @@ int main(int argc, char *argv[])
                 m_o.visualizePrintableVolumes(printable_components, printing_directions, printable_volumes);
                 m_o.boolOpsApply(printable_volumes);
                 // m_o.visualizePrintableComponents(printable_components, printing_directions);
+            } else if (debug_mode == "remesh_intersection") {
+                // NOTE: make sure to specify outfile
+                m.remeshSelfIntersections();
+                m.saveToFile(outfile.toStdString());
+                a.exit();
             } else {
                 std::cout << "Error: Unknown debug mode \"" << debug_mode << "\"" << std::endl;
             }

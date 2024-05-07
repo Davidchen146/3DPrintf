@@ -9,6 +9,7 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "util/tiny_obj_loader.h"
 #include <igl/copyleft/cgal/remesh_self_intersections.h>
+#include <igl/copyleft/cgal/outer_hull.h>
 
 using namespace Eigen;
 using namespace std;
@@ -264,16 +265,43 @@ void Mesh::remeshSelfIntersections() {
     Eigen::VectorXi J, IM;
     igl::copyleft::cgal::remesh_self_intersections(V, F, igl::copyleft::cgal::RemeshSelfIntersectionsParam(), Vs, Fs, IF, J, IM);
 
+    ///     // _apply_ duplicate vertex mapping IM to FF
+    ///     for_each(FF.data(),FF.data()+FF.size(),[&IM](int & a){a=IM(a);});
+    ///     // remove any vertices now unreferenced after duplicate mapping.
+    ///     igl::remove_unreferenced(VV,FF,SV,SF,UIM);
+    ///     // Now (SV,SF) is ready to extract outer hull
+    ///     igl::copyleft::cgal::outer_hull(SV,SF,G,J,flip);
+    std::for_each(Fs.data(), Fs.data() + Fs.size(), [&IM](int &a){a=IM(a);});
+
+    Eigen::MatrixXd HV;
+    Eigen::MatrixXi HF;
+    Eigen::VectorXi UIM;
+    igl::remove_unreferenced(Vs, Fs, HV, HF, UIM);
+
+
+    Eigen::MatrixXd OV;
+    Eigen::MatrixXi OF;
+    Eigen::VectorXi flip;
+    igl::copyleft::cgal::outer_hull(HV, HF, OV, OF, J, flip);
+
     _vertices.clear();
-    _vertices.resize(Vs.rows());
-    for (int i = 0; i < Vs.rows(); i++) {
-        _vertices[i] = Vs.row(i).cast<float>();
+    // _vertices.resize(Vs.rows());
+    // for (int i = 0; i < Vs.rows(); i++) {
+    //     _vertices[i] = Vs.row(i).cast<float>();
+    // }
+    _vertices.resize(OV.rows());
+    for (int i = 0; i < OV.rows(); i++) {
+        _vertices[i] = OV.row(i).cast<float>();
     }
 
     _faces.clear();
-    _faces.resize(Fs.rows());
-    for (int i = 0; i < Fs.rows(); i++) {
-        _faces[i] = Fs.row(i);
+    // _faces.resize(Fs.rows());
+    // for (int i = 0; i < Fs.rows(); i++) {
+    //     _faces[i] = Fs.row(i);
+    // }
+    _faces.resize(OF.rows());
+    for (int i = 0; i < OF.rows(); i++) {
+        _faces[i] = OF.row(i);
     }
 }
 
