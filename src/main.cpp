@@ -113,8 +113,8 @@ int main(int argc, char *argv[])
     // Load
     Mesh m;
     m.loadFromFile(infile.toStdString());
-    // m.preProcess();
-    // m.validate();
+    m.preProcess();
+    m.validate();
     // TODO: Make this take a reference to an existing mesh instead to avoid copying?
     MeshOperations m_o(m);
 
