@@ -205,9 +205,26 @@ void MeshOperations::propagateVolume(PrintableVolume* volume,
         getTetFaces(t, faces);
 
         for (auto it = faces.begin(); it != faces.end(); ++it) {
-
+            Vector3i face = *it;
+            pair<int, int> adjacentTets = faceToTet[face];
+            int targetTetIndex;
+            // Get the tet's neighbor
+            if (adjacentTets.first != t) {
+                targetTetIndex = adjacentTets.first;
+            } else {
+                targetTetIndex = adjacentTets.second;
+            }
+            // If the neighboring tet is unassigned
+            if (unassignedTets.contains(targetTetIndex) && !nextLayer.contains(targetTetIndex)) {
+                unassignedTets.erase(targetTetIndex);
+                volume->totalVolume.insert(targetTetIndex);
+                nextLayer.insert(targetTetIndex);
+                // Don't consider any other faces. We only want to propagate each tet once
+                continue;
+            }
         }
     }
+    volume->currentLayer = nextLayer;
 }
 
 void MeshOperations::getTetFaces(int tetrahedron, std::unordered_set<Eigen::Vector3i, Vector3iHash, Vector3iEqual> &faces) {
