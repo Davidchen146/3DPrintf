@@ -9,6 +9,8 @@
 #include <igl/copyleft/cgal/mesh_boolean.h>
 #include <igl/copyleft/cgal/string_to_mesh_boolean_type.h>
 #include <igl/adjacency_list.h>
+#include <igl/writeOBJ.h>
+#include <igl/rotation_matrix_from_directions.h>
 
 #include <igl/opengl/glfw/Viewer.h>
 
@@ -306,15 +308,24 @@ void MeshOperations::pruneVolume(std::vector<std::vector<Eigen::Vector4i>> &prin
     }
 }
 
-void MeshOperations::boolOpsApply(std::vector<std::vector<Eigen::Vector4i>> &printable_volumes) {
+void MeshOperations::boolOpsApply(std::vector<std::vector<Eigen::Vector4i>> &printable_volumes, std::vector<Eigen::MatrixXf> &printable_vertices, std::vector<Eigen::MatrixXi> &printable_faces) {
     // step 0: Fix any flipped triangles prior to starting
     // TODO - doesn't seem to impact results, so not doing it.
     // print out the number of volumes
     // std::cout << "Number of volumes to do Bool Ops: " << printable_volumes.size() << std::endl;
 
-    // this is to be passed back out
-    std::vector<Eigen::MatrixXf> printable_meshes_vertices;
-    std::vector<Eigen::MatrixXi> printable_meshes_faces;
+    // Compute inset and cache it
+    Eigen::MatrixXi insetF;
+    Eigen::MatrixXd insetV;
+
+    Eigen::MatrixXd normals;
+    igl::per_vertex_normals(_V.cast<double>(), _F, normals);
+    double inset_amount = 0.2; // pictures in slack with 0.15
+    insetV = _V.cast<double>() - inset_amount * normals;
+    insetF = _F; // same topology
+
+    printable_vertices.resize(printable_volumes.size());
+    printable_faces.resize(printable_volumes.size());
 
     // step 1: convert each volume into a surface mesh -- defined by a _F and _V collection
     for (int i = 0; i < printable_volumes.size(); i++) {
@@ -329,35 +340,43 @@ void MeshOperations::boolOpsApply(std::vector<std::vector<Eigen::Vector4i>> &pri
         Eigen::MatrixXi newF;
         igl::boundary_facets(_currTT, newF);
 
-        // step 2: get the inset of the original mesh, stored at _F and _V
-        Eigen::MatrixXi insetF;
-        Eigen::MatrixXd insetV;
-
-        Eigen::MatrixXd normals;
-        igl::per_vertex_normals(_V.cast<double>(), _F, normals);
-        double inset_amount = 0.2; // pictures in slack with 0.15
-        insetV = _V.cast<double>() - inset_amount * normals;
-        insetF = _F; // same topology
-
-        // step 3: perform the boolean operation
-        Eigen::MatrixXd _VOut;
-        Eigen::MatrixXi _FOut;
+        // Perform the boolean operation
         Eigen::VectorXi _I;
 
         newF.col(1).swap(newF.col(2));
         bool debug = igl::copyleft::cgal::mesh_boolean(
              _TV, newF,
-            insetV, insetF, igl::copyleft::cgal::string_to_mesh_boolean_type("minus"), _VOut, _FOut, _I);
+            insetV, insetF, igl::copyleft::cgal::string_to_mesh_boolean_type("minus"), printable_vertices[i], printable_faces[i], _I);
 
         // debug visualizer
         igl::opengl::glfw::Viewer viewer;
         // Set the mesh data
-        viewer.data().set_mesh(_VOut, _FOut);
+        viewer.data().set_mesh(printable_vertices[i].cast<double>(), printable_faces[i]);
         Eigen::RowVector3d mesh_color(0.8, 0.5, 0.2);  // orange color
         viewer.data().set_colors(mesh_color);
         viewer.launch();
     }
+}
 
+// Writes components to an obj file
+void MeshOperations::outputComponentsToFile(const std::vector<Eigen::MatrixXf> &printable_vertices, const std::vector<Eigen::MatrixXi> &printable_faces, const std::vector<Eigen::Vector3f> &printing_directions, const std::string &filename) {
+    assert(printable_vertices.size() == printable_faces.size());
+    for (int printable_component = 0; printable_component < printable_vertices.size(); printable_component++) {
+        // Rotate printable component in the correct direction
+        Eigen::MatrixXf rotated_vertices;
+        rotated_vertices.resize(printable_vertices[printable_component].rows(), 3);
+        Eigen::Vector3f printing_direction = printing_directions[printable_component];
+        // This matrix will rotate the printing direction to directly upwards, so it will rotate the mesh so the printing direction is upwards
+        Eigen::Matrix3f rotation = igl::rotation_matrix_from_directions(printing_direction, Eigen::Vector3f(0.0, 1.0, 0.0)).transpose();
+        rotated_vertices = printable_vertices[printable_component] * rotation;
+
+        // Produce filename
+        std::string curr_filename = filename + "_" + std::to_string(printable_component) + ".obj";
+
+        // Write to file
+        igl::writeOBJ(curr_filename, rotated_vertices, printable_faces[printable_component]);
+        std::cout << "Wrote printable component: " << printable_component << " to file " << curr_filename << std::endl;
+    }
 }
 
 
