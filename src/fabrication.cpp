@@ -14,8 +14,6 @@
 
 #include <igl/opengl/glfw/Viewer.h>
 
-
-
 // Mesh the interior of a surface mesh (V,F) using tetgen
 // @param[in] V #V x 3 vertex position list
 // @param[in] F #F x 3 indices into V
@@ -25,21 +23,26 @@
 // @param[out] TF #TF x 3 list of triangle face indices
 // (contents of TF are the same as _F --> IF "p" option is specified)
 void MeshOperations::tetrahedralizeMesh() {
-    // i just took the options from the example, not 100% what to use here
-    VectorXd area;
-    igl::doublearea(_V.cast<double>(),_F,area);
-    double area_avg = area.mean();
-    double edge_length = sqrt(4 * area_avg / sqrt(3));
-    double volume = pow(edge_length, 3) / (6 * sqrt(2));
-    volume /= 2;
-    std::cout << "volume: " << volume << std::endl;
+    // Auto generate volume if not specified in config file
+    double volume = _t_volume;
+    if (volume == 0) {
+        // i just took the options from the example, not 100% what to use here
+        VectorXd area;
+        igl::doublearea(_V.cast<double>(),_F,area);
+        double area_avg = area.mean();
+        double edge_length = sqrt(4 * area_avg / sqrt(3));
+        volume = pow(edge_length, 3) / (6 * sqrt(2));
+        volume /= 2;
+        std::cout << "Generating automatic volume constraint of: " << volume << std::endl;
+    }
+
     std::ostringstream oss;
     oss << std::fixed << std::setprecision(5) << volume;
     std::string volume_string = oss.str();
-    std::string options = "pq1.414Ya";
-    options.append(volume_string);
-    options.append("n");
-    std::cout << "options: " << options << std::endl;
+
+    // Generate options using specified quality and volume parameters
+    std::string options = "pq" + std::to_string(_t_quality) + "Ya" + volume_string + "n";
+    std::cout << "Generating tetrahedralization with the following options: " << options << std::endl;
     igl::copyleft::tetgen::tetrahedralize(_V.cast<double>(), _F, options, _TV, _TT, _TF);
 }
 
@@ -97,7 +100,8 @@ void MeshOperations::partitionVolume(const std::vector<std::unordered_set<int>> 
         boxMax[i] = max;
     }
 
-    int n = 512;
+    // Determine printable component for this tetrahedra by casting random rays in a stratified manner
+    int n = _num_random_rays;
     std::vector<Eigen::Vector3f> directions(n);
     float phi = M_PI * (sqrt(5) - 1);
     for (int i = 0; i < n; i++) {
@@ -109,7 +113,10 @@ void MeshOperations::partitionVolume(const std::vector<std::unordered_set<int>> 
         directions[i] = Vector3f(x, y, z);
     }
 
+    // This raycasting operation requires grouping faces
     if (faceToGroup.size() == 0) {
+        // TODO: Can initialize this hashmap here, I think?
+        // Shouldn't need a call to visualize and it can be bypassed
         std::cerr << "MUST CALL visualize() first to initialize faceToGroup" << std::endl;
         return;
     }
@@ -193,9 +200,9 @@ void MeshOperations::partitionVolume(const std::vector<std::unordered_set<int>> 
         }
 
         // for each vertex in vertexToNeighbors determine the average of its neighbors' positions then reassign the corresponding vertex position with this new average scaled by alpha
-        double scale = 0.01;
+        double scale = _smoothing_weight;
         // note: 20
-        for (int iteration = 0; iteration < 20; iteration++) {
+        for (int iteration = 0; iteration < _smoothing_iterations; iteration++) {
             for (auto& [vertex, neighbors] : vertexToNeighbors) {
                 Eigen::Vector3d average = Eigen::Vector3d::Zero();
                 for (int neighbor : neighbors) {
@@ -298,7 +305,6 @@ void MeshOperations::pruneVolume(std::vector<std::vector<Eigen::Vector4i>> &prin
             }
         }
         if (toErase.size() > 0) {
-            std::cout << "size: " << toErase.size() << std::endl;
             std::sort(toErase.begin(), toErase.end(), std::greater<int>());
             for (int j = 0; j < toErase.size(); j++) {
                 auto it = printable_volumes[i].begin() + toErase[j];
@@ -340,21 +346,33 @@ void MeshOperations::boolOpsApply(std::vector<std::vector<Eigen::Vector4i>> &pri
         Eigen::MatrixXi newF;
         igl::boundary_facets(_currTT, newF);
 
-        // Perform the boolean operation
-        Eigen::VectorXi _I;
+        // Solid components simply convert the boundary facets to a mesh
+        if (_solid_components) {
+            Eigen::VectorXi I;
+            // Remove unnecessary vertices (interior) to generate the boundary values
+            igl::remove_unreferenced(_TV, newF, printable_vertices[i], printable_faces[i], I);
+        }
 
-        newF.col(1).swap(newF.col(2));
-        bool debug = igl::copyleft::cgal::mesh_boolean(
-             _TV, newF,
-            insetV, insetF, igl::copyleft::cgal::string_to_mesh_boolean_type("minus"), printable_vertices[i], printable_faces[i], _I);
+        // Hollow components requires subtracting out inset surface
+        else {
+            // Perform the boolean operation
+            Eigen::VectorXi _I;
 
-        // debug visualizer
-        igl::opengl::glfw::Viewer viewer;
-        // Set the mesh data
-        viewer.data().set_mesh(printable_vertices[i].cast<double>(), printable_faces[i]);
-        Eigen::RowVector3d mesh_color(0.8, 0.5, 0.2);  // orange color
-        viewer.data().set_colors(mesh_color);
-        viewer.launch();
+            newF.col(1).swap(newF.col(2));
+            bool debug = igl::copyleft::cgal::mesh_boolean(
+                 _TV, newF,
+                insetV, insetF, igl::copyleft::cgal::string_to_mesh_boolean_type("minus"), printable_vertices[i], printable_faces[i], _I);
+        }
+
+        if (!_fabricate_skip_visualization) {
+            // debug visualizer
+            igl::opengl::glfw::Viewer viewer;
+            // Set the mesh data
+            viewer.data().set_mesh(printable_vertices[i].cast<double>(), printable_faces[i]);
+            Eigen::RowVector3d mesh_color(0.8, 0.5, 0.2);  // orange color
+            viewer.data().set_colors(mesh_color);
+            viewer.launch();
+        }
     }
 }
 

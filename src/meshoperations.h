@@ -95,6 +95,14 @@ public:
     void setRefinedSegmentationParameters(double e_fuzzy = 0.02,
                                           double ambient_occlusion_lambda = 4,
                                           bool skip_visualization = false);
+    void setFabricateParameters(double t_quality = 1.414,
+                                double t_volume = 0,
+                                int smoothing_iterations = 20,
+                                double smoothing_weight = 0.01,
+                                int num_random_rays = 512,
+                                bool solid_components = false,
+                                bool fabricate_skip_visual = false);
+
 
     // Oversegmentation: returns list of lists of faces
     // Each list of faces represents a connected patch (to be merged and assigned a printing direction)
@@ -333,10 +341,18 @@ private:
     bool _initial_skip_visualization;
 
     // Refined Segmentation parameters
-    // TODO: Add them
     double _e_fuzzy;
     double _ambient_occlusion_lambda;
     bool _refined_skip_visualization;
+
+    // Fabrication parameters
+    double _t_quality;
+    double _t_volume;
+    int _smoothing_iterations;
+    double _smoothing_weight;
+    int _num_random_rays;
+    bool _solid_components;
+    bool _fabricate_skip_visualization;
 
     // ILP solver used for phases 2 and 3 (should be cleared before using in phase 2)
     operations_research::MPSolver* _solver;
