@@ -35,6 +35,16 @@ MeshOperations::MeshOperations(Mesh m) {
     _e_fuzzy = 0.02;
     _ambient_occlusion_lambda = 4;
     _refined_skip_visualization = false;
+
+    // Fabrication parameters
+    _t_quality = 1.414;
+    // Volume constraint is automatically generated
+    _t_volume = 0;
+    _smoothing_iterations = 20;
+    _smoothing_weight = 0.01;
+    _num_random_rays = 512;
+    _solid_components = false;
+    _fabricate_skip_visualization = false;
 }
 
 // Configure parameters for 3D printing operations
@@ -157,6 +167,43 @@ void MeshOperations::setRefinedSegmentationParameters(double e_fuzzy,
 
     if (refined_skip_visualization) {
         _refined_skip_visualization = refined_skip_visualization;
+    }
+}
+
+void MeshOperations::setFabricateParameters(double t_quality,
+                                            double t_volume,
+                                            int smoothing_iterations,
+                                            double smoothing_weight,
+                                            int num_random_rays,
+                                            bool solid_components,
+                                            bool fabricate_skip_visual) {
+    // Check against default value (0) to prevent loading unspecified parameters
+    if (t_quality != 0) {
+        _t_quality = t_quality;
+    }
+
+    if (t_volume != 0) {
+        _t_volume = t_volume;
+    }
+
+    if (smoothing_iterations != 0) {
+        _smoothing_iterations = smoothing_iterations;
+    }
+
+    if (smoothing_weight != 0) {
+        _smoothing_weight = smoothing_weight;
+    }
+
+    if (num_random_rays != 0) {
+        _num_random_rays = num_random_rays;
+    }
+
+    if (solid_components) {
+        _solid_components = solid_components;
+    }
+
+    if (fabricate_skip_visual) {
+        _fabricate_skip_visualization = fabricate_skip_visual;
     }
 }
 

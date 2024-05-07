@@ -86,11 +86,13 @@ int main(int argc, char *argv[])
         // "Refined/ambient_occlusion_lambda": determines how important occlusion is for reshaping cuts; larger values are more important
         // "Refined/skip_visualization": skips visualization of refined segmentation
     // Fabricate:
-        // TODO: Parameters for tetgen operations
-        // TODO: Parameters for smoothing operations
-        // TODO: Parameters for raytracing operations
-        // TODO: Bool to determine if final components should be hollowed out or not
-        // TODO: Threshold to determine if small parts should be hollowed our or not
+        // "Fabricate/t_quality": Quality parameter for tetgen. Smaller values (close to 1.0) generate better tetrahedra
+        // "Fabricate/t_volume": Volume parametter for tetgen. Smaller values mean smaller, more fine-grained tetrahedra
+        // "Fabricate/smoothing_iterations": Number of iterations for Laplacian smoothing of interface surfaces
+        // "Fabricate/smoothing_weight": Controls smoothing weight for each iteration of Laplacian smoothing of interface surfaces
+        // "Fabricate/num_rays": Number of rays cast for tetrahedra assignment to printable components
+        // "Fabricate/solid_components": If components should not be hollowed out and instead be solid pieces
+        // "Fabricate/skip_visualization": skips visualization of fabrication step
     // Debug:
         // "Debug/function": function to debug. Should be one of:
             // "ao_face": ambient occlusion for each face; red values are visible, green are not as visible, and blue are occluded
@@ -99,6 +101,7 @@ int main(int argc, char *argv[])
             // "smoothing_costs": costs for smoothing a patch. Costs are averaged by patch edge length boundary, red are high costs, blue are lower costs
             // "angular_distance": average angular distance from a face to its neighbors; red are high distances, blue are lower
             // "weighted_distance": average weighted distance a face to its neighbors; red are high distances, blue are lower
+            // "remesh_intersection": remesh a mesh to resolve self-intersections. Saves output mesh to outfile
         // "Debug/debug_x": X coordinate for printing direction to determine support costs
         // "Debug/debug_y": Y coordinate for printing direction to determine support costs
         // "Debug/debug_z": Z coordinate for printing direction to determine support costs
@@ -195,6 +198,15 @@ int main(int argc, char *argv[])
         double ambient_occlusion_lambda = settings.value("Refined/ambient_occlusion_lambda").toDouble();
         bool refined_skip_visual = settings.value("Refined/skip_visualization").toBool();
 
+        // Fabricate
+        double t_quality = settings.value("Fabricate/t_quality").toDouble();
+        double t_volume = settings.value("Fabricate/t_volume").toDouble();
+        int smoothing_iterations = settings.value("Fabricate/smoothing_iterations").toInt();
+        double smoothing_weight = settings.value("Fabricate/smoothing_weight").toDouble();
+        int num_random_rays = settings.value("Fabricate/num_rays").toInt();
+        bool solid_components = settings.value("Fabricate/solid_components").toBool();
+        bool fabricate_skip_visual = settings.value("Fabricate/skip_visualization").toBool();
+
         // Debug
         std::string debug_mode = settings.value("Debug/mode").toString().toStdString();
         double debug_x = settings.value("Debug/debug_x").toDouble();
@@ -289,7 +301,56 @@ int main(int argc, char *argv[])
             }
         }
         else if (method == "fabricate") {
-            std::cerr << "Error: This phase hasn't been implemented yet" << std::endl;
+            m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
+            m_o.preprocessData();
+            m_o.preprocessDistances();
+            m_o.preprocessRaytracer();
+            m_o.preprocessZeroCostFaces();
+            m_o.preprocessSolver();
+
+            // This vec will hold the labelings
+            std::vector<std::unordered_set<int>> patches;
+            m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, visualize_seeds, oversegmentation_skip_visual);
+            m_o.generateOversegmentation(patches);
+            if (!oversegmentation_skip_visual) {
+                m_o.visualize(patches);
+            }
+
+            // The printable components
+            std::vector<std::unordered_set<int>> printable_components;
+            // Printing directions for each component
+            std::vector<Eigen::Vector3f> printing_directions;
+            m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples, axis_only, initial_skip_visual);
+            m_o.generateInitialSegmentation(patches, printable_components, printing_directions);
+            // Visualize printing components, then each printable components with supported faces highlighted in red
+            if (!initial_skip_visual) {
+                m_o.visualize(printable_components);
+                m_o.visualizePrintableComponents(printable_components, printing_directions);
+            }
+
+            std::vector<std::unordered_set<int>> fuzzyRegions;
+            m_o.setRefinedSegmentationParameters(e_fuzzy, ambient_occlusion_lambda, refined_skip_visual);
+            m_o.generateRefinedSegmentation(printable_components, printing_directions, fuzzyRegions);
+            // Visualize with the changes
+            if (!refined_skip_visual) {
+                m_o.visualize(printable_components);
+                m_o.visualizePrintableComponents(printable_components, printing_directions);
+            }
+
+            m_o.setFabricateParameters(t_quality, t_volume, smoothing_iterations, smoothing_weight, num_random_rays, solid_components, fabricate_skip_visual);
+            m_o.tetrahedralizeMesh(); // this is effectively a preprocessing step for fabrication
+            std::vector<std::vector<Eigen::Vector4i>> printable_volumes;
+            m_o.partitionVolume(printable_components, printable_volumes);
+            m_o.pruneVolume(printable_volumes);
+            if (!fabricate_skip_visual) {
+                m_o.visualizePrintableVolumes(printable_components, printing_directions, printable_volumes);
+            }
+
+            // Send to file
+            std::vector<Eigen::MatrixXf> printable_vertices;
+            std::vector<Eigen::MatrixXi> printable_faces;
+            m_o.boolOpsApply(printable_volumes, printable_vertices, printable_faces);
+            m_o.outputComponentsToFile(printable_vertices, printable_faces, printing_directions, outfile.toStdString());
         }
         else if (method == "debug") {
             // Case on the debug option
@@ -359,12 +420,15 @@ int main(int argc, char *argv[])
 
                 // View distances
                 m_o.visualizeWeightedDistance();
-            }
 
-            else {
+            } else if (debug_mode == "remesh_intersection") {
+                // NOTE: make sure to specify outfile
+                m.remeshSelfIntersections();
+                m.saveToFile(outfile.toStdString());
+                return 0;
+            } else {
                 std::cout << "Error: Unknown debug mode \"" << debug_mode << "\"" << std::endl;
             }
-
         }
     }
     else {
@@ -375,17 +439,6 @@ int main(int argc, char *argv[])
     auto t1 = std::chrono::high_resolution_clock::now();
     auto duration = duration_cast<std::chrono::milliseconds>(t1 - t0).count();
     std::cout << "Execution took " << duration << " milliseconds." << std::endl;
-
-    // Save
-    if (outfile != "") {
-        if (is_mesh_operation) {
-            m.saveToFile(outfile.toStdString());
-        }
-
-        if (is_3d_print_operation) {
-            std::cerr << "Error: Saving outputs in 3D print mode not yet supported" << std::endl;
-        }
-    }
 
     a.exit();
 }

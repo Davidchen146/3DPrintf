@@ -211,6 +211,19 @@ int MeshOperations::getIntersection(const Eigen::Vector3f &ray_position, const E
     return -1;
 }
 
+int MeshOperations::getIntersectionWithDistance(const Eigen::Vector3f &ray_position, const Eigen::Vector3f &ray_direction, float &distance) {
+    // Invoke the Embree raytracer, baby!
+    igl::Hit hit;
+    if (_intersector.intersectRay(ray_position, ray_direction, hit)) {
+        // This is the ID (number) of the intersected face
+        distance = (hit.t * ray_direction).norm();
+        return hit.id;
+    }
+    // -1 Means that no face was hit (duh)
+    distance = 0;
+    return -1;
+}
+
 void MeshOperations::updateBoundarySet(const std::pair<int, int> edge, std::unordered_set<std::pair<int, int>, PairHash>& boundary_set) {
     // NOTE: if this seems buggy use a map that keeps track of edge count instead
     // but each edge should either have a count of 1 or 2

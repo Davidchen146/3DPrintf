@@ -21,6 +21,29 @@
 using namespace Eigen;
 using namespace std;
 using namespace operations_research;
+
+// Custom hash function for Vector3i
+struct Vector3iHash {
+    size_t operator()(const Eigen::Vector3i& v) const {
+        // Compute hash based on elements
+        return std::hash<int>()(v[0]) ^ std::hash<int>()(v[1]) ^ std::hash<int>()(v[2]);
+    }
+};
+
+// Custom equality comparator for Vector3i
+struct Vector3iEqual {
+    bool operator()(const Eigen::Vector3i& lhs, const Eigen::Vector3i& rhs) const {
+        // Sort the elements of both vectors
+        Eigen::Vector3i sorted_lhs = lhs;
+        Eigen::Vector3i sorted_rhs = rhs;
+        std::sort(sorted_lhs.begin(), sorted_lhs.end());
+        std::sort(sorted_rhs.begin(), sorted_rhs.end());
+
+        // Compare sorted vectors for equality
+        return sorted_lhs == sorted_rhs;
+    }
+};
+
 class MeshOperations
 {
 
@@ -72,6 +95,14 @@ public:
     void setRefinedSegmentationParameters(double e_fuzzy = 0.02,
                                           double ambient_occlusion_lambda = 4,
                                           bool skip_visualization = false);
+    void setFabricateParameters(double t_quality = 1.414,
+                                double t_volume = 0,
+                                int smoothing_iterations = 20,
+                                double smoothing_weight = 0.01,
+                                int num_random_rays = 512,
+                                bool solid_components = false,
+                                bool fabricate_skip_visual = false);
+
 
     // Oversegmentation: returns list of lists of faces
     // Each list of faces represents a connected patch (to be merged and assigned a printing direction)
@@ -99,10 +130,27 @@ public:
     void visualizeWeightedDistance();
     void visualizeSupportCosts(const Eigen::Vector3f &printing_direction);
     void visualizeSmoothingCosts(const std::vector<std::unordered_set<int>>& patches);
+    void visualizePrintableVolumes(const std::vector<std::unordered_set<int>> &printable_components,
+                                   const std::vector<Eigen::Vector3f> &printing_directions,
+                                   const std::vector<std::vector<Eigen::Vector4i>> &printable_volumes);
+    // void visualizePrintableVolume(std::vector<Eigen::Vector3i> &surface_faces, int groupNum, Eigen::Vector3f printing_direction);
 
     // Random direction visualization
     Eigen::Vector3f generateRandomVector();
 
+    // Fabrication step
+    void tetrahedralizeMesh();
+    Eigen::Vector3d computeTetCentroid(Eigen::Vector4i &tetrahedron);
+    void getComponentBoundingBox(const std::unordered_set<int> &component, Eigen::Vector3d& min, Eigen::Vector3d& max);
+    void partitionVolume(const std::vector<std::unordered_set<int>> &printable_components,
+                         std::vector<std::vector<Eigen::Vector4i>> &printable_volumes);
+    void getFacesFromTet(const std::vector<Eigen::Vector4i>& volume, Eigen::MatrixXi& faces, std::unordered_set<Vector3i, Vector3iHash, Vector3iEqual>& exposedFaces);
+    void pruneVolume(std::vector<std::vector<Eigen::Vector4i>> &printable_volumes);
+    void updateFaceMap(std::unordered_map<Vector3i, Vector4i, Vector3iHash, Vector3iEqual>& faceMap, Vector3i face, Vector4i tet);
+    Vector3i orderVertices(Vector3i& face, Vector4i& tet);
+    void extractSurface(const std::vector<Eigen::Vector4i> &volume, std::vector<Eigen::Vector3i> &surface_faces);
+    void boolOpsApply(std::vector<std::vector<Eigen::Vector4i>> &printable_volumes, std::vector<Eigen::MatrixXf> &printable_vertices, std::vector<Eigen::MatrixXi> &printable_faces);
+    void outputComponentsToFile(const std::vector<Eigen::MatrixXf> &printable_vertices, const std::vector<Eigen::MatrixXi> &printable_faces, const std::vector<Eigen::Vector3f> &printing_directions, const std::string &filename);
 
 private:
     Mesh _mesh;
@@ -119,10 +167,21 @@ private:
     MatrixXf _V;
     MatrixXi _F;
 
+    // initialized via call to tetrahedralizeMesh()
+    MatrixXd _TV;
+    MatrixXi _TT;
+    MatrixXi _TF;
+
     Eigen::MatrixXd _geodesicDistances;
     Eigen::MatrixXd _angularDistances;
     double _avgGeodesic;
     double _avgAngular;
+
+    // for visualization routines
+    // mostly so that the colors of the patches from initial segmentation step
+    // will match the colors of the patches from fabrication
+    std::unordered_map<int, int> faceToGroup;
+    std::unordered_map<int, Vector3d> groupToColor;
 
     // Subroutines used for Phase 1 (Oversegmentation)
     // Initial seed computation
@@ -202,7 +261,7 @@ private:
     // Should use BVH, some other structure, or there might be something in libigl/VCGlib we can use
     // If using BVH, may need to make BVH initialization a preprocessing step
     int getIntersection(const Eigen::Vector3f &ray_position, const Eigen::Vector3f &ray_direction);
-
+    int getIntersectionWithDistance(const Eigen::Vector3f &ray_position, const Eigen::Vector3f &ray_direction, float &distance);
     // helper for getPatchBoundary
     void updateBoundarySet(const std::pair<int, int> edge, std::unordered_set<std::pair<int, int>, PairHash>& boundary_set);
     // helper for getPairwiseFuzzyRegion
@@ -282,10 +341,18 @@ private:
     bool _initial_skip_visualization;
 
     // Refined Segmentation parameters
-    // TODO: Add them
     double _e_fuzzy;
     double _ambient_occlusion_lambda;
     bool _refined_skip_visualization;
+
+    // Fabrication parameters
+    double _t_quality;
+    double _t_volume;
+    int _smoothing_iterations;
+    double _smoothing_weight;
+    int _num_random_rays;
+    bool _solid_components;
+    bool _fabricate_skip_visualization;
 
     // ILP solver used for phases 2 and 3 (should be cleared before using in phase 2)
     operations_research::MPSolver* _solver;
