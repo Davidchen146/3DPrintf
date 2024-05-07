@@ -289,7 +289,46 @@ int main(int argc, char *argv[])
             }
         }
         else if (method == "fabricate") {
-            std::cerr << "Error: This phase hasn't been implemented yet" << std::endl;
+            m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
+            m_o.preprocessData();
+            m_o.preprocessDistances();
+            m_o.preprocessRaytracer();
+            m_o.preprocessZeroCostFaces();
+            m_o.preprocessSolver();
+
+            // This vec will hold the labelings
+            std::vector<std::unordered_set<int>> patches;
+            m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, visualize_seeds, oversegmentation_skip_visual);
+            m_o.generateOversegmentation(patches);
+            if (!oversegmentation_skip_visual) {
+                m_o.visualize(patches);
+            }
+
+            // The printable components
+            std::vector<std::unordered_set<int>> printable_components;
+            // Printing directions for each component
+            std::vector<Eigen::Vector3f> printing_directions;
+            m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples, axis_only, initial_skip_visual);
+            m_o.generateInitialSegmentation(patches, printable_components, printing_directions);
+            // Visualize printing components, then each printable components with supported faces highlighted in red
+            if (!initial_skip_visual) {
+                m_o.visualize(printable_components);
+                m_o.visualizePrintableComponents(printable_components, printing_directions);
+            }
+
+            std::vector<std::unordered_set<int>> fuzzyRegions;
+            m_o.setRefinedSegmentationParameters(e_fuzzy, ambient_occlusion_lambda, refined_skip_visual);
+            m_o.generateRefinedSegmentation(printable_components, printing_directions, fuzzyRegions);
+            // Visualize with the changes
+            m_o.visualize(printable_components);
+
+            m_o.tetrahedralizeMesh(); // this is effectively a preprocessing step for fabrication
+            std::vector<std::vector<Eigen::Vector4i>> printable_volumes;
+            m_o.partitionVolume(printable_components, printable_volumes);
+            m_o.pruneVolume(printable_volumes);
+            m_o.visualizePrintableVolumes(printable_components, printing_directions, printable_volumes);
+            m_o.boolOpsApply(printable_volumes);
+            // NOTE: output printable volumes to obj files????
         }
         else if (method == "debug") {
             // Case on the debug option
@@ -372,7 +411,7 @@ int main(int argc, char *argv[])
 
                 // // This vec will hold the labelings
                 std::vector<std::unordered_set<int>> patches;
-                m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, visualize_seeds);
+                m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, visualize_seeds, oversegmentation_skip_visual);
                 m_o.generateOversegmentation(patches);
                 std::cout << "oversegmentation done" << std::endl;
 
