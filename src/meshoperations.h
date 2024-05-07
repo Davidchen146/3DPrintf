@@ -146,6 +146,7 @@ public:
     // a Vector4i indicating the coordinates of a tet. The pair of integers denotes the two tetrahedrons that a face is adjacent to. If a face
     // is only adjacent to 1 tet, the other value in the pair shall be -1.
     void makeFaceToTetMap(std::unordered_map<Eigen::Vector3i, std::pair<int, int>, Vector3iHash, Vector3iEqual> &faceToTet);
+    void initializeUnassignedTets(std::unordered_set<int> &unassignedTets);
     // Fill in volumes_to_propagate with surface tets
     void initializePrintableVolumes(const std::vector<std::unordered_set<int>> &printable_components,
                                     std::vector<PrintableVolume*> &volumes_to_propagate,

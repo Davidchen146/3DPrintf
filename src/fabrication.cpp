@@ -119,7 +119,7 @@ void MeshOperations::getComponentBoundingBox(const std::unordered_set<int> &comp
         V.row(num) = _vertices[vertex];
         num++;
     }
-    // get the bounding box of printable component?
+    // get the bounding box of printable component
     min = _V.cast<double>().colwise().minCoeff();
     max = _V.cast<double>().colwise().maxCoeff();
 }
@@ -185,12 +185,6 @@ void MeshOperations::partitionVolume(const std::vector<std::unordered_set<int>> 
         int groupNum = faceToGroup[boundaryFace];
         printable_volumes[groupNum].push_back(tetrahedron);
     }
-
-    // ALTERNATIVE APPROACH
-    // need igl::adjacency_list which constructs the graph adjacency list of a given mesh (V, F)
-    // gives you a vector<vector<int>> containing at row i the adjacent vertices of vertex i
-    // but if i have the adjacent vertices
-
 }
 
 // Propagate a single volume collection one step into the mesh
@@ -240,24 +234,50 @@ void MeshOperations::getTetFaces(int tetrahedron, std::unordered_set<Eigen::Vect
     faces.insert(face4);
 }
 
+void MeshOperations::makeFaceToTetMap(std::unordered_map<Eigen::Vector3i, std::pair<int, int>, Vector3iHash, Vector3iEqual> &faceToTet) {
+    faceToTet.clear();
+    for (int i = 0; i < _TT.rows(); i++) {
+        std::unordered_set<Eigen::Vector3i, Vector3iHash, Vector3iEqual> faces;
+        getTetFaces(i, faces);
+        for (const Vector3i& face : faces) {
+            if (faceToTet.contains(face)) {
+                std::pair<int, int> tets = faceToTet[face];
+                if (tets.second != -1) {
+                    std::cerr << "second tet should be uninitialized!!!" << std::endl;
+                }
+                tets.second = i;
+                faceToTet[face] = tets;
+            } else {
+                std::pair<int, int> tets(i, -1);
+                faceToTet[face] = tets;
+            }
+        }
+    }
+}
+
+// unassignedTets starts off as all the tets in the mesh
+void MeshOperations::initializeUnassignedTets(std::unordered_set<int> &unassignedTets) {
+    unassignedTets.clear();
+    for (int i = 0; i < _TT.rows(); i++) {
+        unassignedTets.insert(i);
+    }
+}
+
+// for each printable component, the tets corresponding to the surface faces are assigned to the corresponding printable volume
 void MeshOperations::initializePrintableVolumes(const std::vector<std::unordered_set<int>> &printable_components,
                                 std::vector<PrintableVolume*> &volumes_to_propagate,
                                 std::unordered_map<Eigen::Vector3i, std::pair<int, int>, Vector3iHash, Vector3iEqual> &faceToTet,
                                 std::unordered_set<int> &unassignedTets) {
-
     for (int i = 0; i < printable_components.size(); i++) {
         PrintableVolume* volume = new PrintableVolume;
         for (int f: printable_components[i]) {
             Vector3i face = _faces[f];
             pair<int, int> adjacentTets = faceToTet[face];
-            // These are surface faces, so one of the ints in pair should be -1
-            int surfaceTet;
-            if (adjacentTets.first == -1) {
-                surfaceTet = adjacentTets.second;
-            } else {
-                surfaceTet = adjacentTets.first;
+            // These are surface faces, so the **second** int in pair should be -1
+            if (adjacentTets.second != -1) {
+                std::cerr << "for surface face second int in pair should be -1" << std::endl;
             }
-
+            int surfaceTet = adjacentTets.first;
             volume->totalVolume.insert(surfaceTet);
             volume->currentLayer.insert(surfaceTet);
             unassignedTets.erase(surfaceTet);
@@ -348,7 +368,6 @@ void MeshOperations::pruneVolume(std::vector<std::vector<Eigen::Vector4i>> &prin
             }
         }
         if (toErase.size() > 0) {
-            std::cout << "size: " << toErase.size() << std::endl;
             std::sort(toErase.begin(), toErase.end(), std::greater<int>());
             for (int j = 0; j < toErase.size(); j++) {
                 auto it = printable_volumes[i].begin() + toErase[j];
