@@ -332,16 +332,25 @@ int main(int argc, char *argv[])
             m_o.setRefinedSegmentationParameters(e_fuzzy, ambient_occlusion_lambda, refined_skip_visual);
             m_o.generateRefinedSegmentation(printable_components, printing_directions, fuzzyRegions);
             // Visualize with the changes
-            m_o.visualize(printable_components);
+            if (!refined_skip_visual) {
+                m_o.visualize(printable_components);
+                m_o.visualizePrintableComponents(printable_components, printing_directions);
+            }
 
             m_o.setFabricateParameters(t_quality, t_volume, smoothing_iterations, smoothing_weight, num_random_rays, solid_components, fabricate_skip_visual);
             m_o.tetrahedralizeMesh(); // this is effectively a preprocessing step for fabrication
             std::vector<std::vector<Eigen::Vector4i>> printable_volumes;
             m_o.partitionVolume(printable_components, printable_volumes);
             m_o.pruneVolume(printable_volumes);
-            m_o.visualizePrintableVolumes(printable_components, printing_directions, printable_volumes);
-            m_o.(printable_volumes);
-            // NOTE: output printable volumes to obj files????
+            if (!fabricate_skip_visual) {
+                m_o.visualizePrintableVolumes(printable_components, printing_directions, printable_volumes);
+            }
+
+            // Send to file
+            std::vector<Eigen::MatrixXf> printable_vertices;
+            std::vector<Eigen::MatrixXi> printable_faces;
+            m_o.boolOpsApply(printable_volumes, printable_vertices, printable_faces);
+            m_o.outputComponentsToFile(printable_vertices, printable_faces, printing_directions, outfile.toStdString());
         }
         else if (method == "debug") {
             // Case on the debug option
@@ -411,50 +420,7 @@ int main(int argc, char *argv[])
 
                 // View distances
                 m_o.visualizeWeightedDistance();
-            } else if (debug_mode == "tetrahedralize") {
-                std::cout << "start tetrahedralize" << std::endl;
-                // Setup
-                m_o.setPreprocessingParameters(geodesic_dist_coeff, angular_distance_convex, angular_distance_concave, use_zero_cost_faces);
-                m_o.preprocessData();
-                m_o.preprocessDistances();
-                m_o.preprocessRaytracer();
-                m_o.preprocessZeroCostFaces();
-                m_o.preprocessSolver();
-                std::cout << "preprocessing done" << std::endl;
 
-                // // This vec will hold the labelings
-                std::vector<std::unordered_set<int>> patches;
-                m_o.setOversegmentationParameters(num_seed_faces, proportion_seed_faces, e_patch, num_iterations, visualize_seeds, oversegmentation_skip_visual);
-                m_o.generateOversegmentation(patches);
-                std::cout << "oversegmentation done" << std::endl;
-
-                // The printable components
-                std::vector<std::unordered_set<int>> printable_components;
-                // Printing directions for each component
-                std::vector<Eigen::Vector3f> printing_directions;
-                m_o.setInitialSegmentationParameters(num_random_dir_samples, printer_tolerance_angle, ambient_occlusion_supports_alpha, ambient_occlusion_smoothing_alpha, smoothing_width_t, ambient_occlusion_samples, footing_samples, axis_only);
-                m_o.generateInitialSegmentation(patches, printable_components, printing_directions);
-                m_o.visualize(printable_components);
-                std::cout << "initial segmentation done" << std::endl;
-
-                std::vector<std::unordered_set<int>> fuzzyRegions;
-                m_o.setRefinedSegmentationParameters(e_fuzzy, ambient_occlusion_lambda, refined_skip_visual);
-                m_o.generateRefinedSegmentation(printable_components, printing_directions, fuzzyRegions);
-                // Visualize with the changes
-                m_o.visualize(printable_components);
-
-                m_o.tetrahedralizeMesh(); // this is effectively a preprocessing step for fabrication
-                std::vector<std::vector<Eigen::Vector4i>> printable_volumes;
-                m_o.partitionVolume(printable_components, printable_volumes);
-                m_o.pruneVolume(printable_volumes);
-                m_o.visualizePrintableVolumes(printable_components, printing_directions, printable_volumes);
-
-                // Send to file
-                std::vector<Eigen::MatrixXf> printable_vertices;
-                std::vector<Eigen::MatrixXi> printable_faces;
-                m_o.(printable_volumes, printable_vertices, printable_faces);
-                m_o.outputComponentsToFile(printable_vertices, printable_faces, printing_directions, outfile.toStdString());
-                // m_o.visualizePrintableComponents(printable_components, printing_directions);
             } else if (debug_mode == "remesh_intersection") {
                 // NOTE: make sure to specify outfile
                 m.remeshSelfIntersections();
