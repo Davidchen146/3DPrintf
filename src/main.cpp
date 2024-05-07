@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
     std::cout << "Loading config " << args[0].toStdString() << std::endl;
     QSettings settings(args[0], QSettings::IniFormat);
     QString infile  = settings.value("Global/meshfile").toString();
-    QString outfile = settings.value("Global/output").toString();
+    QString outfile = settings.value("Global/outfile").toString();
     QString method  = settings.value("Global/method").toString();
 
     // Load
@@ -204,6 +204,7 @@ int main(int argc, char *argv[])
         int smoothing_iterations = settings.value("Fabricate/smoothing_iterations").toInt();
         double smoothing_weight = settings.value("Fabricate/smoothing_weight").toDouble();
         int num_random_rays = settings.value("Fabricate/num_rays").toInt();
+        double inset_amount = settings.value("Fabricate/inset_amount").toDouble();
         bool solid_components = settings.value("Fabricate/solid_components").toBool();
         bool fabricate_skip_visual = settings.value("Fabricate/skip_visualization").toBool();
 
@@ -337,7 +338,7 @@ int main(int argc, char *argv[])
                 m_o.visualizePrintableComponents(printable_components, printing_directions);
             }
 
-            m_o.setFabricateParameters(t_quality, t_volume, smoothing_iterations, smoothing_weight, num_random_rays, solid_components, fabricate_skip_visual);
+            m_o.setFabricateParameters(t_quality, t_volume, smoothing_iterations, smoothing_weight, num_random_rays, inset_amount, solid_components, fabricate_skip_visual);
             m_o.tetrahedralizeMesh(); // this is effectively a preprocessing step for fabrication
             std::vector<std::vector<Eigen::Vector4i>> printable_volumes;
             m_o.partitionVolume(printable_components, printable_volumes);

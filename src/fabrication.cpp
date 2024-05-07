@@ -327,8 +327,8 @@ void MeshOperations::boolOpsApply(std::vector<std::vector<Eigen::Vector4i>> &pri
 
     Eigen::MatrixXd normals;
     igl::per_vertex_normals(_V.cast<double>(), _F, normals);
-    double inset_amount = 0.2; // pictures in slack with 0.15
-    insetV = _V.cast<double>() - inset_amount * normals;
+    // pictures in slack with 0.15
+    insetV = _V.cast<double>() - (_inset_amount * normals);
     insetF = _F; // same topology
 
     printable_vertices.resize(printable_volumes.size());

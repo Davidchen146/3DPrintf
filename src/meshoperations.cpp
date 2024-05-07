@@ -43,6 +43,7 @@ MeshOperations::MeshOperations(Mesh m) {
     _smoothing_iterations = 20;
     _smoothing_weight = 0.01;
     _num_random_rays = 512;
+    _inset_amount = 0.2;
     _solid_components = false;
     _fabricate_skip_visualization = false;
 }
@@ -175,6 +176,7 @@ void MeshOperations::setFabricateParameters(double t_quality,
                                             int smoothing_iterations,
                                             double smoothing_weight,
                                             int num_random_rays,
+                                            double inset_amount,
                                             bool solid_components,
                                             bool fabricate_skip_visual) {
     // Check against default value (0) to prevent loading unspecified parameters
@@ -196,6 +198,10 @@ void MeshOperations::setFabricateParameters(double t_quality,
 
     if (num_random_rays != 0) {
         _num_random_rays = num_random_rays;
+    }
+
+    if (inset_amount != 0) {
+        _inset_amount = inset_amount;
     }
 
     if (solid_components) {
