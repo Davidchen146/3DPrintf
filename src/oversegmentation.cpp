@@ -101,7 +101,6 @@ void MeshOperations::generateInitialSeeds(std::unordered_set<int> &seeds) {
     double maximum_distance = std::numeric_limits<double>::max();
     // Threshold for convergence is a multiple of the bounding box diagonal
     int iteration = 0;
-    std::cout << "Threshold for smallest distance between seeds: " << bbd * _oversegmentation_bounding_box_coeff << std::endl;
     while(maximum_distance > bbd * _oversegmentation_bounding_box_coeff && seed_candidates.size() > 0) {
         // Pick a face with the largest geodesic distance to the set of seeds
         double largest_distance = -1;
@@ -131,7 +130,6 @@ void MeshOperations::generateInitialSeeds(std::unordered_set<int> &seeds) {
         assert(maximum_distance != -1);
         // If we iterate again, we have added another seed and we have chosen to continue
         iteration++;
-        std::cout << "Maximum distance between a seed to all other seeds: " << maximum_distance << std::endl;
     }
     // If we've reached this point, we've terminated with our set of seeds
     std::cout << "Number of selected final seeds " << seeds.size() << std::endl;
