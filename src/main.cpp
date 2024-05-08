@@ -91,6 +91,8 @@ int main(int argc, char *argv[])
         // "Fabricate/smoothing_iterations": Number of iterations for Laplacian smoothing of interface surfaces
         // "Fabricate/smoothing_weight": Controls smoothing weight for each iteration of Laplacian smoothing of interface surfaces
         // "Fabricate/num_rays": Number of rays cast for tetrahedra assignment to printable components
+        // "Fabricate/inset_amount": Coefficient controlling how far large the inset surface is offset
+        // "Fabricate/inset_resolution": Resolution of inset surface
         // "Fabricate/solid_components": If components should not be hollowed out and instead be solid pieces
         // "Fabricate/skip_visualization": skips visualization of fabrication step
     // Debug:
@@ -205,6 +207,7 @@ int main(int argc, char *argv[])
         double smoothing_weight = settings.value("Fabricate/smoothing_weight").toDouble();
         int num_random_rays = settings.value("Fabricate/num_rays").toInt();
         double inset_amount = settings.value("Fabricate/inset_amount").toDouble();
+        int inset_resolution = settings.value("Fabricate/inset_resolution").toInt();
         bool solid_components = settings.value("Fabricate/solid_components").toBool();
         bool fabricate_skip_visual = settings.value("Fabricate/skip_visualization").toBool();
 
@@ -338,7 +341,7 @@ int main(int argc, char *argv[])
                 m_o.visualizePrintableComponents(printable_components, printing_directions);
             }
 
-            m_o.setFabricateParameters(t_quality, t_volume, smoothing_iterations, smoothing_weight, num_random_rays, inset_amount, solid_components, fabricate_skip_visual);
+            m_o.setFabricateParameters(t_quality, t_volume, smoothing_iterations, smoothing_weight, num_random_rays, inset_amount, inset_resolution, solid_components, fabricate_skip_visual);
             m_o.tetrahedralizeMesh(); // this is effectively a preprocessing step for fabrication
             std::vector<std::vector<Eigen::Vector4i>> printable_volumes;
             m_o.partitionVolume(printable_components, printable_volumes);

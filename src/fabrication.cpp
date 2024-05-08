@@ -12,6 +12,7 @@
 #include <igl/writeOBJ.h>
 #include <igl/rotation_matrix_from_directions.h>
 #include <igl/remove_unreferenced.h>
+#include <igl/offset_surface.h>
 
 #include <igl/opengl/glfw/Viewer.h>
 
@@ -322,19 +323,28 @@ void MeshOperations::boolOpsApply(std::vector<std::vector<Eigen::Vector4i>> &pri
     // std::cout << "Number of volumes to do Bool Ops: " << printable_volumes.size() << std::endl;
 
     // Compute inset and cache it
+    // The cached value should be stored because reasons I guess
+    std::cout << "Generating inset surface" << std::endl;
+    Eigen::MatrixXd new_v = _V.cast<double>();
     Eigen::MatrixXi insetF;
     Eigen::MatrixXd insetV;
 
-    Eigen::MatrixXd normals;
-    igl::per_vertex_normals(_V.cast<double>(), _F, normals);
-    // pictures in slack with 0.15
-    insetV = _V.cast<double>() - (_inset_amount * normals);
-    insetF = _F; // same topology
+    // Values needed for the igl call
+    Eigen::MatrixXd GV;
+    Eigen::VectorXd S;
+    Eigen::RowVector3i side;
+
+    std::cout << "Beginning computation of offset_surface" << std::endl;
+    igl::SignedDistanceType signed_distance_type = igl::SignedDistanceType::SIGNED_DISTANCE_TYPE_DEFAULT;
+    std::cout << "Inset amount: " << (-1 * _inset_amount * bbd) << std::endl;
+    igl::offset_surface(new_v, _F, (-1 * _inset_amount * bbd), _inset_resolution, signed_distance_type, insetV, insetF, GV, side, S);
+    std::cout << "Completed computation of offset surface" << std::endl;
 
     printable_vertices.resize(printable_volumes.size());
     printable_faces.resize(printable_volumes.size());
 
     // step 1: convert each volume into a surface mesh -- defined by a _F and _V collection
+    std::cout << "Performing boolean operations using inset surface" << std::endl;
     for (int i = 0; i < printable_volumes.size(); i++) {
         std::vector<Eigen::Vector4i> volume = printable_volumes[i];
 
