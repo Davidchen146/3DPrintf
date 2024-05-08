@@ -100,7 +100,8 @@ public:
                                 int smoothing_iterations = 20,
                                 double smoothing_weight = 0.01,
                                 int num_random_rays = 512,
-                                double inset_amount = 0.2,
+                                double inset_amount = 0.02,
+                                int inset_resolution = 100,
                                 bool solid_components = false,
                                 bool fabricate_skip_visual = false);
 
@@ -355,6 +356,7 @@ private:
     bool _solid_components;
     bool _fabricate_skip_visualization;
     double _inset_amount;
+    int _inset_resolution;
 
     // ILP solver used for phases 2 and 3 (should be cleared before using in phase 2)
     operations_research::MPSolver* _solver;
