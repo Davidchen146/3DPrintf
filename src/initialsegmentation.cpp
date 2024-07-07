@@ -63,7 +63,7 @@ void MeshOperations::sampleRandomDirections(std::vector<Eigen::Vector3f> &direct
         directions.emplace_back(0, 0, -1);
     } else {
         for (int i = 0; i < _num_random_dir_samples; i++) {
-            Vector3f direction = generateRandomVector();
+            Eigen::Vector3f direction = generateRandomVector();
 
             // NOTE: assumes that directions starts off as an empty vector
             directions.push_back(direction);
@@ -157,8 +157,8 @@ double MeshOperations::computeSmoothingCoefficient(const std::unordered_set<int>
     getBoundaryEdges(patch_one, patch_two, boundaryEdges);
     double weight = 0;
     for (std::pair<int, int> edge: boundaryEdges) {
-        Vector3f start = _vertices[edge.first];
-        Vector3f end = _vertices[edge.second];
+        Eigen::Vector3f start = _vertices[edge.first];
+        Eigen::Vector3f end = _vertices[edge.second];
         double length = (start - end).norm();
         double AO = getEdgeAO(edge);
         weight += length * std::pow(AO, _ambient_occlusion_smoothing_alpha);

@@ -29,7 +29,7 @@ void MeshOperations::tetrahedralizeMesh() {
     double volume = _t_volume;
     if (volume == 0) {
         // i just took the options from the example, not 100% what to use here
-        VectorXd area;
+        Eigen::VectorXd area;
         igl::doublearea(_V.cast<double>(),_F,area);
         double area_avg = area.mean();
         double edge_length = sqrt(4 * area_avg / sqrt(3));
@@ -49,17 +49,17 @@ void MeshOperations::tetrahedralizeMesh() {
 }
 
 Eigen::Vector3d MeshOperations::computeTetCentroid(Eigen::Vector4i &tetrahedron) {
-    Vector3d tetVertex1 = _TV.row(tetrahedron[0]);
-    Vector3d tetVertex2 = _TV.row(tetrahedron[1]);
-    Vector3d tetVertex3 = _TV.row(tetrahedron[2]);
-    Vector3d tetVertex4 = _TV.row(tetrahedron[3]);
+    Eigen::Vector3d tetVertex1 = _TV.row(tetrahedron[0]);
+    Eigen::Vector3d tetVertex2 = _TV.row(tetrahedron[1]);
+    Eigen::Vector3d tetVertex3 = _TV.row(tetrahedron[2]);
+    Eigen::Vector3d tetVertex4 = _TV.row(tetrahedron[3]);
     return (tetVertex1 + tetVertex2 + tetVertex3 + tetVertex4) / 4.f;
 }
 
 void MeshOperations::getComponentBoundingBox(const std::unordered_set<int> &component, Eigen::Vector3d& min, Eigen::Vector3d& max) {
     std::unordered_set<int> vertexIndices;
     for (int f : component) {
-        Vector3i face = _faces[f];
+        Eigen::Vector3i face = _faces[f];
         if (!vertexIndices.contains(face[0])) {
             vertexIndices.insert(face[0]);
         }
@@ -70,7 +70,7 @@ void MeshOperations::getComponentBoundingBox(const std::unordered_set<int> &comp
             vertexIndices.insert(face[2]);
         }
     }
-    MatrixXf V;
+    Eigen::MatrixXf V;
     V.resize(vertexIndices.size(), 3);
     int num = 0;
     for (int vertex : vertexIndices) {
@@ -112,7 +112,7 @@ void MeshOperations::partitionVolume(const std::vector<std::unordered_set<int>> 
         float theta = phi * i;
         float x = cos(theta) * radius;
         float z = sin(theta) * radius;
-        directions[i] = Vector3f(x, y, z);
+        directions[i] = Eigen::Vector3f(x, y, z);
     }
 
     // This raycasting operation requires grouping faces
@@ -225,8 +225,8 @@ void MeshOperations::partitionVolume(const std::vector<std::unordered_set<int>> 
 }
 
 
-void MeshOperations::getFacesFromTet(const std::vector<Eigen::Vector4i>& volume, Eigen::MatrixXi& faces, std::unordered_set<Vector3i, Vector3iHash, Vector3iEqual>& exposedFaces) {
-    std::unordered_map<Vector3i, int, Vector3iHash, Vector3iEqual> faceMap;
+void MeshOperations::getFacesFromTet(const std::vector<Eigen::Vector4i>& volume, Eigen::MatrixXi& faces, std::unordered_set<Eigen::Vector3i, Vector3iHash, Vector3iEqual>& exposedFaces) {
+    std::unordered_map<Eigen::Vector3i, int, Vector3iHash, Vector3iEqual> faceMap;
     // (theoretically Vector3iEqual will sort the vector) --> so duplicate faces with different orderings won't exist in the set
     for (int i = 0; i < volume.size(); i++) {
         Eigen::Vector4i tet = volume[i];
@@ -258,8 +258,8 @@ void MeshOperations::getFacesFromTet(const std::vector<Eigen::Vector4i>& volume,
     faces.resize(faceMap.size(), 3);
     int rowNum = 0;
     exposedFaces.clear();
-    for (const std::pair<Vector3i, int>& pair : faceMap) {
-        Vector3i face = pair.first;
+    for (const std::pair<Eigen::Vector3i, int>& pair : faceMap) {
+        Eigen::Vector3i face = pair.first;
         faces.row(rowNum) = face;
         int count = pair.second;
         if (count == 1) {
@@ -272,8 +272,8 @@ void MeshOperations::getFacesFromTet(const std::vector<Eigen::Vector4i>& volume,
 void MeshOperations::pruneVolume(std::vector<std::vector<Eigen::Vector4i>> &printable_volumes) {
     // each Eigen::Vector4i represents a tetrahedron --> each int is an index into TV
     for (int i = 0; i < printable_volumes.size(); i++) {
-        MatrixXi faces;
-        std::unordered_set<Vector3i, Vector3iHash, Vector3iEqual> exposedFaces;
+        Eigen::MatrixXi faces;
+        std::unordered_set<Eigen::Vector3i, Vector3iHash, Vector3iEqual> exposedFaces;
         getFacesFromTet(printable_volumes[i], faces, exposedFaces);
         vector<vector<double>> A; // containing at row i the adjacent vertices of vertex i
         // from the printable volumes get the faces
@@ -409,7 +409,7 @@ void MeshOperations::outputComponentsToFile(const std::vector<Eigen::MatrixXf> &
 }
 
 
-void MeshOperations::updateFaceMap(std::unordered_map<Vector3i, Vector4i, Vector3iHash, Vector3iEqual>& faceMap, Vector3i face, Vector4i tet) {
+void MeshOperations::updateFaceMap(std::unordered_map<Eigen::Vector3i, Eigen::Vector4i, Vector3iHash, Vector3iEqual>& faceMap, Eigen::Vector3i face, Eigen::Vector4i tet) {
     if (faceMap.contains(face)) {
         faceMap.erase(face);
     } else {
@@ -417,22 +417,22 @@ void MeshOperations::updateFaceMap(std::unordered_map<Vector3i, Vector4i, Vector
     }
 }
 
-Vector3i MeshOperations::orderVertices(Vector3i& face, Vector4i& tet) {
+Eigen::Vector3i MeshOperations::orderVertices(Eigen::Vector3i& face, Eigen::Vector4i& tet) {
     // checking of v0, v1, v2 is in CCW order
-    Vector3d v0Coords = _TV.row(face[0]);
-    Vector3d v1Coords = _TV.row(face[1]);
-    Vector3d v2Coords = _TV.row(face[2]);
-    Vector3d normal = ((v1Coords - v0Coords).cross(v2Coords - v0Coords)).normalized();
+    Eigen::Vector3d v0Coords = _TV.row(face[0]);
+    Eigen::Vector3d v1Coords = _TV.row(face[1]);
+    Eigen::Vector3d v2Coords = _TV.row(face[2]);
+    Eigen::Vector3d normal = ((v1Coords - v0Coords).cross(v2Coords - v0Coords)).normalized();
     double d = -1 * (v0Coords).dot(normal);
 
-    Vector3d tetVertex1 = _TV.row(tet[0]);
-    Vector3d tetVertex2 = _TV.row(tet[1]);
-    Vector3d tetVertex3 = _TV.row(tet[2]);
-    Vector3d tetVertex4 = _TV.row(tet[3]);
-    Vector3d tetCenter = (tetVertex1 + tetVertex2 + tetVertex3 + tetVertex4) / 4.f;
-    Vector4d u = {tetCenter[0], tetCenter[1], tetCenter[2], 1}; // u should be centroid of tetrahedron
+    Eigen::Vector3d tetVertex1 = _TV.row(tet[0]);
+    Eigen::Vector3d tetVertex2 = _TV.row(tet[1]);
+    Eigen::Vector3d tetVertex3 = _TV.row(tet[2]);
+    Eigen::Vector3d tetVertex4 = _TV.row(tet[3]);
+    Eigen::Vector3d tetCenter = (tetVertex1 + tetVertex2 + tetVertex3 + tetVertex4) / 4.f;
+    Eigen::Vector4d u = {tetCenter[0], tetCenter[1], tetCenter[2], 1}; // u should be centroid of tetrahedron
 
-    Vector4d v{normal[0], normal[1], normal[2], d};
+    Eigen::Vector4d v{normal[0], normal[1], normal[2], d};
     if (u.dot(v) < 0) {
         return {face[0], face[1], face[2]};
     } else {
@@ -452,12 +452,12 @@ void MeshOperations::extractSurface(const std::vector<Eigen::Vector4i> &volume, 
     // for each tetrahedron
     // get the four faces
     // determine whether the face has already appeared
-    std::unordered_map<Vector3i, Vector4i, Vector3iHash, Vector3iEqual> faceMap;
+    std::unordered_map<Eigen::Vector3i, Eigen::Vector4i, Vector3iHash, Vector3iEqual> faceMap;
     for (int i = 0; i < volume.size(); i++) {
-        Vector3i f0{volume[i][1], volume[i][2], volume[i][3]};
-        Vector3i f1{volume[i][0], volume[i][2], volume[i][3]};
-        Vector3i f2{volume[i][0], volume[i][1], volume[i][3]};
-        Vector3i f3{volume[i][0], volume[i][1], volume[i][2]};
+        Eigen::Vector3i f0{volume[i][1], volume[i][2], volume[i][3]};
+        Eigen::Vector3i f1{volume[i][0], volume[i][2], volume[i][3]};
+        Eigen::Vector3i f2{volume[i][0], volume[i][1], volume[i][3]};
+        Eigen::Vector3i f3{volume[i][0], volume[i][1], volume[i][2]};
         updateFaceMap(faceMap, f0, volume[i]);
         updateFaceMap(faceMap, f1, volume[i]);
         updateFaceMap(faceMap, f2, volume[i]);
@@ -466,9 +466,9 @@ void MeshOperations::extractSurface(const std::vector<Eigen::Vector4i> &volume, 
 
     surface_faces.clear();
     for (auto it = faceMap.begin(); it != faceMap.end(); ++it) {
-        Vector3i f = it->first;
-        Vector4i tet = it->second;
-        Vector3i ordered = orderVertices(f, tet);
+        Eigen::Vector3i f = it->first;
+        Eigen::Vector4i tet = it->second;
+        Eigen::Vector3i ordered = orderVertices(f, tet);
         surface_faces.push_back(ordered);
     }
 }

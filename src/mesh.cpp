@@ -11,11 +11,12 @@
 #include <igl/copyleft/cgal/remesh_self_intersections.h>
 #include <igl/copyleft/cgal/outer_hull.h>
 
-using namespace Eigen;
 using namespace std;
 
-void Mesh::initFromVectors(const vector<Vector3f> &vertices,
-                           const vector<Vector3i> &faces)
+// TODO: separate mesh operations (subdivide/simplify/remesh) from helpers that are used in 3DPrintf pipeline
+
+void Mesh::initFromVectors(const vector<Eigen::Vector3f> &vertices,
+                           const vector<Eigen::Vector3i> &faces)
 {
     // Copy vertices and faces into internal vector
     _vertices = vertices;
@@ -82,7 +83,7 @@ Eigen::Vector3f calculateSurfaceNormal(const Eigen::Vector3f v1, const Eigen::Ve
 
 void Mesh::preProcess() {
     for (int i = 0; i < _vertices.size(); i++) {
-        Vector3f originalVertex = _vertices[i];
+        Eigen::Vector3f originalVertex = _vertices[i];
         Vertex* v = new Vertex{nullptr, i, originalVertex};
         // Populate vertex map, with position as the key and Vertex struct as value
         _vertexMap.insert({i, v});
@@ -91,12 +92,12 @@ void Mesh::preProcess() {
 
     for (int i = 0; i < _faces.size(); i++) {
         // Loop through each face, construct pairs of half edges if it does not already exist
-        Vector3i face = _faces[i];
+        Eigen::Vector3i face = _faces[i];
 
         // Each vertex on a face is stored as indices in the _vertices array
-        Vector3f v1 = _vertices[face[0]];
-        Vector3f v2 = _vertices[face[1]];
-        Vector3f v3 = _vertices[face[2]];
+        Eigen::Vector3f v1 = _vertices[face[0]];
+        Eigen::Vector3f v2 = _vertices[face[1]];
+        Eigen::Vector3f v3 = _vertices[face[2]];
 
         // Fill in later
         Face* faceStruct = new Face;
@@ -139,7 +140,7 @@ void Mesh::preProcess() {
     for (const auto& pair : _vertexMap) {
         Vertex *v = pair.second;
         Halfedge *h = v->halfedge;
-        Vector3f vertexNormal{0, 0, 0};
+        Eigen::Vector3f vertexNormal{0, 0, 0};
         int numNeighbors = 0;
         do {
             vertexNormal += h->face->normal * h->face->area;
@@ -154,7 +155,7 @@ void Mesh::preProcess() {
         if (e == nullptr) {
             continue;
         }
-        Vector3f edgeNormal = (e->halfedge->face->normal * e->halfedge->face->area) + (e->halfedge->twin->face->normal * e->halfedge->twin->face->area);
+        Eigen::Vector3f edgeNormal = (e->halfedge->face->normal * e->halfedge->face->area) + (e->halfedge->twin->face->normal * e->halfedge->twin->face->area);
         e->normal = edgeNormal.normalized();
     }
 
@@ -177,8 +178,8 @@ void Mesh::preProcess() {
 
 // Converts our data structure back into the original format of _vertices and _faces
 void Mesh::convert() {
-    vector<Vector3f> finalVerticesList;
-    vector<Vector3i> finalFacesList;
+    vector<Eigen::Vector3f> finalVerticesList;
+    vector<Eigen::Vector3i> finalFacesList;
 
     // Loop through our vertices, update Vertex struct's index, and append position to final vertices list
     int index = 0;
@@ -200,7 +201,7 @@ void Mesh::convert() {
         }
         while (h != face->halfedge);
 
-        Vector3i finalIndices(indices[0], indices[1], indices[2]);
+        Eigen::Vector3i finalIndices(indices[0], indices[1], indices[2]);
         finalFacesList.push_back(finalIndices);
     }
 
@@ -232,7 +233,7 @@ void Mesh::loadFromFile(const string &filePath)
         for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
             unsigned int fv = shapes[s].mesh.num_face_vertices[f];
 
-            Vector3i face;
+            Eigen::Vector3i face;
             for (size_t v = 0; v < fv; v++) {
                 tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
 
@@ -252,12 +253,12 @@ void Mesh::loadFromFile(const string &filePath)
 }
 
 void Mesh::remeshSelfIntersections() {
-    MatrixXd V;
+    Eigen::MatrixXd V;
     V.resize(_vertices.size(), 3);
     for (int i = 0; i < _vertices.size(); i++) {
         V.row(i) = _vertices[i].cast<double>();
     }
-    MatrixXi F;
+    Eigen::MatrixXi F;
     F.resize(_faces.size(), 3);
     for (int i = 0; i < _faces.size(); i++) {
         F.row(i) = _faces[i];
@@ -316,14 +317,14 @@ void Mesh::saveToFile(const string &filePath)
     // Write vertices
     for (size_t i = 0; i < _vertices.size(); i++)
     {
-        const Vector3f &v = _vertices[i];
+        const Eigen::Vector3f &v = _vertices[i];
         outfile << "v " << v[0] << " " << v[1] << " " << v[2] << endl;
     }
 
     // Write faces
     for (size_t i = 0; i < _faces.size(); i++)
     {
-        const Vector3i &f = _faces[i];
+        const Eigen::Vector3i &f = _faces[i];
         outfile << "f " << (f[0]+1) << " " << (f[1]+1) << " " << (f[2]+1) << endl;
     }
 
@@ -460,7 +461,7 @@ bool collapseValidate(Vertex* c, Vertex* d) {
     return true;
 }
 
-Vertex* Mesh::collapse(Edge* edge, Vector4f point) {
+Vertex* Mesh::collapse(Edge* edge, Eigen::Vector4f point) {
     // Let's call the edge we are collapsing cd, dc
     Halfedge* h = edge->halfedge;
     Halfedge* cd = h;
@@ -475,7 +476,7 @@ Vertex* Mesh::collapse(Edge* edge, Vector4f point) {
         return nullptr;
     }
 
-    Vector3f newVertexCoord(point[0], point[1], point[2]);
+    Eigen::Vector3f newVertexCoord(point[0], point[1], point[2]);
     // Make and add the new Vertex struct
     Vertex* m = new Vertex{nullptr, globalVertexIndex, newVertexCoord};
     _vertexMap.insert({globalVertexIndex, m});
@@ -576,24 +577,24 @@ Vertex* Mesh::collapse(Edge* edge, Vector4f point) {
     return m;
 }
 
-Matrix4f getFaceQ(Face* f, Vertex* u) {
-    Vector3f v1 = f->halfedge->source->p;
-    Vector3f v2 = f->halfedge->next->source->p;
-    Vector3f v3 = f->halfedge->next->next->source->p;
+Eigen::Matrix4f getFaceQ(Face* f, Vertex* u) {
+    Eigen::Vector3f v1 = f->halfedge->source->p;
+    Eigen::Vector3f v2 = f->halfedge->next->source->p;
+    Eigen::Vector3f v3 = f->halfedge->next->next->source->p;
 
-    Vector3f N = calculateSurfaceNormal(v1, v2, v3);
+    Eigen::Vector3f N = calculateSurfaceNormal(v1, v2, v3);
     float d = -v1.dot(N);
 
-    Vector4f v(N[0], N[1], N[2], d);
+    Eigen::Vector4f v(N[0], N[1], N[2], d);
 
-    Matrix4f Q = v*(v.transpose());
+    Eigen::Matrix4f Q = v*(v.transpose());
 
     return Q;
 }
 
-Matrix4f getVertexQ(Vertex* v) {
+Eigen::Matrix4f getVertexQ(Vertex* v) {
     Halfedge* h = v->halfedge;
-    Matrix4f Q = Matrix4f::Zero();
+    Eigen::Matrix4f Q = Eigen::Matrix4f::Zero();
 
     do {
         Q += getFaceQ(h->face, v);
@@ -604,7 +605,7 @@ Matrix4f getVertexQ(Vertex* v) {
     return Q;
 }
 
-bool isMatrixInvertible(Matrix4f* m) {
+bool isMatrixInvertible(Eigen::Matrix4f* m) {
     return m->determinant() != 0.f;
 }
 
@@ -627,25 +628,25 @@ void Mesh::updateEdgeCost(Edge* e) {
     Vertex* v2 = h->destination;
 
     // C is a column vector of [0,0,0,1]
-    Vector4f c(0, 0, 0, 1);
+    Eigen::Vector4f c(0, 0, 0, 1);
     // c = c.transpose();
 
-    Matrix4f Q = v1->Q + v2->Q;
-    Matrix4f Q_Bar = Q;
+    Eigen::Matrix4f Q = v1->Q + v2->Q;
+    Eigen::Matrix4f Q_Bar = Q;
     Q_Bar.row(3) << 0, 0, 0, 1;
 
-    Vector4f minCostPoint;
+    Eigen::Vector4f minCostPoint;
 
     if (isMatrixInvertible(&Q)) {
         minCostPoint = (Q_Bar.inverse())*c;
     } else {
         // If Q is not invertible, the minimum cost is either the midpoint or one of the endpoints, whichever has less error
-        Vector3f midpoint = (v1->p + v2->p) / 2.f;
-        Vector4f mp4(midpoint[0], midpoint[1], midpoint[2], 1.f);
-        Vector3f ep1 = v1->p;
-        Vector4f ep1_4(ep1[0], ep1[1], ep1[2], 1.f);
-        Vector3f ep2 = v2->p;
-        Vector4f ep2_4(ep2[0], ep2[1], ep2[2], 1.f);
+        Eigen::Vector3f midpoint = (v1->p + v2->p) / 2.f;
+        Eigen::Vector4f mp4(midpoint[0], midpoint[1], midpoint[2], 1.f);
+        Eigen::Vector3f ep1 = v1->p;
+        Eigen::Vector4f ep1_4(ep1[0], ep1[1], ep1[2], 1.f);
+        Eigen::Vector3f ep2 = v2->p;
+        Eigen::Vector4f ep2_4(ep2[0], ep2[1], ep2[2], 1.f);
 
         float errorMP = mp4.transpose()*Q*mp4;
         float errorEP1 = ep1_4.transpose()*Q*ep1_4;
@@ -769,7 +770,7 @@ Vertex* Mesh::split(Edge* edge, unordered_set<Edge*>* newEdges) {
     Face* face2 = bc->face;
 
     // Make new vertex
-    Vector3f newVertexCoord = (c->p + b->p) / 2.f;
+    Eigen::Vector3f newVertexCoord = (c->p + b->p) / 2.f;
     Vertex* m = new Vertex{nullptr, globalVertexIndex, newVertexCoord};
     assert(!_vertexMap.contains(globalVertexIndex));
     _vertexMap.insert({globalVertexIndex, m});
@@ -874,7 +875,7 @@ Vertex* Mesh::split(Edge* edge, unordered_set<Edge*>* newEdges) {
 }
 
 void Mesh::loopSubdivide() {
-    std::unordered_map<Vertex*, Vector3f> vertexToOldPosition;
+    std::unordered_map<Vertex*, Eigen::Vector3f> vertexToOldPosition;
     // Make a reverse mapping from the Vertex struct to its position
     for (auto const& [key, val] : _vertexMap) {
         vertexToOldPosition[val] = val->p;
@@ -883,7 +884,7 @@ void Mesh::loopSubdivide() {
     // Calculate the new positions of the old vertices
     for (auto const& [key, val] : vertexToOldPosition) {
         // key is vertex pointer, value is its old position
-        Vector3f newPosition(0.f, 0.f, 0.f);
+        Eigen::Vector3f newPosition(0.f, 0.f, 0.f);
         int n = countDegree(key);
         float u = 0.f;
         if (n == 3) {
@@ -948,10 +949,10 @@ void Mesh::loopSubdivide() {
         Vertex* v1 = h->next->next->twin->next->twin->next->destination;
         Vertex* v3 = h->twin->next->twin->next->next->twin->next->destination;
 
-        Vector3f p2 = vertexToOldPosition[v2];
-        Vector3f p4 = vertexToOldPosition[v4];
-        Vector3f p1 = vertexToOldPosition[v1];
-        Vector3f p3 = vertexToOldPosition[v3];
+        Eigen::Vector3f p2 = vertexToOldPosition[v2];
+        Eigen::Vector3f p4 = vertexToOldPosition[v4];
+        Eigen::Vector3f p1 = vertexToOldPosition[v1];
+        Eigen::Vector3f p3 = vertexToOldPosition[v3];
 
         v->p = (1.f/8.f)*p1 + (1.f/8.f)*p3 + (3.f/8.f)*p2 + (3.f/8.f)*p4;
     }
@@ -999,8 +1000,8 @@ void Mesh::remesh(float w) {
             continue;
         }
         float edgeLength = (e->halfedge->destination->p - e->halfedge->source->p).norm();
-        Vector3f midPoint = (e->halfedge->source->p + e->halfedge->destination->p) / 2.f;
-        Vector4f mp(midPoint[0], midPoint[1], midPoint[2], 1.f);
+        Eigen::Vector3f midPoint = (e->halfedge->source->p + e->halfedge->destination->p) / 2.f;
+        Eigen::Vector4f mp(midPoint[0], midPoint[1], midPoint[2], 1.f);
         if (edgeLength < (4.f/5.f)*L) {
             collapse(e, mp);
         }
@@ -1041,15 +1042,15 @@ void Mesh::remesh(float w) {
 
     // Tangential smoothing
     for (auto const& [index, vertex] : _vertexMap) {
-        Vector3f x = vertex->p;
-        Vector3f n(0, 0, 0);
-        Vector3f c(0, 0, 0);
+        Eigen::Vector3f x = vertex->p;
+        Eigen::Vector3f n(0, 0, 0);
+        Eigen::Vector3f c(0, 0, 0);
         Halfedge* h = vertex->halfedge;
         int numFaces = 0;
         do {
-            Vector3f v1 = h->source->p;
-            Vector3f v2 = h->next->source->p;
-            Vector3f v3 = h->next->next->source->p;
+            Eigen::Vector3f v1 = h->source->p;
+            Eigen::Vector3f v2 = h->next->source->p;
+            Eigen::Vector3f v3 = h->next->next->source->p;
             n += calculateSurfaceNormal(v1, v2, v3);
             c += v2;
             numFaces++;
@@ -1062,7 +1063,7 @@ void Mesh::remesh(float w) {
         // Centroid calculated as average position of all neighbors
         c = c / static_cast<float>(numFaces);
 
-        Vector3f v = c - x;
+        Eigen::Vector3f v = c - x;
         v = v - (n.dot(v))*n;
 
         vertex->p = x + v*w;
@@ -1133,11 +1134,11 @@ void Mesh::validate(){
     }
 }
 
-vector<Vector3f> Mesh::getVertices() {
+vector<Eigen::Vector3f> Mesh::getVertices() {
     return _vertices;
 }
 
-vector<Vector3i> Mesh::getFaces() {
+vector<Eigen::Vector3i> Mesh::getFaces() {
     return _faces;
 }
 

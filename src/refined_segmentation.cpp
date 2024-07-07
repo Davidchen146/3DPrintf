@@ -10,14 +10,14 @@ void MeshOperations::getBoundaryFaces(const std::unordered_set<int> &patch_one, 
     }
     // We have the boundary edges, now let's check which faces are adjacent to those edges
     for (int f: patch_one) {
-        Vector3i vertex_indices = _faces[f];
+        Eigen::Vector3i vertex_indices = _faces[f];
         // if any of the face's vertices are in the boundary, add face to boundaryFaces
         if (edgeVertices.contains(vertex_indices[0]) || edgeVertices.contains(vertex_indices[1]) || edgeVertices.contains(vertex_indices[2])) {
             boundaryFaces.insert(f);
         }
     }
     for (int f: patch_two) {
-        Vector3i vertex_indices = _faces[f];
+        Eigen::Vector3i vertex_indices = _faces[f];
         // if any of the face's vertices are in the boundary, add face to boundaryFaces
         if (edgeVertices.contains(vertex_indices[0]) || edgeVertices.contains(vertex_indices[1]) || edgeVertices.contains(vertex_indices[2])) {
             boundaryFaces.insert(f);

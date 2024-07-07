@@ -14,10 +14,10 @@ int minDistanceVertex(vector<double> distances, vector<bool> visited) {
     return v;
 }
 
-VectorXd MeshOperations::dijkstra(int start) {
+Eigen::VectorXd MeshOperations::dijkstra(int start) {
     vector<double> distances;
     vector<bool> visited;
-    VectorXd d;
+    Eigen::VectorXd d;
     // initialize distances and visited vectors
     for (int i = 0; i < _n; i++) {
         distances.push_back(std::numeric_limits<double>::max());
@@ -115,16 +115,16 @@ void MeshOperations::preprocessRaytracer() {
 
 void MeshOperations::geodesicDistance() {
     int n = _faces.size();
-    VectorXi VS, VT, FS, FT;
+    Eigen::VectorXi VS, VT, FS, FT;
     Eigen::VectorXd d;
     FS.resize(1);
     FT.resize(n);
-    FT = VectorXi::LinSpaced(n, 0, n-1);
+    FT = Eigen::VectorXi::LinSpaced(n, 0, n-1);
     for (int i = 0; i < n; i++) {
         d.setZero();
         FS[0] = i;
         igl::exact_geodesic(_V, _F, VS, FS, VT, FT, d);
-        VectorXd d_copy = d;
+        Eigen::VectorXd d_copy = d;
         _geodesicDistances.row(i) = d_copy;
     }
 }
@@ -133,12 +133,12 @@ void MeshOperations::angularDistance() {
     unordered_map<int, Face *> faceMap = _mesh.getFaceMap();
     for (const auto& pair : faceMap) {
         Face *f_i = pair.second;
-        Vector3f normal_i = f_i->normal;
+        Eigen::Vector3f normal_i = f_i->normal;
         Halfedge *h = f_i->halfedge;
         // i think it's easier to do it this way so we know the edge the two adjacent faces share
         do {
             Face *f_j = h->twin->face;
-            Vector3f normal_j = f_j->normal;
+            Eigen::Vector3f normal_j = f_j->normal;
 
             // angle between face normals
             float cos_alpha_ij = (normal_i.dot(normal_j)) / (normal_i.norm() * normal_j.norm());
@@ -148,11 +148,11 @@ void MeshOperations::angularDistance() {
             Vertex *v2 = h->twin->next->destination;
 
             // midpoint between v1 & v2
-            Vector3f midpoint_line = (v1->p + v2->p) / 2;
+            Eigen::Vector3f midpoint_line = (v1->p + v2->p) / 2;
 
             // midpoint of halfedge h
-            Vector3f midpoint_halfedge = (h->source->p + h->destination->p) / 2;
-            Vector3f lineToHalfedge = midpoint_halfedge - midpoint_line;
+            Eigen::Vector3f midpoint_halfedge = (h->source->p + h->destination->p) / 2;
+            Eigen::Vector3f lineToHalfedge = midpoint_halfedge - midpoint_line;
 
             float n = _convex_coeff; // convex
             // note: would this dot product ever be 0?
@@ -169,7 +169,7 @@ void MeshOperations::angularDistance() {
 
 void MeshOperations::weightedDistance() {
     for (int i = 0; i < _n; i++) {
-        VectorXd distances = dijkstra(i);
+        Eigen::VectorXd distances = dijkstra(i);
         _weightedDistances.row(i) = distances;
     }
 }

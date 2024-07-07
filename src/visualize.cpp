@@ -44,7 +44,7 @@ void MeshOperations::visualize(const vector<unordered_set<int>>& coloringGroups)
         double m_red = static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
         double m_green = static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
         double m_blue = static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
-        Vector3d RGB = {m_red, m_green, m_blue};
+        Eigen::Vector3d RGB = {m_red, m_green, m_blue};
         groupToColor[i] = RGB;
     }
 
@@ -310,7 +310,7 @@ void MeshOperations::visualizeSmoothingCosts(const std::vector<std::unordered_se
         patchToCost[pair.first] /= edge_length;
         max_cost = max(max_cost, patchToCost[pair.first]);
     }
-    std::unordered_map<int, Vector3d> patchToColor;
+    std::unordered_map<int, Eigen::Vector3d> patchToColor;
     for (const auto& pair: patchToCost) {
         // get the color of the patch
         patchToColor[pair.first] = mapValueToColor(pair.second, max_cost);
@@ -399,7 +399,7 @@ void MeshOperations::visualizePrintableVolumes(const std::vector<std::unordered_
     }
     int num_components = printable_components.size();
     for (int component = 0; component < num_components; component++) {
-        Vector3d RGB = groupToColor[component];
+        Eigen::Vector3d RGB = groupToColor[component];
 
         // Rotate all the vertices so the printing direction points upward
         Eigen::MatrixXd component_vertices;

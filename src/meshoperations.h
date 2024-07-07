@@ -18,7 +18,6 @@
 // TODO: Reorganize this file into multiple subclasses for each phases along with common util functions
 // TODO: Mesh class, preprocessing, oversegmentation, initial segmentation, refined segmentation, and fabrication should all have different classes
 // TODO: Get rid of the namespace; that's lazy
-using namespace Eigen;
 using namespace std;
 using namespace operations_research;
 
@@ -146,10 +145,10 @@ public:
     void getComponentBoundingBox(const std::unordered_set<int> &component, Eigen::Vector3d& min, Eigen::Vector3d& max);
     void partitionVolume(const std::vector<std::unordered_set<int>> &printable_components,
                          std::vector<std::vector<Eigen::Vector4i>> &printable_volumes);
-    void getFacesFromTet(const std::vector<Eigen::Vector4i>& volume, Eigen::MatrixXi& faces, std::unordered_set<Vector3i, Vector3iHash, Vector3iEqual>& exposedFaces);
+    void getFacesFromTet(const std::vector<Eigen::Vector4i>& volume, Eigen::MatrixXi& faces, std::unordered_set<Eigen::Vector3i, Vector3iHash, Vector3iEqual>& exposedFaces);
     void pruneVolume(std::vector<std::vector<Eigen::Vector4i>> &printable_volumes);
-    void updateFaceMap(std::unordered_map<Vector3i, Vector4i, Vector3iHash, Vector3iEqual>& faceMap, Vector3i face, Vector4i tet);
-    Vector3i orderVertices(Vector3i& face, Vector4i& tet);
+    void updateFaceMap(std::unordered_map<Eigen::Vector3i, Eigen::Vector4i, Vector3iHash, Vector3iEqual>& faceMap, Eigen::Vector3i face, Eigen::Vector4i tet);
+    Eigen::Vector3i orderVertices(Eigen::Vector3i& face, Eigen::Vector4i& tet);
     void extractSurface(const std::vector<Eigen::Vector4i> &volume, std::vector<Eigen::Vector3i> &surface_faces);
     void boolOpsApply(std::vector<std::vector<Eigen::Vector4i>> &printable_volumes, std::vector<Eigen::MatrixXf> &printable_vertices, std::vector<Eigen::MatrixXi> &printable_faces);
     void outputComponentsToFile(const std::vector<Eigen::MatrixXf> &printable_vertices, const std::vector<Eigen::MatrixXi> &printable_faces, const std::vector<Eigen::Vector3f> &printing_directions, const std::string &filename);
@@ -166,13 +165,13 @@ private:
 
     std::vector<std::vector<bool>> _adjacency;
 
-    MatrixXf _V;
-    MatrixXi _F;
+    Eigen::MatrixXf _V;
+    Eigen::MatrixXi _F;
 
     // initialized via call to tetrahedralizeMesh()
-    MatrixXd _TV;
-    MatrixXi _TT;
-    MatrixXi _TF;
+    Eigen::MatrixXd _TV;
+    Eigen::MatrixXi _TT;
+    Eigen::MatrixXi _TF;
 
     Eigen::MatrixXd _geodesicDistances;
     Eigen::MatrixXd _angularDistances;
@@ -183,7 +182,7 @@ private:
     // mostly so that the colors of the patches from initial segmentation step
     // will match the colors of the patches from fabrication
     std::unordered_map<int, int> faceToGroup;
-    std::unordered_map<int, Vector3d> groupToColor;
+    std::unordered_map<int, Eigen::Vector3d> groupToColor;
 
     // Subroutines used for Phase 1 (Oversegmentation)
     // Initial seed computation

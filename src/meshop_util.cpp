@@ -177,7 +177,7 @@ Eigen::Vector3f MeshOperations::generateRandomVector() {
     float x = sin(theta) * cos(phi);
     float y = cos(theta);
     float z = sin(theta) * sin(phi);
-    Vector3f direction(x, y, z);
+    Eigen::Vector3f direction(x, y, z);
     return direction.normalized();
 }
 
