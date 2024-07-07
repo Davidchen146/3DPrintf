@@ -17,9 +17,6 @@
 
 // TODO: Reorganize this file into multiple subclasses for each phases along with common util functions
 // TODO: Mesh class, preprocessing, oversegmentation, initial segmentation, refined segmentation, and fabrication should all have different classes
-// TODO: Get rid of the namespace; that's lazy
-using namespace std;
-using namespace operations_research;
 
 // Custom hash function for Vector3i
 struct Vector3iHash {
@@ -213,8 +210,8 @@ private:
                                        const std::unordered_set<int> &patch_two);
     // Assign results of the ILP to something we can return out
     void generatePrintableComponents(const std::vector<std::unordered_set<int>> &patches,
-                                     std::vector<unordered_set<int>> &printable_components,
-                                     const std::vector<std::vector<const MPVariable*>> &solutions,
+                                     std::vector<std::unordered_set<int>> &printable_components,
+                                     const std::vector<std::vector<const operations_research::MPVariable*>> &solutions,
                                      const std::vector<Eigen::Vector3f> &patch_printing_directions,
                                      std::vector<Eigen::Vector3f> &component_printing_directions);
 
@@ -232,20 +229,20 @@ private:
     void initializeFuzzyRegionCoefficients(const std::unordered_set<int> &fuzzy_region, std::unordered_map<std::pair<int, int>, double, PairHash> &adjacent_face_coefficients);
     void solveFuzzyRegion(std::vector<std::unordered_set<int>> &printable_components,
                           const std::unordered_set<int> &fuzzy_region,
-                          const unordered_set<int> &fuzzy_region_directions,
+                          const std::unordered_set<int> &fuzzy_region_directions,
                           const std::unordered_map<std::pair<int, int>, double, PairHash> &adjacent_face_coefficients);
     void addRefinedFaceVariable(const int &face,
                                 const std::unordered_set<int> &fuzzy_region,
                                 const std::vector<std::unordered_set<int>> &printable_components,
                                 std::unordered_map<int, int> &variable_to_direction,
                                 std::unordered_map<int, int> &face_to_variable,
-                                std::vector<std::vector<const MPVariable*>> &variables);
+                                std::vector<std::vector<const operations_research::MPVariable*>> &variables);
     void updatePrintableComponents(const int &face,
                                    const int &face_variable,
                                    const std::unordered_set<int> &fuzzy_region,
                                    std::vector<std::unordered_set<int>> &printable_components,
                                    std::unordered_map<int, int> &variable_to_direction,
-                                   std::vector<std::vector<const MPVariable*>> &variables);
+                                   std::vector<std::vector<const operations_research::MPVariable*>> &variables);
 
 
     // Other general subroutines
@@ -301,13 +298,13 @@ private:
     double getTotalWeightedDistanceToSet(const int &face, const std::unordered_set<int> &faces);
 
     // Support for ILP when doing initial segmentation
-    void addSupportCosts(std::vector<std::vector<const MPVariable*>> &variables, const std::vector<std::unordered_set<int>> &patches);
-    void addSmoothingCosts(std::vector<std::vector<const MPVariable*>> &variables);
+    void addSupportCosts(std::vector<std::vector<const operations_research::MPVariable*>> &variables, const std::vector<std::unordered_set<int>> &patches);
+    void addSmoothingCosts(std::vector<std::vector<const operations_research::MPVariable*>> &variables);
 
     // Generic ILP Subroutines
-    const MPVariable* addVariable(const double &coefficient, const double &min_val = 0.0, const double &max_val = 1.0, const std::string &name = "");
-    const MPVariable* addXORVariable(const MPVariable* var_1, const MPVariable* var_2, const double &coefficient, const std::string &name = "");
-    void addConstraint(const std::vector<const MPVariable*> &variables, const std::vector<double> &coefficients, const double &min_val = 0.0, const double &max_val = 1.0, const std::string &name = "");
+    const operations_research::MPVariable* addVariable(const double &coefficient, const double &min_val = 0.0, const double &max_val = 1.0, const std::string &name = "");
+    const operations_research::MPVariable* addXORVariable(const operations_research::MPVariable* var_1, const operations_research::MPVariable* var_2, const double &coefficient, const std::string &name = "");
+    void addConstraint(const std::vector<const operations_research::MPVariable*> &variables, const std::vector<double> &coefficients, const double &min_val = 0.0, const double &max_val = 1.0, const std::string &name = "");
     void clearSolver();
 
     double bbd; // bounding box diagonal

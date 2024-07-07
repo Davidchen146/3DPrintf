@@ -20,7 +20,7 @@ Eigen::Vector3d MeshOperations::mapValueToColor(double value, double max_value) 
 }
 
 // Visualize groups with random colors
-void MeshOperations::visualize(const vector<unordered_set<int>>& coloringGroups) {
+void MeshOperations::visualize(const std::vector<std::unordered_set<int>>& coloringGroups) {
     // generate a certain number of colors based on coloringGroups
     Eigen::MatrixXd C;
     C.resize(_faces.size(), 3);
@@ -155,7 +155,7 @@ void MeshOperations::visualizeAngularDistance() {
             avg_angular_dist += getAngularDistance(current_face->index, face->index);
         }
         avg_angular_dist /= current_face->neighbors.size();
-        max_dist = max(max_dist, avg_angular_dist);
+        max_dist = std::max(max_dist, avg_angular_dist);
         face_to_dist[face] = avg_angular_dist;
     }
 
@@ -186,7 +186,7 @@ void MeshOperations::visualizeWeightedDistance() {
             avg_angular_dist += getWeightedDistance(current_face->index, face->index);
         }
         avg_angular_dist /= current_face->neighbors.size();
-        max_dist = max(max_dist, avg_angular_dist);
+        max_dist = std::max(max_dist, avg_angular_dist);
         face_to_dist[face] = avg_angular_dist;
     }
 
@@ -308,7 +308,7 @@ void MeshOperations::visualizeSmoothingCosts(const std::vector<std::unordered_se
         }
 
         patchToCost[pair.first] /= edge_length;
-        max_cost = max(max_cost, patchToCost[pair.first]);
+        max_cost = std::max(max_cost, patchToCost[pair.first]);
     }
     std::unordered_map<int, Eigen::Vector3d> patchToColor;
     for (const auto& pair: patchToCost) {
@@ -340,10 +340,10 @@ void MeshOperations::visualizeFaceAO() {
     C.resize(_faces.size(), 3);
 
     double max_ao = 0;
-    vector<double> ao_vals;
+    std::vector<double> ao_vals;
     for (int i = 0; i < _faces.size(); i++) {
         double ao = getFaceAO(i);
-        max_ao = max(ao, max_ao);
+        max_ao = std::max(ao, max_ao);
         ao_vals.push_back(ao);
     }
 
@@ -362,7 +362,7 @@ void MeshOperations::visualizeEdgeAO() {
     C.resize(_faces.size(), 3);
 
     double max_ao = 0;
-    vector<double> ao_vals;
+    std::vector<double> ao_vals;
     for (int i = 0; i < _faces.size(); i++) {
         Eigen::Vector3i vertexIndices = _faces[i];
         std::pair<int, int> e1 = _mesh.getSortedPair(vertexIndices[0], vertexIndices[1]);
@@ -372,7 +372,7 @@ void MeshOperations::visualizeEdgeAO() {
         double ao2 = getEdgeAO(e2);
         double ao3 = getEdgeAO(e3);
         double ao = (ao1 + ao2 + ao3) / 3;
-        max_ao = max(ao, max_ao);
+        max_ao = std::max(ao, max_ao);
         ao_vals.push_back(ao);
     }
 

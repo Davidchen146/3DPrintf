@@ -3,8 +3,8 @@
 void MeshOperations::getBoundaryFaces(const std::unordered_set<int> &patch_one, const std::unordered_set<int> &patch_two, std::unordered_set<int> &boundaryFaces) {
     std::unordered_set<std::pair<int, int>, PairHash> boundaryEdges;
     getBoundaryEdges(patch_one, patch_two, boundaryEdges);
-    unordered_set<int> edgeVertices;
-    for (pair<int, int> edge: boundaryEdges) {
+    std::unordered_set<int> edgeVertices;
+    for (std::pair<int, int> edge: boundaryEdges) {
         edgeVertices.insert(edge.first);
         edgeVertices.insert(edge.second);
     }
@@ -42,7 +42,7 @@ void MeshOperations::getPairwiseFuzzyRegion(const std::unordered_set<int> &patch
                                             const std::unordered_set<int> &patch_two,
                                             std::unordered_set<int> &fuzzyRegion) {
     // A fuzzy region is a set of faces, we are storing all fuzzy regions in a vector
-    unordered_set<int> boundaryFaces;
+    std::unordered_set<int> boundaryFaces;
     getBoundaryFaces(patch_one, patch_two, boundaryFaces);
     // the fuzzy region starts by including all boundary faces
     for (int f: patch_one) {
@@ -62,14 +62,14 @@ void MeshOperations::generateFuzzyRegions(std::vector<std::unordered_set<int>> &
         for (int j = i+1; j < printable_components.size(); j++) {
             // pointer to fuzzyRegion to avoid the struct having to copy everything over on initialization
             // This will need to be cleaned up later
-            unordered_set<int>* fuzzyRegion = new unordered_set<int>();
+            std::unordered_set<int>* fuzzyRegion = new std::unordered_set<int>();
             getPairwiseFuzzyRegion(printable_components[i], printable_components[j], *fuzzyRegion);
             if (fuzzyRegion->size() == 0) {
                 // If the pairwise patches don't share boundaries
                 delete fuzzyRegion;
             } else {
-                unordered_set<FuzzyNode*> neighbors;
-                vector<int> patchDirections = {i, j};
+                std::unordered_set<FuzzyNode*> neighbors;
+                std::vector<int> patchDirections = {i, j};
                 // This will need to be cleaned up later
                 FuzzyNode* fuzzyNode = new FuzzyNode{fuzzyRegion, neighbors, patchDirections};
                 nodes.push_back(fuzzyNode);
@@ -79,8 +79,8 @@ void MeshOperations::generateFuzzyRegions(std::vector<std::unordered_set<int>> &
 }
 
 bool areNodesConnected(FuzzyNode* n1, FuzzyNode* n2) {
-    unordered_set<int>* n1_faces = n1->fuzzyRegion;
-    unordered_set<int>* n2_faces = n2->fuzzyRegion;
+    std::unordered_set<int>* n1_faces = n1->fuzzyRegion;
+    std::unordered_set<int>* n2_faces = n2->fuzzyRegion;
     for (int i: *n1_faces) {
         if (n2_faces->contains(i)) {
             return true;
@@ -104,9 +104,9 @@ void MeshOperations::makeFuzzyGraph(std::vector<FuzzyNode*> &nodes) {
     }
 }
 
-void fuzzyDFS(unordered_set<FuzzyNode*> &visited,
-              unordered_set<int> &regionFaces,
-              unordered_set<int> &regionDirections,
+void fuzzyDFS(std::unordered_set<FuzzyNode*> &visited,
+              std::unordered_set<int> &regionFaces,
+              std::unordered_set<int> &regionDirections,
               FuzzyNode* node) {
     if (visited.contains(node)) {
         return;
@@ -131,13 +131,13 @@ void fuzzyDFS(unordered_set<FuzzyNode*> &visited,
 void MeshOperations::combineFuzzyRegions(std::vector<FuzzyNode*> &nodes,
                                          std::vector<std::unordered_set<int>> &fuzzyRegions,
                                          std::vector<std::unordered_set<int>> &fuzzyRegionDirections) {
-    unordered_set<FuzzyNode*> visited;
+    std::unordered_set<FuzzyNode*> visited;
     for (FuzzyNode* node: nodes) {
         if (visited.contains(node)) {
             continue;
         }
-        unordered_set<int> fuzzyRegion;
-        unordered_set<int> fuzzyDirections;
+        std::unordered_set<int> fuzzyRegion;
+        std::unordered_set<int> fuzzyDirections;
         fuzzyDFS(visited, fuzzyRegion, fuzzyDirections, node);
         fuzzyRegions.push_back(fuzzyRegion);
         fuzzyRegionDirections.push_back(fuzzyDirections);
@@ -148,8 +148,8 @@ void MeshOperations::generateRefinedSegmentation(std::vector<std::unordered_set<
                                                  std::vector<Eigen::Vector3f> &printing_directions,
                                                  std::vector<std::unordered_set<int>> &fuzzyRegions) {
     // Create pairwise fuzzy regions (FuzzyNodes)
-    vector<FuzzyNode*> nodes;
-    vector<unordered_set<int>> fuzzyRegionDirections;
+    std::vector<FuzzyNode*> nodes;
+    std::vector<std::unordered_set<int>> fuzzyRegionDirections;
     std::cout << "Making initial fuzzy regions..." << std::endl;
     generateFuzzyRegions(printable_components, printing_directions, nodes);
     std::cout << "Number of initial fuzzy regions: " << nodes.size() << std::endl;
@@ -256,13 +256,13 @@ void MeshOperations::initializeFuzzyRegionCoefficients(const std::unordered_set<
 // Function to actually interface with the solver
 void MeshOperations::solveFuzzyRegion(std::vector<std::unordered_set<int>> &printable_components,
                                       const std::unordered_set<int> &fuzzy_region,
-                                      const unordered_set<int> &fuzzy_region_directions,
+                                      const std::unordered_set<int> &fuzzy_region_directions,
                                       const std::unordered_map<std::pair<int, int>, double, PairHash> &adjacent_face_coefficients) {
     // Reset solver in case this is called multiple times
     clearSolver();
 
     // Variables
-    std::vector<std::vector<const MPVariable*>> variables;
+    std::vector<std::vector<const operations_research::MPVariable*>> variables;
     // Maps face index to variables
     std::unordered_map<int, int> face_to_variable;
     // Maps printing direction to variables
@@ -297,7 +297,7 @@ void MeshOperations::solveFuzzyRegion(std::vector<std::unordered_set<int>> &prin
 
     // Solve!
     std::cout << "Solving system. This may take a while..." << std::endl;
-    MPObjective* const objective = _solver->MutableObjective();
+    operations_research::MPObjective* const objective = _solver->MutableObjective();
     objective->SetMinimization();
     _solver->Solve();
 
@@ -313,7 +313,7 @@ void MeshOperations::addRefinedFaceVariable(const int &face,
                                             const std::vector<std::unordered_set<int>> &printable_components,
                                             std::unordered_map<int, int> &variable_to_direction,
                                             std::unordered_map<int, int> &face_to_variable,
-                                            std::vector<std::vector<const MPVariable*>> &variables) {
+                                            std::vector<std::vector<const operations_research::MPVariable*>> &variables) {
     // Create a vector of variables (for each direction) at the end
     int num_face_variables = variables.size();
     int num_region_directions = variable_to_direction.size();
@@ -364,7 +364,7 @@ void MeshOperations::updatePrintableComponents(const int &face,
                                                const std::unordered_set<int> &fuzzy_region,
                                                std::vector<std::unordered_set<int>> &printable_components,
                                                std::unordered_map<int, int> &variable_to_direction,
-                                               std::vector<std::vector<const MPVariable*>> &variables) {
+                                               std::vector<std::vector<const operations_research::MPVariable*>> &variables) {
     // For faces not in the fuzzy region, we don't want to update them
     if (!fuzzy_region.contains(face)) {
         std::cout << "Skipping update of face " << face << " since it is not in fuzzy region" << std::endl;

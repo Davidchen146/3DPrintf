@@ -2,7 +2,7 @@
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/unproject_onto_mesh.h>
 
-int minDistanceVertex(vector<double> distances, vector<bool> visited) {
+int minDistanceVertex(std::vector<double> distances, std::vector<bool> visited) {
     double minDistance = std::numeric_limits<double>::max();
     int v = -1;
     for (int i = 0; i < distances.size(); i++) {
@@ -15,8 +15,8 @@ int minDistanceVertex(vector<double> distances, vector<bool> visited) {
 }
 
 Eigen::VectorXd MeshOperations::dijkstra(int start) {
-    vector<double> distances;
-    vector<bool> visited;
+    std::vector<double> distances;
+    std::vector<bool> visited;
     Eigen::VectorXd d;
     // initialize distances and visited vectors
     for (int i = 0; i < _n; i++) {
@@ -73,7 +73,7 @@ void MeshOperations::makeAdjacency() {
     std::vector<std::vector<bool>> matrix(_n, std::vector<bool>(_n, false));
     _adjacency = matrix;
 
-    unordered_map<int, Face *> faceMap = _mesh.getFaceMap();
+    std::unordered_map<int, Face *> faceMap = _mesh.getFaceMap();
     for (const auto& pair : faceMap) {
         Face *f = pair.second;
         for (Face* n: f->neighbors) {
@@ -130,7 +130,7 @@ void MeshOperations::geodesicDistance() {
 }
 
 void MeshOperations::angularDistance() {
-    unordered_map<int, Face *> faceMap = _mesh.getFaceMap();
+    std::unordered_map<int, Face *> faceMap = _mesh.getFaceMap();
     for (const auto& pair : faceMap) {
         Face *f_i = pair.second;
         Eigen::Vector3f normal_i = f_i->normal;

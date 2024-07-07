@@ -275,7 +275,7 @@ void MeshOperations::pruneVolume(std::vector<std::vector<Eigen::Vector4i>> &prin
         Eigen::MatrixXi faces;
         std::unordered_set<Eigen::Vector3i, Vector3iHash, Vector3iEqual> exposedFaces;
         getFacesFromTet(printable_volumes[i], faces, exposedFaces);
-        vector<vector<double>> A; // containing at row i the adjacent vertices of vertex i
+        std::vector<std::vector<double>> A; // containing at row i the adjacent vertices of vertex i
         // from the printable volumes get the faces
         igl::adjacency_list(faces, A);
         std::vector<Eigen::Vector4i> volume = printable_volumes[i];

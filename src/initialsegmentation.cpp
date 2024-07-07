@@ -26,7 +26,7 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
     _solver->Clear();
 
     // Allocate space for all the items poggers
-    std::vector<std::vector<const MPVariable*>> printing_direction_vars;
+    std::vector<std::vector<const operations_research::MPVariable*>> printing_direction_vars;
     printing_direction_vars.resize(patches.size());
     for (int patch = 0; patch < patches.size(); patch++) {
         printing_direction_vars[patch].resize(_num_random_dir_samples);
@@ -39,7 +39,7 @@ void MeshOperations::generateInitialSegmentation(const std::vector<std::unordere
 
     // SOLVE THIS
     std::cout << "Solving initial segmentation optimization. This may take a while..." << std::endl;
-    MPObjective* const objective = _solver->MutableObjective();
+    operations_research::MPObjective* const objective = _solver->MutableObjective();
     objective->SetMinimization();
     _solver->Solve();
   
@@ -169,8 +169,8 @@ double MeshOperations::computeSmoothingCoefficient(const std::unordered_set<int>
 // Assign results of the ILP to something we can return out
 // Assumes the solver already has results assigned to variables
 void MeshOperations::generatePrintableComponents(const std::vector<std::unordered_set<int>> &patches,
-                                                 std::vector<unordered_set<int>> &printable_components,
-                                                 const std::vector<std::vector<const MPVariable*>> &solutions,
+                                                 std::vector<std::unordered_set<int>> &printable_components,
+                                                 const std::vector<std::vector<const operations_research::MPVariable*>> &solutions,
                                                  const std::vector<Eigen::Vector3f> &patch_printing_directions,
                                                  std::vector<Eigen::Vector3f> &component_printing_directions) {
     // For each patch, determine its printing direction
@@ -306,15 +306,15 @@ void MeshOperations::populateSmoothingMatrix(const std::vector<std::unordered_se
     }
 }
 
-void MeshOperations::addSupportCosts(std::vector<std::vector<const MPVariable*>> &variables, const std::vector<std::unordered_set<int>> &patches) {
+void MeshOperations::addSupportCosts(std::vector<std::vector<const operations_research::MPVariable*>> &variables, const std::vector<std::unordered_set<int>> &patches) {
     // Initialize variables
     int numPatches = patches.size();
     for (int patch = 0; patch < numPatches; patch++) {
         // Create a variable for this patch indicating if it's printed in this direction
-        std::vector<const MPVariable*> patch_direction_vars;
+        std::vector<const operations_research::MPVariable*> patch_direction_vars;
 
         for (int printing_direction = 0; printing_direction < _num_random_dir_samples; printing_direction++) {
-            const MPVariable* new_dir_var = addVariable(_supportCoefficients(patch, printing_direction), 0.0, 1.0);
+            const operations_research::MPVariable* new_dir_var = addVariable(_supportCoefficients(patch, printing_direction), 0.0, 1.0);
             variables[patch][printing_direction] = new_dir_var;
             patch_direction_vars.push_back(new_dir_var);
         }
@@ -326,7 +326,7 @@ void MeshOperations::addSupportCosts(std::vector<std::vector<const MPVariable*>>
     }
 }
 
-void MeshOperations::addSmoothingCosts(std::vector<std::vector<const MPVariable*>> &variables) {
+void MeshOperations::addSmoothingCosts(std::vector<std::vector<const operations_research::MPVariable*>> &variables) {
     LOG(INFO) << "Num Neighboring Patch Pairs: " << _smoothingCoefficients.size();
     LOG(INFO) << "Num Variables Pre-XOR: " << _solver->NumVariables();
     LOG(INFO) << "Num Constraints Pre-XOR: " << _solver->NumConstraints();
@@ -336,8 +336,8 @@ void MeshOperations::addSmoothingCosts(std::vector<std::vector<const MPVariable*
         // For each Direction:
         for (int direction = 0; direction < _num_random_dir_samples; direction++) {
             // Create a new variable corresponding to the relevant XOR in the solver
-            const MPVariable* patch_1_dir_indicator = variables[patch_pair.first][direction];
-            const MPVariable* patch_2_dir_indicator = variables[patch_pair.second][direction];
+            const operations_research::MPVariable* patch_1_dir_indicator = variables[patch_pair.first][direction];
+            const operations_research::MPVariable* patch_2_dir_indicator = variables[patch_pair.second][direction];
 
             addXORVariable(patch_1_dir_indicator, patch_2_dir_indicator, smoothing_cost);
         }
